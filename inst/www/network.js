@@ -765,7 +765,8 @@ function applySelection(query,data){
     else
       delete d.selected;
   });
-  drawNet();
+  simulation.restart();
+  showTables();
 }
 
 function applyAuto(item, visual, attr, pickerProperty){
@@ -2201,7 +2202,8 @@ function selectAllNodes(){
     Graph.nodes.forEach(function(d){
       delete d.selected;
     });
-  drawNet();
+  simulation.restart();
+  showTables();
 }
 
 function isolateNodes(){
@@ -2234,7 +2236,8 @@ function selectNeighbors(){
       d.selected = !d.noShow && d.neighbor;
       delete d.neighbor;
     });
-    drawNet();
+    simulation.restart();
+    showTables();
   }
 }
 
@@ -2692,7 +2695,8 @@ function selectNodesFromTable(){
           Graph.nodes.forEach(function(d){
             d.selected = names.indexOf(d[options.nodeName]) != -1;
           });
-          drawNet();
+          simulation.restart();
+          showTables();
         }
 }
 
