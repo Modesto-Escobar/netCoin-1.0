@@ -205,6 +205,14 @@ function network(Graph){
       height = height - (38 + 12*options.cex);
   }
 
+  if(options.mode=="h" || options.mode[0]=="h"){
+    heatmap = true;
+    if(options.linkWidth){
+       options.linkIntensity = options.linkWidth;
+       delete options.linkWidth;
+    }
+  }
+
 // main title
   if(options.main){
     body.append("div")
@@ -351,21 +359,6 @@ if(options.controls.indexOf(2)+options.controls.indexOf(3)!=-2){
   }
 }
 
-  plot.call(drawSVG);
-
-  var reload = false;
-  if(options.mode=="h" || options.mode[0]=="h"){
-    heatmap = true;
-    reload = true;
-    if(options.linkWidth){
-       options.linkIntensity = options.linkWidth;
-       delete options.linkWidth;
-    }
-  }
-
-  if(reload && !options.degreeFilter) drawNet();
-  applyDegreeFilter();
-
   displaySidebar();
 
   if(options.helpOn)
@@ -508,6 +501,7 @@ function displaySidebar(){
   plot.select("svg").remove();
   plot.style("width",width+"px");
   plot.call(drawSVG);
+  applyDegreeFilter();
 
   function filterSwitch(sel){
     sel.append("h4")
