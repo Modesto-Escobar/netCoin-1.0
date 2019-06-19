@@ -255,6 +255,7 @@ if(options.controls.indexOf(2)+options.controls.indexOf(3)!=-2){
   dragbar.call(d3.drag()
     .on("start", function() {
       body.style("cursor","row-resize");
+      plot.select("canvas").remove();
       plot.select("svg").remove();
       dragOffset = d3.mouse(body.node())[1]-height;
     })
@@ -308,10 +309,13 @@ if(options.controls.indexOf(2)+options.controls.indexOf(3)!=-2){
 
   iconButton(tables,"pdf",pdfIcon_b64,texts.pdfexport,function(){ embedImages(svg2pdf); });
 
-  tables.append("input")
+  var buttonsSelect = tables.append("div")
+        .attr("class","selectButton")
+
+  buttonsSelect.append("span").text(texts.select+": ");
+  buttonsSelect.append("input")
     .attr("type", "text")
     .attr("placeholder","search...")
-    .style("float","right")
     .on("keyup",function(){
       var txt = d3.select(this).property("value");
       if(txt.length>1){
@@ -331,9 +335,8 @@ if(options.controls.indexOf(2)+options.controls.indexOf(3)!=-2){
         showTables();
       }
     })
+  buttonsSelect.append("span").text(" ");
 
-  var buttonsSelect = tables.append("div")
-        .attr("class","selectButton")
   var selectButton = function(txt,clk){
         buttonsSelect.append("div")
           .text(txt)
@@ -396,8 +399,10 @@ function displaySidebar(){
     dragbar.call(d3.drag()
       .on("start", function() {
         body.style("cursor","col-resize");
-        if(options.showSidebar)
+        if(options.showSidebar){
+          plot.select("canvas").remove();
           plot.select("svg").remove();
+        }
       })
       .on("drag", function() {
         var value = d3.mouse(body.node())[0];
@@ -498,6 +503,7 @@ function displaySidebar(){
   }
   dragbar.style("height",(8 + parseInt(sidebar.style("height"))) + "px");
   width = docSize.width - sidebarOffset - 20;
+  plot.select("canvas").remove();
   plot.select("svg").remove();
   plot.style("width",width+"px");
   plot.call(drawSVG);
@@ -813,11 +819,31 @@ function drawSVG(sel){
   body
     .on("keydown", keyflip)
     .on("keyup", keyflip)
+
+  var canvas = sel.append("canvas")
+    .attr("width", width)
+    .attr("height", height)
   
   var svg = sel.append("svg")
       .attr("xmlns","http://www.w3.org/2000/svg")
       .attr("width", width)
-      .attr("height", height);
+      .attr("height", height)
+    .style("position","absolute")
+    .style("top",0)
+    .style("left",0)
+    .on("dblclick",dblClickNet)
+    .on("click",clickNet)
+    .call(d3.drag()
+          .subject(dragsubject)
+          .on("start", dragstarted)
+          .on("drag", dragged)
+          .on("end", dragended))
+
+    if(options.nodeText){
+      body.append("div")
+          .attr("class","tooltip")
+      svg.on("mousemove",hoverNet)
+    }
 
     svg.append("style")
      .text("text { font-family: sans-serif; font-size: "+body.style("font-size")+"; } "+
@@ -850,38 +876,6 @@ function drawSVG(sel){
 
   svg.call(zoom).on("dblclick.zoom",null);
 
-  var foreignObject = svg.append("foreignObject")
-    .attr("x", 0)
-    .attr("y", 0)
-    .attr("width", width)
-    .attr("height", height);
-
-  var foBody = foreignObject.append("xhtml:body")
-    .style("margin", "0px")
-    .style("padding", "0px")
-    .style("background-color", "none")
-    .style("width", width + "px")
-    .style("height", height + "px");
-
-  var canvas = foBody.append("canvas")
-    .attr("x", 0)
-    .attr("y", 0)
-    .attr("width", width)
-    .attr("height", height)
-    .on("dblclick",dblClickCanvas)
-    .on("click",clickCanvas)
-    .call(d3.drag()
-          .subject(dragsubject)
-          .on("start", dragstarted)
-          .on("drag", dragged)
-          .on("end", dragended))
-
-  if(options.nodeText){
-    body.append("div")
-        .attr("class","tooltip")
-    canvas.on("mousemove",hoverCanvas)
-  }
-
   var net = svg.append("g")
     .attr("class","net")
 
@@ -897,10 +891,10 @@ function drawSVG(sel){
           });
           var extent = d3.event.selection;
           if(extent){
-            extent[0][0] = transform.applyX(extent[0][0]);
-            extent[0][1] = transform.applyY(extent[0][1]);
-            extent[1][0] = transform.applyX(extent[1][0]);
-            extent[1][1] = transform.applyY(extent[1][1]);
+            extent[0][0] = 1/transform.k * (extent[0][0] - transform.x);
+            extent[0][1] = 1/transform.k * (extent[0][1] - transform.y);
+            extent[1][0] = 1/transform.k * (extent[1][0] - transform.x);
+            extent[1][1] = 1/transform.k * (extent[1][1] - transform.y);
             Graph.nodes.forEach(function(node) {
               node.selected = node.selected ^ (extent[0][0] <= node.x && node.x < extent[1][0] && extent[0][1] <= node.y && node.y < extent[1][1]);
             });
@@ -936,8 +930,10 @@ function drawSVG(sel){
   var chargeRange = [0,-(size*2)],
       linkDistanceRange = [0,size*3/4];
 
-  options.charge = chargeRange[1] * (options.repulsion/100);
-  options.linkDistance = linkDistanceRange[1] * (options.distance/100);
+  if(typeof options.charge == 'undefined')
+    options.charge = chargeRange[1] * (options.repulsion/100);
+  if(typeof options.linkDistance == 'undefined')
+    options.linkDistance = linkDistanceRange[1] * (options.distance/100);
 
   displaySlider(sliders, 5*options.cex, chargeRange, texts.repulsion, 'charge');
   displaySlider(sliders, 20*options.cex, linkDistanceRange, texts.distance, 'linkDistance');
@@ -976,7 +972,7 @@ function drawSVG(sel){
         .clamp(true);
 
     var brush = d3.brushX()
-        .extent([[0,0], [200,12]])
+        .extent([[-6,0], [206,12]])
         .on("brush", brushed);
 
         sliders = sliders.append("g")
@@ -1021,13 +1017,15 @@ function drawSVG(sel){
     }
 
     function update_forces(){
-      simulation.force("charge")
-        .strength(options.charge)
-      if(!options.linkWeight)
-        simulation.force("link")
-          .distance(options.linkDistance)
+      if(!options.stopped){
+        simulation.force("charge")
+          .strength(options.charge)
+        if(!options.linkWeight)
+          simulation.force("link")
+            .distance(options.linkDistance)
 
-      simulation.alpha(0.3).restart();
+        simulation.alpha(1).restart();
+      }
     }
   }
 }
@@ -1041,7 +1039,7 @@ function drawNet(){
   
   var svg = d3.select(".plot svg g.net");
 
-  var ctx = d3.select(".plot svg canvas").node().getContext("2d");
+  var ctx = d3.select(".plot canvas").node().getContext("2d");
 
   var gScale = d3.select(".plot svg g.scale");
   gScale.selectAll("*").remove();
@@ -1394,7 +1392,8 @@ function drawNet(){
 
     simulation.on("tick", tick);
 
-    simulation.alpha(0.3).restart();
+    if(options.stopped)
+        simulation.restart();
 
     //axes
     var axes = svg.selectAll(".axis")
@@ -1571,7 +1570,7 @@ function drawNet(){
     ctx.restore();
   }
 
-  svg2pdf = function svg2pdf(){
+  svg2pdf = function(){
 
     var doc = new jsPDF({
       orientation: (width>height)?"l":"p",
@@ -1774,7 +1773,7 @@ function findNode(){
   return simulation.find(transform.invertX(d3.mouse(d3.event.target)[0]), transform.invertY(d3.mouse(d3.event.target)[1]), 16);
 }
 
-function dblClickCanvas(){
+function dblClickNet(){
   var node = findNode();
   if(node){
     if(Graph.tree && ctrlKey){
@@ -1788,7 +1787,7 @@ function dblClickCanvas(){
   }
 }
 
-function clickCanvas(){
+function clickNet(){
   var node = findNode();
   if(node){
     body.select("div.tooltip").style("display","none").html("");
@@ -1804,7 +1803,7 @@ function clickCanvas(){
   }
 }
 
-function hoverCanvas(){
+function hoverNet(){
   var node = findNode(),
       tip = body.select("div.tooltip");
   if(node && node[options.nodeText]){
@@ -2294,11 +2293,12 @@ function stopResumeNet(){
     d3.select(".sliders").transition()
     .duration(500)
         .style("opacity",1);
-    simulation.alpha(0.3).restart();
+    simulation.alpha(1).restart();
   }else{
     d3.select(".sliders").transition()
     .duration(500)
         .style("opacity",0);
+    simulation.stop();
   }
   options.stopped = !options.stopped;
 }
@@ -2817,6 +2817,7 @@ window.onresize = function(){
       height = height - (38 + 12*options.cex);
   }
 
+  plot.select("canvas").remove();
   plot.select("svg").remove();
   plot.style("width",width+"px");
   plot.style("height",height+"px");

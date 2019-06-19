@@ -1,13 +1,19 @@
 function barplot(json){
 
-  var vp = viewport(),
-      margin = {top: 80, right: 40, bottom: 80, left: 160},
-      width = vp.width - 20 - margin.left - margin.right,
-      height = vp.height - 55 - margin.top - margin.bottom;
-
   var options = json.options,
       nodes = json.nodes,
       links = json.links;
+
+  var words = nodes.map(function(node){ return node[options.label?options.label:options.name]; }),
+      maxWord = d3.max(words.map(function(word){ return word.length; }));
+
+  var vp = viewport(),
+      margin = {top: 80, right: 40, bottom: 80, left: maxWord*options.cex*7},
+      width = vp.width - 20 - margin.left - margin.right,
+      height = vp.height - 55 - margin.top - margin.bottom;
+
+  if(margin.left<160)
+    margin.left = 160;
 
   var x = d3.scaleLinear()
       .range([0, width]);
@@ -97,7 +103,7 @@ function barplot(json){
         .attr("class","note")
         .style("position","absolute")
         .style("left",margin.left+"px")
-        .style("top",(margin.top+height+margin.bottom)+"px")
+        .style("top",(margin.top+height+margin.bottom+10)+"px")
         .html(options.note)
   }
 
@@ -110,18 +116,21 @@ function barplot(json){
       if(!slider.empty()){
         slider.remove();
       }
-      brushSlider(topBar,[0,1],false,function(ext){
-          var names = links.filter(function(d){ 
-return (d.Source==subject || d.Target==subject) && (d[options.significance]>=ext[0] && d[options.significance]<=ext[1]); }).map(function(d){ return [d.Source,d.Target]; });
+      var values = [0,0.0001,0.001,0.01,0.05,0.10,0.20,0.50,1];
+      var slider = topBar.append("input")
+        .attr("class","slider")
+        .style("float","right")
+        .style("margin-right","10px")
+        .attr("type","range")
+        .attr("min","0")
+        .attr("max","8")
+        .attr("value","8")
+        .on("change",function(){
+          var value = +this.value;
+          var names = links.filter(function(d){ return (d.Source==subject || d.Target==subject) && d[options.significance]<=values[value]; }).map(function(d){ return [d.Source,d.Target]; });
           names = d3.set(d3.merge(names)).values();
           displayGraph(names);
-        },200);
-      topBar.style("height",null)
-          .select("div.slider")
-            .style("float","right")
-            .style("height",null)
-            .style("top","10px")
-            .style("left","-25px");
+        })
     }
   }
 
@@ -292,7 +301,7 @@ return (d.Source==subject || d.Target==subject) && (d[options.significance]>=ext
           .style("fill","#fff")
           .style("font-size",(bandwidth)+"px")
           .attr("x",x(d[type])-4)
-          .attr("y",bandwidth)
+          .attr("y",bandwidth*1.08)
           .text(drawSig(d.sig))
 
       bar.transition().duration(1000)
