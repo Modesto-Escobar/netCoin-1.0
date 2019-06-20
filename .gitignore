@@ -77,5 +77,4 @@ $RECYCLE.BIN/
 
 # Windows shortcuts
 *.lnk
-inst/www/jspdf.min.js
 .Rproj.user

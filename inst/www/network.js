@@ -307,7 +307,7 @@ if(options.controls.indexOf(2)+options.controls.indexOf(3)!=-2){
 
   iconButton(tables,"xlsx",xlsxIcon_b64,texts.downloadtable,tables2xlsx);
 
-  iconButton(tables,"pdf",pdfIcon_b64,texts.pdfexport,function(){ embedImages(svg2pdf); });
+  iconButton(tables,"pdf",pdfIcon_b64,texts.pdfexport,function(){ embedImages(generatePDF); });
 
   var buttonsSelect = tables.append("div")
         .attr("class","selectButton")
@@ -1570,7 +1570,7 @@ function drawNet(){
     ctx.restore();
   }
 
-  svg2pdf = function(){
+  generatePDF = function(){
 
     var doc = new jsPDF({
       orientation: (width>height)?"l":"p",
@@ -2801,7 +2801,7 @@ function embedImages(callback){
   loading.remove();
 }
 
-function svg2pdf(){
+function generatePDF(){
     displayWindow("The network is not loaded yet!");
 }
 
