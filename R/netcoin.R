@@ -570,31 +570,32 @@ valuesof<-function(x,length=0,min=0,sort=TRUE,sep="") {
 
 # Links. See below funcs="shape"
 edgeList <- function(data, procedures="Haberman", criteria="Z", Bonferroni=FALSE, min=-Inf, max=Inf, support=-Inf, 
-                       directed=FALSE, diagonal=FALSE, sort=NULL, decreasing=TRUE) {
-    if (tolower(substr(criteria,1,2))%in%c("z","hy") & substr(tolower(procedures[1]),1,2)!="sh") {
-      if (max==Inf) max<-.50
-      if (Bonferroni ) max<-max/choose(nrow(attr(data,"n")),2) # Changes of Z max criterium (Bonferroni)
+                     directed=FALSE, diagonal=FALSE, sort=NULL, decreasing=TRUE) {
+  if (tolower(substr(criteria,1,2))%in%c("z","hy") & substr(tolower(procedures[1]),1,2)!="sh") {
+    if (max==Inf) max<-.50
+    if (Bonferroni ) max<-max/choose(nrow(data$f),2) # Changes of Z max criterium (Bonferroni)
+  }
+  if (substr(tolower(procedures)[1],1,2)!="sh") { # For coin objects
+    if (class(data)!="coin") stop("Error: input must be a coin object (see coin function)")
+    funcs<-c.method(procedures)
+    if(!is.null(sort)) funcs<-union(c.method(sort),funcs)
+    criteria<-c.method(criteria)
+    todas<-union(funcs,criteria)
+    matrices<-sim(data,todas,minimum=min)
+    funcs<-i.method(funcs)
+    criteria<-i.method(criteria)
+    if (length(union(funcs,criteria))==1) {
+      M<-new.env()
+      M[[funcs]]<-matrices
+      matrices<-as.list(M)
     }
-    if (substr(tolower(procedures)[1],1,2)!="sh") { # For coin objects
-      if (class(data)!="coin") stop("Error: input must be a coin object (see coin function)")
-      funcs<-c.method(procedures)
-      if(!is.null(sort)) funcs<-union(c.method(sort),funcs)
-      criteria<-c.method(criteria)
-      todas<-union(funcs,criteria)
-      matrices<-sim(data,todas,minimum=min)
-      funcs<-i.method(funcs)
-      criteria<-i.method(criteria)
-      if (length(union(funcs,criteria))==1) {
-        M<-new.env()
-        M[[funcs]]<-matrices
-        matrices<-as.list(M)
-      }
-      matrices<-matrices[i.method(todas)]
-      Mat<-mats2edges(data,matrices,criteria=criteria,min=min,max=max,support=support,directed=directed,diagonal=diagonal)
-    }
-    # This is for the case of having  only one matrix to be converted in edge form [funcs="shape"]
-    else {
-      if (class(data)!="matrix") stop("Error: input must be a matrix")
+    matrices<-matrices[i.method(todas)]
+    Mat<-mats2edges(data$f,matrices,criteria=criteria,min=min,max=max,support=support,directed=directed,diagonal=diagonal)
+  }
+  else {
+    if (class(data)!="matrix" & class(data)!="data.frame") 
+      stop("Error: input must be a matrix (shape) or a data.frame (tree)")    
+    if (class(data)=="matrix"){
       if(min==-Inf)min<-1    
       funcs="value"
       M<-new.env()
@@ -603,25 +604,36 @@ edgeList <- function(data, procedures="Haberman", criteria="Z", Bonferroni=FALSE
       data<-list(f=M[[funcs]],n=NA)
       Mat<-mats2edges(data$f,min=min,max=max,directed=directed,diagonal=diagonal)
     }
-    
-    # Last transformations: c.Conditional c.Probable and sort
-    
-    if(length(Mat)>0) {
-      if (!is.null(Mat$c.conditional)) 
-        Mat$c.conditional<-factor(Mat$c.conditional,levels=c(0:8),
-                                  labels=c("Null","Mere","Conditional","Significant","Quite significant","Very significant","Subtotal","Suptotal","Total"))
-      if (!is.null(Mat$c.probable)) 
-        Mat$c.probable<-factor(Mat$c.probable,levels=c(0:8),
-                               labels=c("Null","Mere","Probable","Significant","Quite significant","Very significant","Subtotal","Suptotal","Total"))
-      if (!is.null(sort)) {
-        if (substr(tolower(procedures)[1],1,2)!="sh") Mat<-Mat[order(Mat[[i.method(c.method(sort))]],decreasing = decreasing),]
-        else Mat<-Mat[order(Mat$value,decreasing=decreasing),]
-      }
+    if (class(data)=="data.frame") {
+      lines<-sapply(data,as.character)
+      lines<-rbind(c(lines[1,1],rep(NA,ncol(lines)-1)),lines) # Add one blank case in order to avoid mXm problem.
+      lines<-ifelse(lines=="",NA,lines)
+      adjlist<-split(lines,seq(nrow(lines))) # splits the character strings into list with different vector for each line
+      adjlist<-sapply(adjlist,na.omit)
+      Source=unlist(lapply(adjlist,function(x) rep(x[1],length(x)-1))) # establish first column of edgelist by replicating the 1st element (=ID number) by the length of the line minus 1 (itself)
+      Target=unlist(lapply(adjlist,"[",-1)) # the second line I actually don't fully understand this command, but it takes the rest of the ID numbers in the character string and transposes it to list vertically
+      return(as.data.frame(cbind(Source,Target),stringsAsFactors = FALSE,row.names=FALSE))
     }
-    else return(NULL)
-    names(Mat)[names(Mat)=="Z"]<-"p(Z)"
-    names(Mat)[names(Mat)=="Fisher"]<-"p(Fisher)"
-    return(Mat)
+  }  
+  
+  # Last transformations: c.Conditional c.Probable and sort
+  
+  if(length(Mat)>0) {
+    if (!is.null(Mat$c.conditional)) 
+      Mat$c.conditional<-factor(Mat$c.conditional,levels=c(0:8),
+                                labels=c("Null","Mere","Conditional","Significant","Quite significant","Very significant","Subtotal","Suptotal","Total"))
+    if (!is.null(Mat$c.probable)) 
+      Mat$c.probable<-factor(Mat$c.probable,levels=c(0:8),
+                             labels=c("Null","Mere","Probable","Significant","Quite significant","Very significant","Subtotal","Suptotal","Total"))
+    if (!is.null(sort)) {
+      if (substr(tolower(procedures)[1],1,2)!="sh") Mat<-Mat[order(Mat[[i.method(c.method(sort))]],decreasing = decreasing),]
+      else Mat<-Mat[order(Mat$value,decreasing=decreasing),]
+    }
+  }
+  else return(NULL)
+  names(Mat)[names(Mat)=="Z"]<-"p(Z)"
+  names(Mat)[names(Mat)=="Fisher"]<-"p(Fisher)"
+  return(Mat)
 }
 
 c.method<-function(method) {
