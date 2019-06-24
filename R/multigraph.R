@@ -35,7 +35,7 @@ multiGraph <- function(multi,dir){
 }
 
 polyGraph <- function(multi,dir){
-  createHTML(dir, NULL, c("d3.min.js","polygraph.js"), toJSON(names(multi)))
+  createHTML(dir, NULL, "polygraph.js", toJSON(names(multi)))
   multiGraph(multi,paste0(dir,"/multiGraph"))
 }
 

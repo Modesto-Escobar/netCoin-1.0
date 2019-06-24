@@ -307,7 +307,7 @@ if(options.controls.indexOf(2)+options.controls.indexOf(3)!=-2){
 
   iconButton(tables,"xlsx",xlsxIcon_b64,texts.downloadtable,tables2xlsx);
 
-  iconButton(tables,"pdf",pdfIcon_b64,texts.pdfexport,function(){ embedImages(generatePDF); });
+  iconButton(tables,"pdf",pdfIcon_b64,texts.pdfexport,function(){ embedImages(svg2pdf); });
 
   var buttonsSelect = tables.append("div")
         .attr("class","selectButton")
@@ -1393,7 +1393,9 @@ function drawNet(){
     simulation.on("tick", tick);
 
     if(options.stopped)
-        simulation.restart();
+      simulation.restart();
+    else
+      simulation.alpha(1).restart();
 
     //axes
     var axes = svg.selectAll(".axis")
@@ -1570,7 +1572,7 @@ function drawNet(){
     ctx.restore();
   }
 
-  generatePDF = function(){
+  svg2pdf = function(){
 
     var doc = new jsPDF({
       orientation: (width>height)?"l":"p",
@@ -1777,7 +1779,7 @@ function dblClickNet(){
   var node = findNode();
   if(node){
     if(Graph.tree && ctrlKey){
-      d3.select(this).classed("selected", d.selected = true);
+      node.selected = true;
       treeAction();
     }else
       egoNet();
@@ -2366,6 +2368,7 @@ function displayLegend(scale, txt, color, shape, dat){
         showTables();
       })
       .on("dblclick", function(){
+        d3.event.stopPropagation();
         if(Graph.tree && ctrlKey){
           this.selected = key;
           legendSelected();
@@ -2801,7 +2804,7 @@ function embedImages(callback){
   loading.remove();
 }
 
-function generatePDF(){
+function svg2pdf(){
     displayWindow("The network is not loaded yet!");
 }
 

@@ -1,20 +1,26 @@
 window.onload = function(){
-	var graphs = JSON.parse(d3.select("#data").text());
+	var graphs = JSON.parse(document.getElementById("data").textContent);
 	
-	var body = d3.select('body'),
+	var body = document.querySelector('body'),
 	vp = viewport(),
 	width = vp.width/2,
 	height = vp.height;
 
 	for(var i=0; i<2; i++){
-      body.append("iframe")
-    .attr("src","multiGraph/index.html?"+encodeURI(graphs[i]))
-    .attr("width",width)
-    .attr("height",height)
-    .attr("frameborder",0)
-    .attr("marginwidth",0)
-    .attr("marginheight",0)
-	.style({"display":"block","position":"absolute","top":"0px","left":i*width+"px"})
+  var iframe = document.createElement("iframe");
+
+  iframe.setAttribute("src","multiGraph/index.html?"+encodeURI(graphs[i]));
+  iframe.setAttribute("width",width);
+  iframe.setAttribute("height",height);
+  iframe.setAttribute("frameborder",0);
+  iframe.setAttribute("marginwidth",0);
+  iframe.setAttribute("marginheight",0);
+  iframe.style.display = "block";
+  iframe.style.position = "absolute";
+  iframe.style.top = "0px";
+  iframe.style.left = i*width+"px";
+
+  body.appendChild(iframe);
 	}
 }
 
