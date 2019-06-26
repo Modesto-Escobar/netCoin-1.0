@@ -573,7 +573,7 @@ edgeList <- function(data, procedures="Haberman", criteria="Z", Bonferroni=FALSE
                      directed=FALSE, diagonal=FALSE, sort=NULL, decreasing=TRUE) {
   if (tolower(substr(criteria,1,2))%in%c("z","hy") & substr(tolower(procedures[1]),1,2)!="sh") {
     if (max==Inf) max<-.50
-    if (Bonferroni ) max<-max/choose(nrow(data$f),2) # Changes of Z max criterium (Bonferroni)
+    if (Bonferroni ) max<-max/choose(nrow(data),2) # Changes of Z max criterium (Bonferroni)
   }
   if (substr(tolower(procedures)[1],1,2)!="sh") { # For coin objects
     if (class(data)!="coin") stop("Error: input must be a coin object (see coin function)")
@@ -590,19 +590,19 @@ edgeList <- function(data, procedures="Haberman", criteria="Z", Bonferroni=FALSE
       matrices<-as.list(M)
     }
     matrices<-matrices[i.method(todas)]
-    Mat<-mats2edges(data$f,matrices,criteria=criteria,min=min,max=max,support=support,directed=directed,diagonal=diagonal)
+    Mat<-mats2edges(data[,],matrices,criteria=criteria,min=min,max=max,support=support,directed=directed,diagonal=diagonal)
   }
   else {
     if (class(data)!="matrix" & class(data)!="data.frame") 
       stop("Error: input must be a matrix (shape) or a data.frame (tree)")    
     if (class(data)=="matrix"){
       if(min==-Inf)min<-1    
-      funcs="value"
-      M<-new.env()
-      M[[criteria]]<-M[[funcs]]<-data
-      matrices<-as.list(M)
-      data<-list(f=M[[funcs]],n=NA)
-      Mat<-mats2edges(data$f,min=min,max=max,directed=directed,diagonal=diagonal)
+      #funcs="value"
+      #M<-new.env()
+      #M[[criteria]]<-M[[funcs]]<-data
+      #matrices<-as.list(M)
+      #data<-list(f=M[[funcs]],n=NA)
+      Mat<-mats2edges(data,min=min,max=max,directed=directed,diagonal=diagonal)
     }
     if (class(data)=="data.frame") {
       lines<-sapply(data,as.character)

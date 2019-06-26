@@ -21,6 +21,30 @@ button, input, select {
 select {
   background-color: #fff;
 }
+input[type=range]{
+  -webkit-appearance: none;
+  height: 5px;
+  background: #d3d3d3;
+  outline: none;
+  border: none;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%; 
+  background: #47c0c0;
+  cursor: pointer;
+}
+
+input[type=range]::-moz-range-thumb {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%; 
+  background: #47c0c0;
+  cursor: pointer;
+}
 table {
   color: #444;
   border-collapse: collapse;

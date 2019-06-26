@@ -17,8 +17,6 @@ function network(Graph){
   var simulation = d3.forceSimulation()
       .force("link", d3.forceLink())
       .force("charge", d3.forceManyBody())
-      .force("x", d3.forceX().strength(0.1))
-      .force("y", d3.forceY().strength(0.1))
       .on("end", forceEnd)
       .stop();
 
@@ -814,7 +812,9 @@ function drawSVG(sel){
 
   adaptLayout();
 
-  simulation.force("center", d3.forceCenter(width / 2, height / 2));
+  simulation
+      .force("x", d3.forceX(width / 2).strength(0.1))
+      .force("y", d3.forceY(height / 2).strength(0.1))
 
   body
     .on("keydown", keyflip)
@@ -832,7 +832,6 @@ function drawSVG(sel){
     .style("top",0)
     .style("left",0)
     .on("dblclick",dblClickNet)
-    .on("click",clickNet)
     .call(d3.drag()
           .subject(dragsubject)
           .on("start", dragstarted)
@@ -1103,16 +1102,16 @@ function drawNet(){
     // compute node size
     var getNodeSize = getNumAttr(nodes,'nodeSize',nodeSizeRange,options.imageItem?3:1);
     nodes.forEach(function(d){ d.nodeSize = getNodeSize(d) * 4.514; });
+  }
 
-    // compute shapes
-    var getShape = function() { return d3["symbol"+defaultShape]; };
-    if(options.nodeShape){
-      var symbolList = d3.scaleOrdinal()
+  // compute shapes
+  var getShape = function() { return d3["symbol"+defaultShape]; };
+  if(options.nodeShape){
+    var symbolList = d3.scaleOrdinal()
          .range(symbolTypes)
          .domain(d3.map(Graph.nodes, function(d) { return d[options.nodeShape]; }).keys());
 
-      getShape = function(d) { return d3["symbol"+symbolList(d[options.nodeShape])]; }
-    }
+    getShape = function(d) { return d3["symbol"+symbolList(d[options.nodeShape])]; }
   }
 
   svg.attr("clip-path", heatmap&&heatmapTriangle?"url(#heatmapClip)":null);
@@ -1249,6 +1248,7 @@ function drawNet(){
         showTables();
       })
       .on("dblclick", row | !options.linkIntensity ? function(){
+        d3.event.stopPropagation();
         Graph.links.forEach(function(d){
           if(!d.noShow && (((!options.showArrows || heatmapTriangle)&&d.target.selected)||(d.source.selected))){
                 d.source.neighbor = d.target.neighbor = true;
@@ -1260,6 +1260,7 @@ function drawNet(){
         });
         drawNet();
       } : function(d,i){
+        d3.event.stopPropagation();
         var order = d3.transpose(matrix)[i].sort(function(a,b){
               var aIntensity = a[options.linkIntensity]?a[options.linkIntensity]:0,
                   bIntensity = b[options.linkIntensity]?b[options.linkIntensity]:0;
@@ -1361,6 +1362,7 @@ function drawNet(){
   }
 
   function dblclick(p){
+    d3.event.stopPropagation();
     links.forEach(function(l){ checkNeighbors(l,p); });
     nodes.forEach(function(n){
       n.selected = (!n.noShow && (n.index == p.x || n.index == p.y))? true : false;
@@ -1386,7 +1388,6 @@ function drawNet(){
     simulation.nodes(nodes)
 
     simulation.force("link")
-      .id(function(d,i) { return i; })
       .links(links)
       .distance(getLinkDistance);
 
@@ -1789,22 +1790,6 @@ function dblClickNet(){
   }
 }
 
-function clickNet(){
-  var node = findNode();
-  if(node){
-    body.select("div.tooltip").style("display","none").html("");
-    if(ctrlKey)
-      node.selected = !node.selected;
-    else
-      Graph.nodes.forEach(function(n){
-        n.selected = node[options.nodeName] == n[options.nodeName];
-      })
-    simulation.restart();
-    showTables();
-    displayInfoPanel(node,options.nodeInfo);  
-  }
-}
-
 function hoverNet(){
   var node = findNode(),
       tip = body.select("div.tooltip");
@@ -1826,9 +1811,15 @@ function dragsubject() {
 }
 
 function dragstarted(d) {
+  body.select("div.tooltip").style("display","none").html("");
   if (!d3.event.active) simulation.alphaTarget(0.3).restart();
-  d3.event.subject.fx = transform.invertX(d3.event.subject.x);
-  d3.event.subject.fy = transform.invertY(d3.event.subject.y);
+  var node = d3.event.subject;
+  if(typeof node.fx == 'number' || typeof node.fy == 'number')
+    node.fixed = true;
+  node.fx = transform.invertX(node.x);
+  node.fy = transform.invertY(node.y);
+
+  node.position = [node.fx,node.fy];
 }
 
 function dragged(d) {
@@ -1838,10 +1829,27 @@ function dragged(d) {
 
 function dragended(d) {
   if (!d3.event.active) simulation.alphaTarget(0);
-  if (!options.stopped) {
-    d3.event.subject.fx = null;
-    d3.event.subject.fy = null;
+  var node = d3.event.subject;
+  if(node.position[0]==node.fx && node.position[1]==node.fy){
+    // click action
+    if(ctrlKey){
+      node.selected = !node.selected;
+    }else{
+      Graph.nodes.forEach(function(n){
+        n.selected = false;
+      });
+      node.selected = true;
+    }
+    showTables();
+    displayInfoPanel(node,options.nodeInfo); 
   }
+  delete node.position;
+  if (!options.stopped && !node.fixed) {
+    node.fx = null;
+    node.fy = null;
+  }
+  if(node.fixed)
+    delete node.fixed;
 }
 
 function getGroups(nodes){

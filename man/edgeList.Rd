@@ -12,7 +12,7 @@ edgeList(data, procedures="Haberman", criteria="Z", Bonferroni=FALSE,
          directed=FALSE, diagonal= FALSE, sort=NULL, decreasing=TRUE)
 }
 \arguments{
-  \item{data}{a coin object, let's say an R list composed by a number of scenarios (\code{$n}) and a coincidence matrix with frequencies (\code{$f}). In case of change of shape, \code{data} should be a matrix.}
+  \item{data}{a coin object, let's say an R matrix with frequencies and an attribute (\code{n}) giving the number of scenarios. In case of change of shape, \code{data} should be a matrix.}
   \item{procedures}{a vector of statistics of similarity. See below.}
   \item{criteria}{statistic to be use for selection criteria.}
   \item{Bonferroni}{Bonferroni criterium of the signification test.}

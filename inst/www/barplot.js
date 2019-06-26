@@ -116,21 +116,36 @@ function barplot(json){
       if(!slider.empty()){
         slider.remove();
       }
+      var sliderWidth = 300;
       var values = [0,0.0001,0.001,0.01,0.05,0.10,0.20,0.50,1];
-      var slider = topBar.append("input")
+      var slider = topBar.append("div")
         .attr("class","slider")
+        .style("position","relative")
+        .style("top","0px")
         .style("float","right")
-        .style("margin-right","10px")
+        .style("margin-right","10px");
+
+      slider.append("input")
         .attr("type","range")
         .attr("min","0")
         .attr("max","8")
         .attr("value","8")
+        .style("width",sliderWidth+"px")
         .on("change",function(){
           var value = +this.value;
           var names = links.filter(function(d){ return (d.Source==subject || d.Target==subject) && d[options.significance]<=values[value]; }).map(function(d){ return [d.Source,d.Target]; });
           names = d3.set(d3.merge(names)).values();
           displayGraph(names);
         })
+      values.forEach(function(v,i){
+        slider.append("span")
+          .style("position","absolute")
+          .style("top","12px")
+          .style("left",-10+(i*(sliderWidth/8.3))+"px")
+          .style("width",(sliderWidth/8.3)+"px")
+          .style("text-align","center")
+          .text(v);
+      });
     }
   }
 
