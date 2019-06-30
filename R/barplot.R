@@ -21,7 +21,7 @@ barCoin<-function(data, variables = colnames(data), commonlabel = NULL,
                   dichotomies = c("_all","_none"), valueDicho = 1,
                   weight = NULL, subsample = FALSE, sort = FALSE, decreasing = TRUE,
                   nodes = NULL, name = "name", note = NULL, label = NULL, text = NULL,
-                  expected = FALSE, confidence = FALSE, significance = FALSE, 
+                  expected = FALSE, confidence = FALSE, level = .95, significance = FALSE, 
                   minimum = 1 , maximum = nrow(data), 
                   percentages = FALSE,
                   criteria = c("Z","hyp"), Bonferroni = FALSE,
@@ -126,7 +126,7 @@ dicho<-function(input,variables,value) {
     }
 
 # making edgeList     
-    E<-edgeList(C, procedures, criteria= criteria[1], Bonferroni, minL, maxL, support, 
+    E<-edgeList(C, procedures, criteria= criteria[1], level, Bonferroni, minL, maxL, support, 
                 directed=FALSE, diagonal= FALSE, sort= NULL)
 
 # definition of options

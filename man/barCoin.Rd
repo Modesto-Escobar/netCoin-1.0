@@ -13,7 +13,7 @@ barCoin(data, variables = colnames(data), commonlabel = NULL,
         dichotomies = c("_all","_none"), valueDicho = 1,
         weight = NULL, subsample = FALSE, sort = FALSE, decreasing = TRUE,
         nodes = NULL, name = "name", note = NULL, label = NULL, text = NULL,
-        expected = FALSE, confidence = FALSE, significance = FALSE, 
+        expected = FALSE, confidence = FALSE, level = .95, significance = FALSE, 
         minimum = 1 , maximum = nrow(data), percentages = FALSE,
         criteria = c("Z","hyp"), Bonferroni = FALSE, support = 1,
         minL = -Inf, maxL = 1, language = c("en","es","ca"),
@@ -36,6 +36,7 @@ barCoin(data, variables = colnames(data), commonlabel = NULL,
 \item{text}{name of the vector with html text in the nodes data frame.}
 \item{expected}{name of the vector with expected coincidences in the links data frame.}
 \item{confidence}{name of the vector with confidence interval in the links data frame.}
+\item{level}{confidence level}
 \item{significance}{name of the vector with significance in the links data frame.}
 \item{minimum}{minimum frequency to be considered.}
 \item{maximum}{maximum frequency to be considered.}
