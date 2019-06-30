@@ -200,6 +200,7 @@ allNet<-function(incidences, weight = NULL, subsample = FALSE,
   if(!("language" %in% names(arguments))) arguments$language <- "en"
   arguments$name <- nameByLanguage(arguments$name,arguments$language,arguments$nodes)
   if(!("size" %in% names(arguments))) arguments$size <- "%"
+  if (!("level" %in% names(arguments))) level<-.95 else level <-arguments$level
   incidences<-na.omit(incidences)
   if (all(incidences==0 | incidences==1)) {
     C<-coin(incidences, minimum, maximum, sort, decreasing, weight=weight, subsample=subsample)
@@ -215,7 +216,7 @@ allNet<-function(incidences, weight = NULL, subsample = FALSE,
       arguments$nodes<-arguments$nodes[nodesOrder,]
     }
     procedures<-union(procedures,unlist(arguments[c("lwidth","lweight","lcolor","ltext")]))
-    arguments$links<-edgeList(C, procedures, criteria, Bonferroni, minL, maxL, support, 
+    arguments$links<-edgeList(C, procedures, criteria, level, Bonferroni, minL, maxL, support, 
                               directed, diagonal, sortL, decreasingL)
     for(lattr in c("lwidth","lweight","lcolor","ltext"))
       if(!is.null(arguments[[lattr]])) arguments[[lattr]]<-i.method(c.method(arguments[[lattr]]))
@@ -262,6 +263,7 @@ surCoin<-function(data,variables=names(data), commonlabel=NULL,
   nodes <- arguments$nodes
   if ("tbl_df" %in% class(nodes)) nodes<-as.data.frame(nodes)
   name <- arguments$name <- nameByLanguage(arguments$name,arguments$language,arguments$nodes)
+  if (!("level" %in% names(arguments))) level<-.95 else level <-arguments$level
   
   #Data.frame  
   if (all(class(data)==c("tbl_df","tbl","data.frame"))) data<-as.data.frame(data) # convert haven objects
@@ -330,7 +332,7 @@ surCoin<-function(data,variables=names(data), commonlabel=NULL,
     }
     
     #Links elaboration
-    E<-edgeList(C, procedures, criteria, Bonferroni, minL, maxL, support, 
+    E<-edgeList(C, procedures, criteria, level, Bonferroni, minL, maxL, support, 
                 directed, diagonal, sortL, decreasing)
     for(lattr in c("lwidth","lweight","lcolor","ltext"))
       if(!is.null(arguments[[lattr]])) arguments[[lattr]]<-i.method(c.method(arguments[[lattr]]))
