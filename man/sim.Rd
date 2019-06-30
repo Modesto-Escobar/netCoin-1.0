@@ -7,12 +7,13 @@ Similarity matrix.
 It calculates a similarity/distance matrix from either an incidence data frame/matrix or a coin object.
 }
 \usage{
-sim(input, procedures="Jaccard", distance=FALSE, minimum=1, maximum=Inf, 
+sim(input, procedures="Jaccard", level=.95, distance=FALSE, minimum=1, maximum=Inf, 
     sort=FALSE, decreasing=FALSE)
 }
 \arguments{
   \item{input}{a binary data frame or a coin object, let's say an R list composed by a number of scenarios (\code{$n}) and a coincidence matrix with frequencies (\code{$f}).}
   \item{procedures}{a vector of statistics of similarity. See details below.}
+  \item{level}{confidence level}
   \item{distance}{convert the similarity matrix into a distance matrix}
   \item{minimum}{minimum frequency to obtain a similarity/distance measure.}
   \item{maximum}{maxium frequency to obtain a similarity/distance measure.}

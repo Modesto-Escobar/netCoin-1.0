@@ -569,7 +569,7 @@ valuesof<-function(x,length=0,min=0,sort=TRUE,sep="") {
 }
 
 # Links. See below funcs="shape"
-edgeList <- function(data, procedures="Haberman", criteria="Z", Bonferroni=FALSE, min=-Inf, max=Inf, support=-Inf, 
+edgeList <- function(data, procedures="Haberman", criteria="Z", level = .95, Bonferroni=FALSE, min=-Inf, max=Inf, support=-Inf, 
                      directed=FALSE, diagonal=FALSE, sort=NULL, decreasing=TRUE) {
   if (tolower(substr(criteria,1,2))%in%c("z","hy") & substr(tolower(procedures[1]),1,2)!="sh") {
     if (max==Inf) max<-.50
@@ -581,7 +581,7 @@ edgeList <- function(data, procedures="Haberman", criteria="Z", Bonferroni=FALSE
     if(!is.null(sort)) funcs<-union(c.method(sort),funcs)
     criteria<-c.method(criteria)
     todas<-union(funcs,criteria)
-    matrices<-sim(data,todas,minimum=min)
+    matrices<-sim(data,todas,level=level, minimum=min)
     funcs<-i.method(funcs)
     criteria<-i.method(criteria)
     if (length(union(funcs,criteria))==1) {
@@ -661,11 +661,20 @@ i.method<-function(method) {
                          "Hamann", "Yule", "Pearson", "odds", "Russell", "expected", "Haberman", "confidence", "Z",
                          "coincidences", "relative", "sConditional","tConditional", "c.conditional","c.probable","tetrachoric","Fisher"), 
                        nrow=1, dimnames=list("Similarity", c("M","T","G","S","B","J","D","A","O","K","N","Y","P","C","R","E","H","L","Z","F","X","I","0","U","Q","V","W")))
-  return(similarities[,method])
+  similarities<-similarities[,method]
+  if("L" %in% method) {
+    cade <- c("conf.L","confidence","conf.U")
+    posi <- match("confidence",similarities)
+    if (posi ==1) similarities <- c(cade,similarities[-1])
+    else if (posi == length(similarities)) similarities<-c(similarities[-length(similarities)], cade)
+    else similarities <- c(similarities[c(1:max(1,posi-1))], cade,
+                           similarities[(match("confidence",similarities)+1):length(similarities)]) 
+  }
+  return(similarities)
 }
 
 # Similatities
-sim<-function (input,procedures="Jaccard",distance=FALSE, minimum=1, maximum=Inf, sort=FALSE, decreasing=FALSE) {
+sim<-function (input,procedures="Jaccard", level=.95, distance=FALSE, minimum=1, maximum=Inf, sort=FALSE, decreasing=FALSE) {
   method<-c.method(procedures)
   if (is.matrix(input) & class(input)!="coin") {
     if (is.null(colnames(input))) dimnames(input)<-list(NULL,paste("X",1:ncol(input),sep=""))
@@ -734,10 +743,12 @@ sim<-function (input,procedures="Jaccard",distance=FALSE, minimum=1, maximum=Inf
   }
   if ("E" %in% method) s$expected <- (a+b)*(a+c)/N
   if ("L" %in% method) {
+    s$'conf.L' <- pmax(a-qt(level+(1-level)/2, N-1)*sqrt(((a+b)*(a+c)/N)*((1-(a+b)/N)*(1-(a+c)/N))),0)
     signo<-2*(((a+b)*(a+c)/N)<a)-1
-    s$confidence <- pmax((a+b)*(a+c)/N+signo*1.64*sqrt(((a+b)*(a+c)/N)*((1-(a+b)/N)*(1-(a+c)/N))),0)
+    s$confidence <- pmax((a+b)*(a+c)/N+signo*qt(level,N-1)*sqrt(((a+b)*(a+c)/N)*((1-(a+b)/N)*(1-(a+c)/N))),0)
     diag(s$confidence) <- diag(a)
-  }
+    s$'conf.U' <- pmin(a+qt(level+(1-level)/2, N-1)*sqrt(((a+b)*(a+c)/N)*((1-(a+b)/N)*(1-(a+c)/N))),N)
+    }
   if ("H" %in% method) {
     s$Haberman <- sqrt(N) * (a * d - b * c)/sqrt((a + b) * (a + c) * (b + d) *  (d + c))
     s$Haberman[is.na(s$Haberman)]<-sqrt(N)
