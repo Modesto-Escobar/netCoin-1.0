@@ -149,7 +149,7 @@ images2net <- function(images,dir){
 imgWrapper <- function(net,dir){
   if("imageItems" %in% names(net$options))
     for(img in net$options[["imageItems"]])
-      net$nodes[[img]] <- images2net(net$nodes[[img]],dir)
+      net$nodes[[img]] <- images2net(gsub("\\\\","/",net$nodes[[img]]),dir)
   if(!is.null(net$options[["background"]]) && file.exists(net$options[["background"]]))
     net$options[["background"]] <- paste0('url("',images2net(net$options[["background"]],dir),'")')
   return(networkJSON(net))

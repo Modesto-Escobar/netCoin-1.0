@@ -45,7 +45,7 @@ var texts = {
     withsomeone: "amb",
     incidences: "Incidències",
     expected: "Esperades",
-    expectedconfidence: "Esperades +/- interval de confiança",
+    confidence: "+/- interval de confiança",
     subjectselect: "Selecció d'esdeveniments",
     Label: "Etiqueta",
     Group: "Grup",

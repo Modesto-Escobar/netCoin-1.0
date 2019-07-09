@@ -43,8 +43,9 @@ dicho<-function(input,variables,value) {
 # model of bar
   if (confidence) procedures <- c("Frequencies","Expected","Confidence")
   else procedures <- c("Frequencies","Expected")
-  if (criteria[1]=="hyp") procedures<-c(procedures,"hyp")
-  else procedures<- c(procedures, "Z"); criteria="Z"
+  criteria <- criteria[1]
+  if(criteria!="hyp") criteria <- "Z"
+  procedures<-c(procedures,criteria)
   
 
 # names  
@@ -126,14 +127,19 @@ dicho<-function(input,variables,value) {
     }
 
 # making edgeList     
-    E<-edgeList(C, procedures, criteria= criteria[1], level, Bonferroni, minL, maxL, support, 
+    E<-edgeList(C, procedures, criteria, level, Bonferroni, minL, maxL, support, 
                 directed=FALSE, diagonal= FALSE, sort= NULL)
 
 # definition of options
     options <-list(name= name, incidences= "incidences", coincidences= "coincidences")
     if (expected || confidence) options[["expected"]] <- "expected"
-    if (confidence) options[["confidence"]] <- "confidence"
-    if (significance) options[["significance"]] <- "p(Z)"
+    if (confidence){
+      if(significance)
+        options[["confidence"]] <- "confidence"
+      else
+        options[["confidence"]] <- c("conf.L","conf.U")
+    }
+    if (significance) options[["significance"]] <- c(Z="p(Z)",hyp="p(Fisher)")[criteria]
     options[["cex"]] <- as.numeric(cex)
     options[["language"]] <- language[1]
     if(!is.null(note))

@@ -45,7 +45,7 @@ var texts = {
     withsomeone: "with",
     incidences: "Incidences",
     expected: "Expected",
-    expectedconfidence: "Expected +/- confidence interval",
+    confidence: "+/- confidence interval",
     subjectselect: "Event selection",
     Label: "Label",
     Group: "Group",

@@ -8,12 +8,13 @@ function barplot(json){
       maxWord = d3.max(words.map(function(word){ return word.length; }));
 
   var vp = viewport(),
-      margin = {top: 80, right: 40, bottom: 80, left: maxWord*options.cex*7},
-      width = vp.width - 20 - margin.left - margin.right,
-      height = vp.height - 55 - margin.top - margin.bottom;
+      margin = {top: 80, right: 40, bottom: 80, left: maxWord*options.cex*7};
 
   if(margin.left<160)
     margin.left = 160;
+
+  var width = vp.width - 40 - margin.left - margin.right,
+      height = vp.height - 55 - margin.top - margin.bottom;
 
   var x = d3.scaleLinear()
       .range([0, width]);
@@ -33,11 +34,22 @@ function barplot(json){
       textLegend = ["coincidences","incidences"];
   if(options.expected){
     main = "concoincidences";
-    textLegend = ["coincidences","expected","expectedconfidence"];
+    textLegend = ["coincidences","expected"];
+    if(options.confidence)
+      textLegend.push("confidence");
   }
 
   var maxIncidence = d3.max(nodes, function(d){ return d[options.incidences]; }),
-      maxExpected = options.expected ? d3.max(links,function(d){ return Math.max(d[options.coincidences],d[options.expected]); }) : 0,
+      maxExpected = options.expected ? d3.max(links,function(d){
+        var conf = [];
+        if(options.confidence){
+          if(Array.isArray(options.confidence))
+            conf = options.confidence.map(function(e){ return d[e]; });
+          else
+            conf = [d[options.confidence]];
+        }
+        return d3.max(d3.merge([[d[options.coincidences],d[options.expected]],conf]));
+      }) : 0,
       subject = nodes.filter(function(d){ return d[options.incidences]==maxIncidence; });
 
   subject = subject[0][options.name];
@@ -116,14 +128,27 @@ function barplot(json){
       if(!slider.empty()){
         slider.remove();
       }
-      var sliderWidth = 300;
+      var sliderWidth = 200;
       var values = [0,0.0001,0.001,0.01,0.05,0.10,0.20,0.50,1];
+
       var slider = topBar.append("div")
         .attr("class","slider")
-        .style("position","relative")
-        .style("top","0px")
         .style("float","right")
         .style("margin-right","10px");
+
+      slider.append("span")
+        .style("margin-right","5px")
+        .text("p<");
+
+      slider = slider.append("span")
+        .style("position","relative");
+
+      var bubble = slider.append("span")
+        .attr("class","slider-text")
+        .style("position","absolute")
+        .style("top","14px")
+        .style("left",bubblePos(8))
+        .text("1")
 
       slider.append("input")
         .attr("type","range")
@@ -133,26 +158,24 @@ function barplot(json){
         .style("width",sliderWidth+"px")
         .on("change",function(){
           var value = +this.value;
+          bubble.style("left",bubblePos(value)).text(String(values[value]));
           var names = links.filter(function(d){ return (d.Source==subject || d.Target==subject) && d[options.significance]<=values[value]; }).map(function(d){ return [d.Source,d.Target]; });
           names = d3.set(d3.merge(names)).values();
           displayGraph(names);
         })
-      values.forEach(function(v,i){
-        slider.append("span")
-          .style("position","absolute")
-          .style("top","12px")
-          .style("left",-10+(i*(sliderWidth/8.3))+"px")
-          .style("width",(sliderWidth/8.3)+"px")
-          .style("text-align","center")
-          .text(v);
-      });
+
+      function bubblePos(value){
+        return (2+((value)*((sliderWidth-12)/8)))+"px";
+      }
     }
   }
 
   function displayGraph(filter){
     //subject is global
 
-    var data = [];
+    var data = [],
+        whiskers = subject && options.confidence && !options.significance;
+
     if(subject){
       links.forEach(function(d){
         if(d.Source == subject || d.Target == subject){
@@ -163,7 +186,10 @@ function barplot(json){
             if(options.expected){
               row.b = d[options.expected];
               if(options.confidence)
-                row.c = d[options.confidence];
+                if(whiskers)
+                  row.c = [d[options.confidence[0]],d[options.confidence[1]]];
+                else
+                  row.c = d[options.confidence];
             }else{
               row.b = nodes.filter(function(p){ return row.object==p[options.name]; })[0][options.incidences];
             }
@@ -219,11 +245,11 @@ function barplot(json){
 
     svg.append("style").text("text { font-family: sans-serif; font-size: "+body.style("font-size")+"; } "+
       ".main { font-size: 200%; }"+
-      ".bar, .legend rect { stroke: #000; stroke-width: .4px; }"+
-      "rect.a { fill: #677BB2; }"+
-      "rect.b { fill: #87CDDE; }"+
-      "rect.c { fill: #D7EEF4; }"+
-      ".axis path, .axis line { fill: none; stroke: #000; shape-rendering: crispEdges; }"+
+      (whiskers ? "" : ".bar, .legend path { stroke: #000; stroke-width: .4px; }") +
+      ".a { fill: #677BB2; }"+
+      ".b { fill: #87CDDE; }"+
+      ".c { fill: #D7EEF4; }" +
+      (whiskers ? ".c, " : "") + ".axis path, .axis line { fill: none; stroke: #000; shape-rendering: crispEdges; }"+
       ".y.axis path, .y.axis line { display: none; }"+
       ".line { stroke-dasharray: 2, 2; stroke: #333; }");
 
@@ -243,9 +269,9 @@ function barplot(json){
           .text(function(d){ return texts[d]; })
           .attr("x",function(d,i){ return i*110*options.cex + 20; })
 
-    legend.selectAll("rect")
+    legend.selectAll("path")
           .data(subject?textLegend:["incidences"])
-        .enter().append("rect")
+        .enter().append("path")
           .attr("class",function(d){
             switch(d){
              case "coincidences":
@@ -253,50 +279,69 @@ function barplot(json){
              case "incidences":
              case "expected":
                return "b";
-             case "expectedconfidence":
+             case "confidence":
                return "c";
-             default:
-               return "d";
             }
           })
-          .attr("width",16)
-          .attr("height",8)
-          .attr("y",-7)
-          .attr("x",function(d,i){ return i*110*options.cex; })
+          .attr("d",function(d,i){
+            var x = i*110*options.cex,
+                y = -7,
+                width = 16,
+                height = 8;
 
-    svg = svg.append("g")
+            if(whiskers){
+              if(d=="coincidences"){
+                var r = height/2;
+                return "M "+(x+width/2)+", "+(y+r)+" m -"+r+", 0 a "+r+","+r+" 0 1,0 "+(r*2)+",0 a "+r+","+r+" 0 1,0 -"+(r*2)+",0";
+              }
+              if(d=="expected")
+                return "M"+(x+((width-height)/2))+","+y+"h"+height+"v"+height+"h"+(-height)+"Z";
+              if(d=="confidence")
+                return "M"+x+","+y+"v"+height+"v"+(-height/2)+"h"+width+"v"+(height/2)+"v"+(-height);
+            }else
+              return "M"+x+","+y+"h"+width+"v"+height+"h"+(-width)+"Z";
+          })
+
+    var g = svg.append("g")
       .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
-    svg.append("g")
+    data.forEach(function(d){
+      var gBar = g.append("g").datum(d);
+      gBar.attr("transform","translate(0,"+y(d.object)+")");
+
+      if(whiskers){
+        display_square(gBar);
+        display_whiskers(gBar);
+        display_circle(gBar);
+      }else{
+        if(d.c < d.b){
+          display_bar(gBar,"b");
+          display_bar(gBar,"c");
+        }else{
+          display_bar(gBar,"c");
+          display_bar(gBar,"b");
+        }
+        display_bar(gBar,"a");
+      }
+
+      if(options.text){
+        tooltip(gBar,"t");
+      }
+    })
+
+    g.append("g")
         .attr("class", "x axis")
         .attr("transform", "translate(0," + height + ")")
         .call(xAxis);
 
-    svg.append("g")
+    g.append("g")
         .attr("class", "y axis")
         .call(yAxis);
 
-    data.forEach(function(d){
-      var g = svg.append("g").datum(d);
-      g.attr("transform","translate(0,"+y(d.object)+")");
-
-      if(d.c < d.b){
-          display_bar(g,"b");
-          display_bar(g,"c");
-      }else{
-          display_bar(g,"c");
-          display_bar(g,"b");
-      }
-      display_bar(g,"a");
-
-      if(options.text){
-        tooltip(g,"t");
-      }
-    })
-
     function display_bar(g,type){
-      var d = g.datum();
-      if(typeof d[type] == "undefined")
+      var d = g.datum(),
+          value = d[type];
+      if(typeof value == "undefined")
         return;
       var bar = g.append("rect")
         .attr("class","bar "+type)
@@ -307,7 +352,7 @@ function barplot(json){
 
       if(!options.text)
         bar.append("title")
-          .text("(" + d.object + ", " + formatter(d[type]) + ")");
+          .text("(" + d.object + ", " + formatter(value) + ")");
 
       if(options.significance && drawSig(d.sig) && type=="a")
         g.append("text")
@@ -315,12 +360,56 @@ function barplot(json){
           .style("text-anchor","end")
           .style("fill","#fff")
           .style("font-size",(bandwidth)+"px")
-          .attr("x",x(d[type])-4)
+          .attr("x",x(value)-4)
           .attr("y",bandwidth*1.08)
           .text(drawSig(d.sig))
 
       bar.transition().duration(1000)
-        .attr("width", x(d[type]));
+        .attr("width", x(value));
+    }
+
+    function display_circle(g){
+      var d = g.datum();
+      var circle = g.append("circle")
+        .attr("class","a")
+        .attr("cx", 0)
+        .attr("cy", bandwidth/2)
+        .attr("r", bandwidth/2);
+
+      if(!options.text)
+        circle.append("title")
+          .text("(" + d.object + ", " + formatter(d.a) + ")");
+
+      circle.transition().duration(1000)
+        .attr("cx", x(d.a));
+    }
+
+    function display_square(g){
+      var d = g.datum();
+      var square = g.append("rect")
+        .attr("class","b")
+        .attr("x", 0)
+        .attr("y", 0)
+        .attr("width", bandwidth)
+        .attr("height", bandwidth);
+
+      if(!options.text)
+        square.append("title")
+          .text("(" + d.object + ", " + formatter(d.b) + ")");
+
+      square.transition().duration(1000)
+        .attr("x", x(d.b)-(bandwidth/2));
+    }
+
+    function display_whiskers(g){
+      var d = g.datum();
+      var whiskers = g.append("path")
+        .attr("class","c")
+        .attr("d",function(){
+          var x1 = x(d.c[0]),
+              x2 = x(d.c[1]);
+          return "M"+x1+",0v"+bandwidth+"v"+(-bandwidth/2)+"h"+(x2-x1)+"v"+(-bandwidth/2)+"v"+bandwidth;
+        })
     }
   }
 
@@ -373,15 +462,35 @@ function svg2pdf(){
           txt = self.text();
       doc.text(x,coors[1],txt);
     })
-    self.selectAll("rect").each(function(){
+    self.selectAll("path").each(function(){
       var self = d3.select(this),
-        x = +self.attr("x") + coors[0],
-        y = coors[1] - 8,
-        w = +self.attr("width"),
-        h = +self.attr("height"),
-        color = d3.rgb(self.style("fill"));
-      doc.setFillColor(color.r,color.g,color.b);
-      doc.rect(x, y, w, h, 'FD');
+          y = coors[1],
+          d = self.attr("d"),
+          x = coors[0],
+          color = d3.rgb(self.style("fill")),
+          stroke = self.style("stroke")!="none",
+          circle = d.indexOf("a")!=-1,
+          closed = d.indexOf("Z")!=-1;
+
+      d = d.replace(/M|Z/g,"").split(/[hvam]/);
+
+      var M = d[0].split(",").map(function(e){ return +e; });
+      x = x+M[0];
+      y = y+M[1];
+
+      if(!isNaN(color.opacity))
+        doc.setFillColor(color.r,color.g,color.b);
+      if(circle){
+        doc.circle(x, y, +d[2].split(",")[0], 'F');
+      }else if(closed){
+        doc.rect(x, y, +d[1], +d[2], stroke?'FD':'F');
+      }else{
+        var h = +d[1],
+            w = +d[3];
+        doc.line(x, y + (h/2), x + w, y + (h/2), 'S');
+        doc.line(x, y, x, y + h, 'S');
+        doc.line(x + w, y, x + w, y + h, 'S');
+      }
     })
   })
 
@@ -394,6 +503,38 @@ function svg2pdf(){
         color = d3.rgb(self.style("fill"));
     doc.setFillColor(color.r,color.g,color.b);
     doc.rect(x, y, w, h, 'FD');
+  });
+
+  d3.selectAll("svg.plot>g:last-child rect.b:not(.bar)").each(function(){
+    var self = d3.select(this),
+        x = +self.attr("x") + margin.left,
+        y = getTranslation(d3.select(this.parentNode).attr("transform"))[1] + (+self.attr("y")) + margin.top,
+        w = +self.attr("width"),
+        h = +self.attr("height"),
+        color = d3.rgb(self.style("fill"));
+    doc.setFillColor(color.r,color.g,color.b);
+    doc.rect(x, y, w, h, 'F');
+  });
+
+  d3.selectAll("svg.plot>g:last-child path.c").each(function(){
+    var self = d3.select(this),
+        y = getTranslation(d3.select(this.parentNode).attr("transform"))[1] + margin.top,
+        d = self.attr("d").substr(1).split(/[hv]/),
+        x = margin.left + (+d[0].split(",")[0]);
+    
+    doc.line(x, y+(+d[1]/2), x + (+d[3]), y+(+d[1]/2), 'S');
+    doc.line(x, y, x, y+(+d[1]), 'S');
+    doc.line(x + (+d[3]), y, x + (+d[3]), y+(+d[1]), 'S');
+  });
+
+  d3.selectAll("svg.plot>g:last-child circle.a").each(function(){
+    var self = d3.select(this),
+        x = +self.attr("cx") + margin.left,
+        y = getTranslation(d3.select(this.parentNode).attr("transform"))[1] + (+self.attr("cy")) + margin.top,
+        r = +self.attr("r"),
+        color = d3.rgb(self.style("fill"));
+    doc.setFillColor(color.r,color.g,color.b);
+    doc.circle(x, y, r, 'F');
   });
 
   d3.selectAll(".y.axis .tick text").each(function(){

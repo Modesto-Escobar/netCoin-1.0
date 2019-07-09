@@ -925,7 +925,8 @@ printNet <- function(x){
 
 plot.coin <- function(x, dir=tempdir(), language=c("en","es","ca"), ...){
     N <- asNodes(x, language = language)
-    E <- edgeList(x,"frequency","expected")
+    colnames(N)[2] <- "incidences"
+    E <- edgeList(x,c("Frequencies","Expected"))
     options <- list(name = names(N)[1], coincidences = "coincidences", incidences = "incidences", expected = "expected", cex = 1, language = language[1])
     bar <- barStart(N, E, options)
     if (!is.null(dir)) barCreate(bar, dir = dir, show = TRUE)
