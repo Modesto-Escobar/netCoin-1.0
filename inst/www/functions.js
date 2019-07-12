@@ -339,11 +339,25 @@ function topFilter(topBar,data,name,displayGraph){
         }
 
         panel.append("button")
+          .text(texts.apply)
+          .style("position","fixed")
+          .style("left",((2*vp.width/3)-80)+"px")
+          .style("top",(2*vp.height/3)+"px")
+          .on("click",function(){
+            selectedValues = {};
+            add2filter();
+            applyfilter();
+          })
+
+        panel.append("button")
           .text(texts.add)
           .style("position","fixed")
           .style("left",(2*vp.width/3)+"px")
           .style("top",(2*vp.height/3)+"px")
-          .on("click",function(){
+          .on("click",add2filter)
+      }
+
+      function add2filter(){
             selectedValues[val] = [];
             if(typeof tempValues != 'undefined'){
               selectedValues[val] = tempValues;
@@ -355,32 +369,38 @@ function topFilter(topBar,data,name,displayGraph){
             }
             if(selectedValues[val].length == 0)
               delete selectedValues[val];
-            d3.select(this.parentNode.parentNode).remove();
-          })
+            d3.select(panel.node().parentNode).remove();
       }
     }
 
   var selFilter = topBar.append("select")
-    .on("click",function(){ this.selectedIndex = -1; })
+    .on("click",function(){ this.selectedIndex = 0; })
     .on("change",function(){ changeAttrSel(this.value); })
 
+  var options = d3.keys(data[0]).sort();
+  options.unshift("-"+texts.none+"-");
   selFilter.selectAll("option")
-        .data(d3.keys(data[0]).sort())
+        .data(options)
       .enter().append("option")
         .property("value",String)
         .text(String)
 
   topBar.append("button")
-    .text(texts.clear)
-    .on("click",function(){ selectedValues = {}; })
+    .text(texts.reset)
+    .on("click",function(){
+      selectedValues = {};
+      applyfilter();
+    })
 
   topBar.append("button")
     .text(texts.apply)
-    .on("click",function(){
+    .on("click",applyfilter)
+
+  function applyfilter(){
       var query = selectedValues2str(selectedValues,data);
       var names = data.filter(function(d){ return eval(query); }).map(function(d){ return d[name]; });
       displayGraph(names);
-    })
+  }
 }
 
 function tooltip(sel,text){

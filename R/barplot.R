@@ -7,7 +7,7 @@ barStart <- function(nodes, links, options){
   notListed <- length(setdiff(lNames,nodes[[options$name]]))
   if(notListed!=0)
     stop(paste(notListed," node link(s) not defined in nodes data frame."))
-  structure(list(nodes=nodes, links=links, options=options, call=match.call()), class="barCoin")
+  structure(list(nodes=nodes, links=links, options=options), class="barCoin")
 }
 
 barCreate <- function(bar, dir = "barCoin", show = TRUE){
@@ -46,6 +46,7 @@ dicho<-function(input,variables,value) {
   criteria <- criteria[1]
   if(criteria!="hyp") criteria <- "Z"
   procedures<-c(procedures,criteria)
+  criteriacolname <- c(Z="p(Z)",hyp="p(Fisher)")[criteria]
   
 
 # names  
@@ -134,12 +135,19 @@ dicho<-function(input,variables,value) {
     options <-list(name= name, incidences= "incidences", coincidences= "coincidences")
     if (expected || confidence) options[["expected"]] <- "expected"
     if (confidence){
-      if(significance)
+      if(significance){
         options[["confidence"]] <- "confidence"
-      else
+        E[,c("conf.L","conf.U")] <- NULL
+      }else{
         options[["confidence"]] <- c("conf.L","conf.U")
+        E[,"confidence"] <- NULL
+      }
     }
-    if (significance) options[["significance"]] <- c(Z="p(Z)",hyp="p(Fisher)")[criteria]
+    if (significance){
+      options[["significance"]] <- criteriacolname
+    }else{
+      E[,criteriacolname] <- NULL
+    }
     options[["cex"]] <- as.numeric(cex)
     options[["language"]] <- language[1]
     if(!is.null(note))

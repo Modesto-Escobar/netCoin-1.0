@@ -211,6 +211,12 @@ function network(Graph){
     }
   }
 
+  if(!options.hasOwnProperty("repulsion"))
+    options.repulsion = 25;
+
+  if(!options.hasOwnProperty("distance"))
+    options.distance = 10;
+
 // main title
   if(options.main){
     body.append("div")
@@ -807,7 +813,7 @@ Query.prototype = {
 function drawSVG(sel){
 
   var zoom = d3.zoom()
-    .scaleExtent([0.5, 10])
+    .scaleExtent([0.1, 10])
     .on("zoom", zoomed);
 
   adaptLayout();
@@ -929,9 +935,9 @@ function drawSVG(sel){
   var chargeRange = [0,-(size*2)],
       linkDistanceRange = [0,size*3/4];
 
-  if(typeof options.charge == 'undefined')
+  if(!options.hasOwnProperty("charge"))
     options.charge = chargeRange[1] * (options.repulsion/100);
-  if(typeof options.linkDistance == 'undefined')
+  if(!options.hasOwnProperty("linkDistance"))
     options.linkDistance = linkDistanceRange[1] * (options.distance/100);
 
   displaySlider(sliders, 5*options.cex, chargeRange, texts.repulsion, 'charge');
@@ -1506,11 +1512,14 @@ function drawNet(){
       else
         ctx.lineTo(points[1][0], points[1][1]);
       if(options.showArrows){
-        var arrow = getArrow(points[0][0], points[0][1], points[1][0], points[1][1], ctx.lineWidth);
+        var arrow;
+        if(link.linkNum)
+          arrow = getArrow(points[2][0], points[2][1], points[1][0], points[1][1], ctx.lineWidth);
+        else
+          arrow = getArrow(points[0][0], points[0][1], points[1][0], points[1][1], ctx.lineWidth);
         ctx.lineTo(arrow[2][0], arrow[2][1]);
         ctx.lineTo(arrow[0][0], arrow[0][1]);
         ctx.lineTo(points[1][0], points[1][1]);
-        ctx.closePath();
       }
       ctx.stroke();
     });
@@ -1637,7 +1646,11 @@ function drawNet(){
         doc.line(x1, y1, x2, y2);
 
       if(options.showArrows){
-        var arrow = getArrow(x1, y1, x2, y2, w);
+        var arrow;
+        if(link.linkNum)
+          arrow = getArrow(cpx+x1, cpy+y1, x2, y2, w);
+        else
+          arrow = getArrow(x1, y1, x2, y2, w);
         doc.line(x2, y2, arrow[2][0], arrow[2][1]);
         doc.line(arrow[2][0], arrow[2][1], arrow[0][0], arrow[0][1]);
         doc.line(arrow[0][0], arrow[0][1], x2, y2);
@@ -2027,7 +2040,12 @@ function getNumAttr(data,itemAttr,range,def){
     if(options[itemAttr]){
       if(data.length){
         if(dataType(data,options[itemAttr]) == "number"){
-          var attrDomain = d3.extent(data, function(d) { return options.linkBipolar? Math.abs(d[options[itemAttr]]) : +d[options[itemAttr]]; });
+          var item = itemAttr.slice(0,4),
+              attrDomain;
+          if(options[item+"Bipolar"])
+            attrDomain = [0,d3.max(data, function(d) { return Math.abs(d[options[itemAttr]]); })];
+          else
+            attrDomain = d3.extent(data, function(d) { return +d[options[itemAttr]]; });
           if(attrDomain[0]!=attrDomain[1]){
             var scaleAttr = d3.scaleLinear()
               .range(range)
@@ -2036,7 +2054,7 @@ function getNumAttr(data,itemAttr,range,def){
             return function(d){
               if(d[options[itemAttr]] === null && (itemAttr == 'linkWidth' || itemAttr == 'linkIntensity'))
                 return 0;
-              if(options.linkBipolar){
+              if(options[item+"Bipolar"]){
                 return scaleAttr(Math.abs(d[options[itemAttr]]));
               }else{
                 if(d[options[itemAttr]] === null && attrDomain[0]<0)
@@ -2472,14 +2490,14 @@ function showTables() {
   })
 
   var tableWrapper = function(dat, name, columns){
+    var currentData;
+    if(name=="nodes")
+      currentData = simulation.nodes();
+    else
+      currentData = simulation.force("link").links();
     var table = d3.select("div.tables div."+name),
     drawTable = function(d){
-      var tr = table.append("tr"),
-        currentItem;
-      if(d[options.nodeName])
-        currentItem = simulation.nodes()[d.index];
-      else
-        currentItem = simulation.force("link").links()[d.index];
+      var tr = table.append("tr").datum(d.index);
       columns.forEach(function(col){
           var txt = d[col],
               textAlign = null;
@@ -2495,28 +2513,21 @@ function showTables() {
               .style("text-align",textAlign)
               .on("mousedown",function(){ d3.event.preventDefault(); });
       });
-      tr.on("mouseover",function(){
-          if(!heatmap){
-            currentItem._selected = true;
-            simulation.restart();
-          }
-        })
-        .on("mouseout",function(){
-          if(!heatmap){
-            Graph[d[options.nodeName]?"nodes":"links"].forEach(function(d){ delete d._selected; });
-            simulation.restart();
-          }
-        })
-        .on("click",function(){
+      tr.on("click",function(){
           var origin = this;
-          table.selectAll("tr").classed("selected", function(){
+          table.selectAll("tr").classed("selected", function(d){
             var selected = d3.select(this).classed("selected");
             if(ctrlKey)
               selected = selected ^ this === origin;
             else
               selected = this === origin;
+            if(!heatmap){
+              currentData[d]._selected = selected;                
+            }
             return selected;
           })
+          if(!heatmap)
+            simulation.restart();
         });
     },
 
@@ -2603,8 +2614,14 @@ function showTables() {
     return noShow.indexOf(d)==-1;
   };
 
-  var nodesData = Graph.nodes.filter(function(d){ return !d.noShow && d.selected; }).map(cleanData),
-      linksData = Graph.links.filter(function(d){ return !d.noShow && (d.source.selected && d.target.selected); }).map(cleanData),
+  var nodesData = Graph.nodes.filter(function(d){
+        delete d._selected;
+        return !d.noShow && d.selected;
+      }).map(cleanData),
+      linksData = Graph.links.filter(function(d){
+        delete d._selected;
+        return !d.noShow && (d.source.selected && d.target.selected);
+      }).map(cleanData),
       nodeColumns = Graph.nodenames.filter(filterNoShow),
       linkColumns = Graph.linknames.filter(filterNoShow);
 

@@ -18,7 +18,7 @@ timeCoin <- function(nodes, name = "name", start = "start", end = "end", group =
   if (!is.null(main)) options[['main']] <- main
   if (!is.null(note)) options[['note']] <- note
   if(!is.null(language)) options[['language']] <- language[1]
-  time <- structure(list(nodes=nodes,options=options,call=match.call()),class="timeCoin")
+  time <- structure(list(nodes=nodes,options=options),class="timeCoin")
   if (!is.null(dir)) timeCreate(time, dir = dir, show = show)
   return(time)
 }

@@ -4,17 +4,34 @@ function barplot(json){
       nodes = json.nodes,
       links = json.links;
 
-  var words = nodes.map(function(node){ return node[options.label?options.label:options.name]; }),
-      maxWord = d3.max(words.map(function(word){ return word.length; }));
+  var body = d3.select("body");
+
+  if(options.cex)
+    body.style("font-size", 10*options.cex + "px")
+  else
+    options.cex = 1;
+
+  var wordSVG = d3.select("body").append("svg"),
+      words = nodes.map(function(node){ return node[options.label?options.label:options.name]; }),
+      maxWord = d3.max(words.map(function(word){
+        var text = wordSVG.append("text")
+          .style("font-family","sans-serif")
+          .style("font-size", body.style("font-size"))
+          .text(word);
+        return text.node().getBoundingClientRect().width;
+      }));
+  wordSVG.remove();
+
+  maxWord = maxWord + 20;
+
+  if(maxWord<160)
+    maxWord = 160;
 
   var vp = viewport(),
-      margin = {top: 80, right: 40, bottom: 80, left: maxWord*options.cex*7};
-
-  if(margin.left<160)
-    margin.left = 160;
+      margin = {top: 80, right: 40, bottom: 80, left: maxWord};
 
   var width = vp.width - 40 - margin.left - margin.right,
-      height = vp.height - 55 - margin.top - margin.bottom;
+      height = vp.height - 40 - margin.top - margin.bottom;
 
   var x = d3.scaleLinear()
       .range([0, width]);
@@ -54,13 +71,6 @@ function barplot(json){
 
   subject = subject[0][options.name];
 
-  var body = d3.select("body");
-
-  if(options.cex)
-    body.style("font-size", 10*options.cex + "px")
-  else
-    options.cex = 1;
-
   // top bar
   var topBar = body.append("div")
     .attr("class","topbar")
@@ -83,12 +93,13 @@ function barplot(json){
       sigSlider();
       displayGraph();
     })
-  eventSelect.selectAll("option")
-        .data(nodes.map(function(d){
+  var nodeslist = nodes.map(function(d){
           return [d[options.name],d[options.label]];
         }).sort(function(a,b){
           return a[1] < b[1] ? -1 : a[1] > b[1] ? 1 : a[1] >= b[1] ? 0 : NaN;
-        }))
+        });
+  eventSelect.selectAll("option")
+        .data(nodeslist)
       .enter().append("option")
         .property("value",function(d){ return d[0]; })
         .text(function(d){ return d[1]; })
@@ -110,12 +121,15 @@ function barplot(json){
 
   sigSlider();
 
+  var topBarHeight = topBar.node().offsetHeight;
+
+  height = height - topBarHeight;
+
   if(options.note){
-      body.append("p")
+    var pnote = body.append("p")
         .attr("class","note")
         .style("position","absolute")
         .style("left",margin.left+"px")
-        .style("top",(margin.top+height+margin.bottom+10)+"px")
         .html(options.note)
   }
 
@@ -146,7 +160,7 @@ function barplot(json){
       var bubble = slider.append("span")
         .attr("class","slider-text")
         .style("position","absolute")
-        .style("top","14px")
+        .style("top",(14*options.cex)+"px")
         .style("left",bubblePos(8))
         .text("1")
 
@@ -156,7 +170,7 @@ function barplot(json){
         .attr("max","8")
         .attr("value","8")
         .style("width",sliderWidth+"px")
-        .on("change",function(){
+        .on("input",function(){
           var value = +this.value;
           bubble.style("left",bubblePos(value)).text(String(values[value]));
           var names = links.filter(function(d){ return (d.Source==subject || d.Target==subject) && d[options.significance]<=values[value]; }).map(function(d){ return [d.Source,d.Target]; });
@@ -222,6 +236,9 @@ function barplot(json){
 
     if(height/data.length < 13)
       height = data.length*13;
+
+    if(options.note)
+      pnote.style("top",(topBarHeight+margin.top+height+margin.bottom)+"px")
 
     if(subject && options.expected)
       x.domain([0,maxExpected]).nice()
@@ -336,7 +353,13 @@ function barplot(json){
 
     g.append("g")
         .attr("class", "y axis")
-        .call(yAxis);
+        .call(yAxis)
+      .selectAll(".tick > text").on("dblclick",function(d){
+        subject = d;
+        sigSlider();
+        displayGraph();
+        eventSelect.node().selectedIndex = nodeslist.map(function(d){ return d[1]; }).indexOf(subject);
+      })
 
     function display_bar(g,type){
       var d = g.datum(),

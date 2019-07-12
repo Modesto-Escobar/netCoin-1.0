@@ -64,7 +64,7 @@ toJSON <- function(x){
     }else{
       if(is.vector(x)){
         if(is.numeric(x))
-          json <- x
+          json <- signif(x,4)
         if(is.logical(x)){
           if(x)
             json <- "true"

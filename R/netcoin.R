@@ -14,20 +14,30 @@ netCoin<-function (nodes, links = NULL, tree = NULL, name = NULL,
                       language = c("en", "es", "ca"), image = NULL, imageNames = NULL, dir = NULL, show = TRUE)
 {
   if(class(nodes)=="netCoin"){
-    links<-nodes$links
-    tree<-nodes$tree
-    options<-nodes$options
-    nodes<-nodes$nodes
-    name<-names(nodes)[1]
-  }
-  else{
+    links <- nodes$links
+    tree <- nodes$tree
+    options <- nodes$options
+    name <- options$nodeName
+    nodes <- nodes$nodes
+  }else{
     name <- nameByLanguage(name,language,nodes)
-    options=list(nodeName=name)
+    options <- list(nodeName=name)
   }
-  if(!is.null(links))
+
+  if(!is.null(links)){
     links <- links[links$Source%in%nodes[[name]]&links$Target%in%nodes[[name]],]
-  if(!is.null(tree))
+    if(nrow(links)==0){
+      links <- NULL
+      warning("links: no row (source and target) matches the name column of the nodes")
+    }
+  }
+  if(!is.null(tree)){
     tree <- tree[tree$Source%in%nodes[[name]]&tree$Target%in%nodes[[name]],]
+    if(nrow(tree)==0){
+      tree <- NULL
+      warning("tree: no row (source and target) matches the name column of the nodes")
+    }
+  }
   
   # graph options
   if(is.numeric(repulsion) && repulsion>=0 && repulsion<=100)
@@ -118,7 +128,7 @@ netCoin<-function (nodes, links = NULL, tree = NULL, name = NULL,
   
   if (!is.null(degreeFilter)) options[["degreeFilter"]] <- as.numeric(degreeFilter)
   
-  net <- structure(list(links=links,nodes=nodes,tree=tree,options=options,call=match.call()),class="netCoin")
+  net <- structure(list(links=links,nodes=nodes,tree=tree,options=options),class="netCoin")
   
   #layout
   if (!is.null(layout)) {
@@ -1342,7 +1352,12 @@ nameByLanguage <- function(name,language,nodes){
     else
       name <- "name"
   }
-  if(!is.null(nodes) & !(name %in% colnames(nodes))) warning(paste0("name: '",name,"' column missing in nodes data frame"))
+  if(!is.null(nodes)){
+    if(!(name %in% colnames(nodes)))
+      warning(paste0("name: '",name,"' column missing in nodes data frame"))
+    else if(sum(duplicated(nodes[[name]])))
+      warning(paste0("name: '",name,"' column values must be unique"))
+  }
   return(name)
 }
 

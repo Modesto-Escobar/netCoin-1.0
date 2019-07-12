@@ -157,6 +157,17 @@ imgWrapper <- function(net,dir){
 
 #create html wrapper for network graph
 netCreate <- function(net, dir = "netCoin", show = FALSE){
+  for(item in c("nodes","links")){
+    for(i in seq_along(net[[item]])){
+      col <- net[[item]][,i]
+      if(is.character(col)){
+        numcol <- suppressWarnings(as.numeric(col[!is.na(col)]))
+        if(!sum(is.na(numcol))){
+          net[[item]][,i][!is.na(col)] <- numcol
+        }
+      }
+    }
+  }
   language <-   language <- getLanguageScript(net)
   createHTML(dir, c("reset.css","styles.css"), c("d3.min.js","jspdf.min.js","functions.js",language,"colorScales.js","network.js"),function(){
     return(imgWrapper(net,dir))
