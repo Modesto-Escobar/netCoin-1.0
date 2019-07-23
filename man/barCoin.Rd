@@ -12,7 +12,7 @@ Object of class \code{barCoin}.
 barCoin(data, variables = colnames(data), commonlabel = NULL,
         dichotomies = c("_all","_none"), valueDicho = 1,
         weight = NULL, subsample = FALSE, sort = FALSE, decreasing = TRUE,
-        nodes = NULL, name = "name", note = NULL, label = NULL, text = NULL,
+        nodes = NULL, name = NULL, note = NULL, label = NULL, text = NULL,
         expected = FALSE, confidence = FALSE, level = .95, significance = FALSE, 
         minimum = 1 , maximum = nrow(data), percentages = FALSE,
         criteria = c("Z","hyp"), Bonferroni = FALSE, support = 1,

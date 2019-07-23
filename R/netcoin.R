@@ -281,10 +281,11 @@ surCoin<-function(data,variables=names(data), commonlabel=NULL,
   
   if(!is.null(weight)) {
     if(class(weight)=="character"){
-      data<-na.omit(data[,allvar])
+      data<-na.omit(data[,c(allvar,weight)])
       allvar<-setdiff(allvar,weight)
       variables<-setdiff(variables,weight)
       weight<-data[,weight]
+      data<-data[,allvar]
     }
     else{
       if(length(weight)!=dim(data)[1]) stop("Weights have not the correct dimensions")
@@ -564,7 +565,7 @@ dichotomize <- function(data,variables, sep="", min=1, length=0, values=NULL,
     if (!exists("R_Data")) R_Data<-data
     if (!is.null(nas)) {
       names(R_Data)<-gsub("\\:<NA>",paste0("\\:",nas),names(R_Data))
-      names(R_Data)<-gsub(".ND.",nas,names(R_Data))
+      names(R_Data)<-gsub("\\.ND\\.",nas,names(R_Data))
     }
     return(R_Data)
   }else

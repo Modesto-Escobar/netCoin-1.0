@@ -20,7 +20,7 @@ barCreate <- function(bar, dir = "barCoin", show = TRUE){
 barCoin<-function(data, variables = colnames(data), commonlabel = NULL,
                   dichotomies = c("_all","_none"), valueDicho = 1,
                   weight = NULL, subsample = FALSE, sort = FALSE, decreasing = TRUE,
-                  nodes = NULL, name = "name", note = NULL, label = NULL, text = NULL,
+                  nodes = NULL, name = NULL, note = NULL, label = NULL, text = NULL,
                   expected = FALSE, confidence = FALSE, level = .95, significance = FALSE, 
                   minimum = 1 , maximum = nrow(data), 
                   percentages = FALSE,
@@ -29,7 +29,8 @@ barCoin<-function(data, variables = colnames(data), commonlabel = NULL,
                   dir = NULL)
 {
 
-dicho<-function(input,variables,value) {
+  name <- nameByLanguage(name = name, language =language, nodes = nodes)
+  dicho<-function(input,variables,value) {
   datum<-as.data.frame(ifelse(input[,variables]==value,1,0))
   if (all(class(input)==c("tbl_df","tbl","data.frame"))) {
     # L<-sapply(datum[,variables],attr,"label")
@@ -159,8 +160,8 @@ dicho<-function(input,variables,value) {
 
 # convertion to percentages
     if (percentages) {
-      E[,intersect(names(E),c("coincidences","expected","confidence"))]<-
-      E[,intersect(names(E),c("coincidences","expected","confidence"))]/attr(C,"n")*100
+      E[,intersect(names(E),c("coincidences","expected","confidence","conf.L","conf.U"))]<-
+      E[,intersect(names(E),c("coincidences","expected","confidence","conf.L","conf.U"))]/attr(C,"n")*100
     }
         
 # preparing bar graph
