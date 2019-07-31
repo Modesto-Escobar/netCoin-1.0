@@ -10,8 +10,9 @@ If the 'dir' attribute is specified, the function creates a folder in the comput
 }
 
 \usage{
-netCoin(nodes, links = NULL, tree = NULL, name = NULL, label = NULL, size = NULL,
-        color = NULL, shape = NULL, legend = NULL, ntext = NULL, info = NULL,
+netCoin(nodes, links = NULL, tree = NULL, name = NULL, label = NULL,
+        labelSize = NULL, size = NULL, color = NULL, shape = NULL,
+        legend = NULL, ntext = NULL, info = NULL,
         orderA = NULL, orderD = NULL, group = NULL, community = NULL,
         lwidth = NULL, lweight = NULL, lcolor = NULL, ltext = NULL,
         nodeFilter = NULL, linkFilter = NULL, degreeFilter = NULL,
@@ -21,7 +22,7 @@ netCoin(nodes, links = NULL, tree = NULL, name = NULL, label = NULL, size = NULL
         layout = NULL, controls = c(1,2,3), mode = c("network","heatmap"),
         showCoordinates = FALSE, showArrows = FALSE, showLegend = TRUE,
         showAxes = FALSE, axesLabels = NULL, language = c("en","es","ca"),
-        image = NULL, imageNames = NULL, dir = NULL, show = TRUE)
+        image = NULL, imageNames = NULL, dir = NULL)
 }
 \arguments{
 \item{nodes}{a data frame with at least one vector of names.}
@@ -31,6 +32,7 @@ netCoin(nodes, links = NULL, tree = NULL, name = NULL, label = NULL, size = NULL
 \item{label}{name of the vector with labels in the nodes data frame.}
 \item{group}{name of the vector with groups in the nodes data frame.}
 \item{community}{algorithm to make communities: edge_betweenness("ed"), fast_greedy("fa"), label_prop("la"), leiden_eigen("le"), louvain("lo"), optimal("op"), spinglass("sp"), walktrap("wa")}
+\item{labelSize}{name of the vector with label size in the nodes data frame.}
 \item{size}{name of the vector with size in the nodes data frame.}
 \item{color}{name of the vector with color variable in the nodes data frame.}
 \item{shape}{name of the vector with shape variable in the nodes data frame.}
@@ -71,7 +73,6 @@ drl("da"), circle("ci"), fruchterman.reingold("fr"), gem("ge"), grid("gr"), kama
 \item{image}{name of the vector with image files in the nodes data frame.}
 \item{imageNames}{name of the vector with names for image files in the nodes data frame.}
 \item{dir}{a "character" string representing the directory where the web files will be saved.}
-\item{show}{a logical value true if the graph is to be shown. Default = TRUE.}
 }
 \note{
 nodes and links arguments can be substituted by a netCoin object to add or change options to it.

@@ -1,72 +1,93 @@
 #create json
 networkJSON<-function(net){
 
-links <- net$links
-tree <- net$tree
-nodes <- net$nodes
-options <- net$options
-
-name <- nodes[[options$nodeName]] <- as.character(nodes[[options$nodeName]])
-
-nodesid <- (seq_along(name))-1
-uniqueid <- data.frame(nodesid,name)
-
-if(length(links)){
-
-  sourcenames <- as.character(links$Source)
-  targetnames <- as.character(links$Target)
-
-  nlinks <- nrow(links)
-  source <- numeric(nlinks)
-  target <- numeric(nlinks)
-  for(i in seq_len(nlinks)){
-    source[i] <- uniqueid[(sourcenames[i]==uniqueid[,2]),1]
-    target[i] <- uniqueid[(targetnames[i]==uniqueid[,2]),1]
+  #parse possible numeric columns
+  for(item in c("nodes","links")){
+    for(i in seq_along(net[[item]])){
+      col <- net[[item]][,i]
+      if(is.character(col)){
+        numcol <- suppressWarnings(as.numeric(col[!is.na(col)]))
+        if(!sum(is.na(numcol))){
+          net[[item]][,i][!is.na(col)] <- numcol
+        }
+      }
+    }
   }
 
-  links$Source <- source
-  links$Target <- target
-}
-if(length(tree)){
-    sourcenames <- as.vector(tree$Source)
-    targetnames <- as.vector(tree$Target)
+  links <- net$links
+  tree <- net$tree
+  nodes <- net$nodes
+  options <- net$options
 
-    if(all(!duplicated(targetnames))){
-      nlinks <- nrow(net$tree)
-      source <- numeric(nlinks)
-      target <- numeric(nlinks)
-      for(i in seq_len(nlinks)){
-        source[i] <- uniqueid[(sourcenames[i]==uniqueid[,2]),1]
-        target[i] <- uniqueid[(targetnames[i]==uniqueid[,2]),1]
-      }
+  #get link intensity
+  count <- 3
+  while(count <= ncol(links) && is.null(options$linkIntensity)){
+      if(is.numeric(links[,count]))
+        options$linkIntensity <- colnames(links)[count]
+      count <- count + 1
+  }
 
-      tree$Source <- source
-      tree$Target <- target
+  name <- nodes[[options$nodeName]] <- as.character(nodes[[options$nodeName]])
 
-      tree <- as.list(tree)
-      names(tree) <- NULL
-    }else{
-      tree <- NULL
-      warning("tree: there must be only one parent per node")
+  nodesid <- (seq_along(name))-1
+  uniqueid <- data.frame(nodesid,name)
+
+  if(length(links)){
+
+    sourcenames <- as.character(links$Source)
+    targetnames <- as.character(links$Target)
+
+    nlinks <- nrow(links)
+    source <- numeric(nlinks)
+    target <- numeric(nlinks)
+    for(i in seq_len(nlinks)){
+      source[i] <- uniqueid[(sourcenames[i]==uniqueid[,2]),1]
+      target[i] <- uniqueid[(targetnames[i]==uniqueid[,2]),1]
     }
-}
 
-nodenames <- colnames(nodes)
-nodes <- as.list(nodes)
-names(nodes) <- NULL
-json <- list(nodes = nodes, nodenames = array(nodenames))
-if(length(links)){
-  linknames <- colnames(links)
-  links <- as.list(links)
-  names(links) <- NULL
-  json$links <- links
-  json$linknames <- linknames
-}
-if(length(tree))
-  json$tree <- tree
-json$options <- options
+    links$Source <- source
+    links$Target <- target
+  }
+  if(length(tree)){
+      sourcenames <- as.vector(tree$Source)
+      targetnames <- as.vector(tree$Target)
+
+      if(all(!duplicated(targetnames))){
+        nlinks <- nrow(net$tree)
+        source <- numeric(nlinks)
+        target <- numeric(nlinks)
+        for(i in seq_len(nlinks)){
+          source[i] <- uniqueid[(sourcenames[i]==uniqueid[,2]),1]
+          target[i] <- uniqueid[(targetnames[i]==uniqueid[,2]),1]
+        }
+
+        tree$Source <- source
+        tree$Target <- target
+
+        tree <- as.list(tree)
+        names(tree) <- NULL
+      }else{
+        tree <- NULL
+        warning("tree: there must be only one parent per node")
+      }
+  }
+
+  nodenames <- colnames(nodes)
+  nodes <- as.list(nodes)
+  names(nodes) <- NULL
+  json <- list(nodes = nodes, nodenames = array(nodenames))
+  if(length(links)){
+    linknames <- colnames(links)
+    links <- as.list(links)
+    names(links) <- NULL
+    json$links <- links
+    json$linknames <- linknames
+  }
+  if(length(tree))
+    json$tree <- tree
+  json$options <- options
   
-return(toJSON(json))
+  return(toJSON(json))
 }
 
 #start a network graph
@@ -157,18 +178,9 @@ imgWrapper <- function(net,dir){
 
 #create html wrapper for network graph
 netCreate <- function(net, dir = "netCoin", show = FALSE){
-  for(item in c("nodes","links")){
-    for(i in seq_along(net[[item]])){
-      col <- net[[item]][,i]
-      if(is.character(col)){
-        numcol <- suppressWarnings(as.numeric(col[!is.na(col)]))
-        if(!sum(is.na(numcol))){
-          net[[item]][,i][!is.na(col)] <- numcol
-        }
-      }
-    }
-  }
-  language <-   language <- getLanguageScript(net)
+  #get language
+  language <- getLanguageScript(net)
+
   createHTML(dir, c("reset.css","styles.css"), c("d3.min.js","jspdf.min.js","jszip.min.js","functions.js",language,"colorScales.js","network.js"),function(){    return(imgWrapper(net,dir))
   })
   if(identical(show,TRUE))

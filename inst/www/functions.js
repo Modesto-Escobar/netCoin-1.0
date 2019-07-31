@@ -132,7 +132,7 @@ function downloadExcel(data,name){
 
   xlrels.file("workbook.xml.rels", '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'+workbookRels.join('')+'</Relationships>');
 
-  zip.generateAsync({type:"blob"})
+  zip.generateAsync({type:"blob", mimeType:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"})
   .then(function(content) {
       fileDownload(content, name + '.xlsx');
   });

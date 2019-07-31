@@ -98,6 +98,7 @@ function network(Graph){
       defaultShape = "Circle", // node shape by default
       symbolTypes = ["Circle","Square","Diamond","Triangle","Cross","Star","Wye"], // list of available shapes
       nodeSizeRange = [0.5,4], // node size range
+      nodeLabelSizeRange = [8,20], // node label size range
       linkWeightRange = [200,40], // link weight range (link distance)
       linkWidthRange = [1,5], // link width range
       axisExtension = 50, // pixels to increase the axes size
@@ -205,10 +206,6 @@ function network(Graph){
 
   if(options.mode=="h" || options.mode[0]=="h"){
     heatmap = true;
-    if(options.linkWidth){
-       options.linkIntensity = options.linkWidth;
-       delete options.linkWidth;
-    }
   }
 
   if(!options.hasOwnProperty("repulsion"))
@@ -448,7 +445,7 @@ function displaySidebar(){
 
   sideNodes.append("h3").text(texts.nodes);
 
-  var visData = heatmap?["Label","Color","Shape","Legend","OrderA","OrderD"]:["Label","Size","Color","Shape","Legend","Group"];
+  var visData = heatmap?["Label","Color","Shape","Legend","OrderA","OrderD"]:["Label","Size","LabelSize","Color","Shape","Legend","Group"];
   divControl = sideNodes.append("div")
       .attr("class", "nodeAuto")
   addController(divControl, Graph.nodes, false, visData);
@@ -853,13 +850,14 @@ function drawSVG(sel){
     svg.append("style")
      .text("text { font-family: sans-serif; font-size: "+body.style("font-size")+"; } "+
 ".scale text { font-size: 120%; fill: #444; } "+
+".scale text:first-child { font-size: 160%; text-anchor: middle; } "+
 ".legend text.title { text-anchor: end; font-size: 160%; } "+
 ".link { opacity: .6; fill: none; } "+
 ".linkText, .axisLabel { stroke-width: 0.5px; font-size: 100%; fill: #999; } "+
 ".node { cursor: pointer; }"+
 ".node > path { stroke: #000; } "+
 ".node > circle { stroke: none; fill: none; } "+
-".label { stroke-width: 0.5px; font-size: 100%; fill: #444; } "+
+".label { font-size: 100%; fill: #444; } "+
 ".shadow { stroke: #fff; stroke-width: 3px; stroke-opacity: .8; }"+
 ".area { opacity: 0.2; stroke-width:3; } "+
 ".axis { stroke: #aaa; }"+
@@ -1020,8 +1018,10 @@ function drawSVG(sel){
       options[name] = value;
       update_forces();
     }
+  }
+}
 
-    function update_forces(){
+function update_forces(){
       if(!options.stopped){
         simulation.force("charge")
           .strength(options.charge)
@@ -1031,8 +1031,6 @@ function drawSVG(sel){
 
         simulation.alpha(1).restart();
       }
-    }
-  }
 }
 
 function drawNet(){
@@ -1106,8 +1104,12 @@ function drawNet(){
         getLinkWidth = getNumAttr(links,'linkWidth',linkWidthRange,1);
 
     // compute node size
-    var getNodeSize = getNumAttr(nodes,'nodeSize',nodeSizeRange,options.imageItem?3:1);
-    nodes.forEach(function(d){ d.nodeSize = getNodeSize(d) * 4.514; });
+    var getNodeSize = getNumAttr(nodes,'nodeSize',nodeSizeRange,options.imageItem?3:1),
+        getNodeLabelSize = getNumAttr(nodes,'nodeLabelSize',nodeLabelSizeRange,10*options.cex);
+    nodes.forEach(function(node){
+      node.nodeSize = getNodeSize(node) * 4.514;
+      node.nodeLabelSize = getNodeLabelSize(node);
+    });
   }
 
   // compute shapes
@@ -1240,6 +1242,7 @@ function drawNet(){
       .attr("text-anchor", row ^ heatmapTriangle? "end" : "start")
       .attr("transform", !row & heatmapTriangle? "rotate(180)" : null)
       .attr("dy", ".32em")
+      .style("font-size",x.bandwidth()+"px")
       .style("fill",colorNodesScale? function(d, i) { return colorNodesScale(nodes[i][options.nodeColor]); } : null)
       .style("opacity",0)
       .text(function(d, i) { return (!row ? nodes[i][options.nodeLabel] : nodes[i][options.nodeName]); })
@@ -1301,7 +1304,7 @@ function drawNet(){
           .attr("transform", function(d, i) { return "translate(" + x(i) + ")rotate(-90)"; });
       })
       .on("mouseover", function(){
-        d3.select(this).style("stroke",d3.select(this).style("fill"));
+        d3.select(this).style("font-weight","bold");
       })
       .on("mouseout", mouseout)
       .transition()
@@ -1344,18 +1347,16 @@ function drawNet(){
   }
 
   function mouseover(p) {
-    d3.selectAll(".row .label").style("stroke", function(d, i) {
-      var color = d3.select(this).style("fill");
-      if(i == p.y) return color; else return null;
+    d3.selectAll(".row .label").style("font-weight", function(d, i) {
+      if(i == p.y) return "bold"; else return null;
     });
-    d3.selectAll(".column .label").style("stroke", function(d, i) {
-      var color = d3.select(this).style("fill");
-      if(i == p.x) return color; else return null;
+    d3.selectAll(".column .label").style("font-weight", function(d, i) {
+      if(i == p.x) return "bold"; else return null;
     });
   }
 
   function mouseout() {
-    d3.selectAll(".label").style("stroke", null);
+    d3.selectAll(".label").style("font-weight",null);
   }
   
   function click(p){
@@ -1402,7 +1403,7 @@ function drawNet(){
     if(options.stopped)
       simulation.restart();
     else
-      simulation.alpha(1).restart();
+      update_forces();
 
     //axes
     var axes = svg.selectAll(".axis")
@@ -1501,6 +1502,7 @@ function drawNet(){
 
     // draw links
     ctx.globalAlpha = 0.6;
+    ctx.lineJoin = "round";
     links.forEach(function(link) {
       var points = getLinkCoords(link);
       ctx.beginPath();
@@ -1524,6 +1526,7 @@ function drawNet(){
       ctx.stroke();
     });
 
+    ctx.lineJoin = "miter";
     ctx.globalAlpha = 1;
 
     if(options.linkText){
@@ -1545,13 +1548,14 @@ function drawNet(){
     // draw nodes
     nodes.forEach(function(node) {
       ctx.lineWidth = node.selected || node._selected ? 2 : 1;
-      ctx.strokeStyle = node._selected ? "#F00" : (node.selected ? "#FF0" : "#000");
+      var strokeStyle = node._selected ? "#F00" : (node.selected ? "#FF0" : false);
+      ctx.strokeStyle = strokeStyle;
       ctx.translate(node.x, node.y);
       if(options.imageItem){
         var img = images[node[options.imageItem]],
             imgHeight = img.height*2/img.width;
         ctx.drawImage(img, -node.nodeSize, -(imgHeight/2)*node.nodeSize, node.nodeSize * 2, node.nodeSize * imgHeight);
-        if(node.selected || node._selected){
+        if(strokeStyle){
           ctx.beginPath();
           ctx.arc(0, 0, node.nodeSize, 0, 2 * Math.PI);
           ctx.closePath();
@@ -1559,6 +1563,8 @@ function drawNet(){
         }
       }else{
         ctx.fillStyle = colorNodesScale?colorNodes(node):defaultColor;
+        if(!strokeStyle)
+          ctx.strokeStyle = d3.rgb(ctx.fillStyle).darker(1);
         ctx.beginPath();
         d3.symbol().type(getShape(node)).size(node.nodeSize * node.nodeSize * Math.PI).context(ctx)();
         ctx.closePath();
@@ -1575,7 +1581,12 @@ function drawNet(){
       ctx.beginPath();
       ctx.font = 10*options.cex+"px sans-serif";
       nodes.forEach(function(node) {
-        ctx.fillText(node[options.nodeLabel], node.x + node.nodeSize + 8, node.y + 4);
+        if(options.nodeLabelSize){
+          if(!node[options.nodeLabelSize])
+            return;
+          ctx.font = node.nodeLabelSize+"px sans-serif";
+        }
+        ctx.fillText(node[options.nodeLabel], node.x + node.nodeSize + 4, node.y + 4);
       });
       ctx.fill();
     }
@@ -1674,11 +1685,11 @@ function drawNet(){
 
     nodes.forEach(function(node){
       var color = d3.rgb(colorNodesScale?colorNodes(node):defaultColor),
-          sColor = d3.rgb(node.selected ? "#FF0" : "#000"),
+          sColor = d3.rgb(node.selected ? "#FF0" : d3.rgb(color).darker(1)),
           size = node.nodeSize*scale,
           x = (node.x*scale)+translate[0],
           y = (node.y*scale)+translate[1];
-      doc.setLineWidth(node.selected ? 2 : 1);
+      doc.setLineWidth((node.selected ? 2 : 1)*scale);
       doc.setDrawColor(sColor.r,sColor.g,sColor.b);
       doc.setFillColor(color.r,color.g,color.b);
       if(options.imageItem){
@@ -1736,12 +1747,14 @@ function drawNet(){
           ctx.fillStyle = grd;
           ctx.fillRect(0,0,300,10);
           var uri = canvas.toDataURL();
-          doc.addImage(uri, 'PNG', (width-320), 20, 300, 10);
-          doc.setFontSize(parseInt(d3.select(".scale>text").style("font-size")));
+          doc.addImage(uri, 'PNG', (width-320), 40, 300, 10);
           d3.selectAll(".scale>text").each(function(){
-            var x = parseInt(d3.select(this).attr("x"))+(width-320),
-                y = parseInt(d3.select(this).attr("y"))+20,
-                t = d3.select(this).text();
+            var self = d3.select(this),
+                x = +(self.attr("x"))+(width-320),
+                y = +(self.attr("y"))+20,
+                t = self.text();
+
+            doc.setFontSize(parseInt(self.style("font-size")));
             doc.text(x, y, t);
           });
       }
@@ -1780,6 +1793,28 @@ function drawNet(){
         })
       }
     }
+
+    doc.setLineWidth(scale);
+    doc.setDrawColor(170, 170, 170);
+    doc.setTextColor(170, 170, 170);
+    d3.selectAll(".net .axis").each(function(){
+      var self = d3.select(this),
+          x1 = (+self.attr("x1")*scale)+translate[0],
+          y1 = (+self.attr("y1")*scale)+translate[1],
+          x2 = (+self.attr("x2")*scale)+translate[0],
+          y2 = (+self.attr("y2")*scale)+translate[1];
+
+      doc.line(x1, y1, x2, y2);
+    })
+    d3.selectAll(".net .axisLabel").each(function(){
+      var self = d3.select(this),
+          x = (+self.attr("x")*scale)+translate[0],
+          y = (+self.attr("y")*scale)+translate[1],
+          anchors = {"start":"left","middle":"center","end":"right"},
+          tAlign = anchors[self.attr("text-anchor")];
+
+      doc.text(x, y, self.text(), { align: tAlign });
+    })
 
     doc.save(d3.select("head>title").text()+".pdf");
   }
@@ -2138,17 +2173,6 @@ function loadSVGbuttons(){
       }},
       datMode = {txt: texts.netheatmap, callback: function(){
         heatmap = !heatmap;
-        if(heatmap){
-          if(options.linkWidth){
-              options.linkIntensity = options.linkWidth;
-              delete options.linkWidth;
-          }
-        }else{
-          if(options.linkIntensity){
-              options.linkWidth = options.linkIntensity;
-              delete options.linkIntensity;
-          }
-        }
         displaySidebar();
       }, gap: 5},
       datReset = {txt: texts.reset, callback: function(){ location.reload(); }},
@@ -2306,9 +2330,11 @@ function treeAction(){
 }
 
 function stopResumeNet(){
+  options.stopped = !options.stopped;
+
   Graph.nodes.forEach(function(node){
     if(!node.noShow){
-      if(options.stopped){
+      if(!options.stopped){
         delete node.fx;
         delete node.fy;
       }else{
@@ -2317,18 +2343,17 @@ function stopResumeNet(){
       }
     }
   });
-  if(options.stopped){
+  if(!options.stopped){
     d3.select(".sliders").transition()
     .duration(500)
         .style("opacity",1);
-    simulation.alpha(1).restart();
+    update_forces();
   }else{
     d3.select(".sliders").transition()
     .duration(500)
         .style("opacity",0);
     simulation.stop();
   }
-  options.stopped = !options.stopped;
 }
 
 function clickHide(items, show) {
@@ -2386,8 +2411,8 @@ function displayLegend(scale, txt, color, shape, dat){
           d3.selectAll(".legend > g").property("selected",null)
           this.selected = key;
         }
-        d3.selectAll(".legend > g > text").style("stroke",function(){
-            return this.parentNode.selected? "black" : null;
+        d3.selectAll(".legend > g > text").style("font-weight",function(){
+            return this.parentNode.selected? "bold" : null;
         });
         legendSelected();
         simulation.restart();
@@ -2456,8 +2481,6 @@ function displayScale(domain, fill, title){
     scale.style("opacity",0);
 
     scale.append("text")
-    .style("text-anchor","middle")
-    .style("font-size","160%")
     .attr("x",150)
     .attr("y",10)
     .text(title);
@@ -2496,6 +2519,7 @@ function showTables() {
     else
       currentData = simulation.force("link").links();
     var table = d3.select("div.tables div."+name),
+        last = -1,
     drawTable = function(d){
       var tr = table.append("tr").datum(d.index);
       columns.forEach(function(col){
@@ -2513,14 +2537,20 @@ function showTables() {
               .style("text-align",textAlign)
               .on("mousedown",function(){ d3.event.preventDefault(); });
       });
-      tr.on("click",function(){
-          var origin = this;
-          table.selectAll("tr").classed("selected", function(d){
-            var selected = d3.select(this).classed("selected");
-            if(ctrlKey)
-              selected = selected ^ this === origin;
-            else
-              selected = this === origin;
+      tr.on("click",function(origin){
+          if(shiftKey && last!=-1)
+            var selecteds = d3.range(Math.min(last,origin),Math.max(last,origin)+1);
+          table.selectAll("tr").classed("selected", function(d,i){
+            var selected;
+            if(selecteds){
+              selected = selecteds.indexOf(i)!=-1;
+            }else{
+              selected = d3.select(this).classed("selected");
+              if(ctrlKey)
+                selected = selected ^ i == origin;
+              else
+                selected = i == origin;
+            }
             if(!heatmap){
               currentData[d]._selected = selected;                
             }
@@ -2528,6 +2558,11 @@ function showTables() {
           })
           if(!heatmap)
             simulation.restart();
+
+          if(d3.select(this).classed("selected"))
+            last = origin;
+          else
+            last = -1;
         });
     },
 

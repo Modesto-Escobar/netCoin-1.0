@@ -3,7 +3,8 @@
 # Batch
 
 netCoin<-function (nodes, links = NULL, tree = NULL, name = NULL,
-                      label = NULL, size = NULL, color = NULL, shape = NULL, legend = NULL, ntext = NULL, info = NULL,
+                      label = NULL, labelSize = NULL, size = NULL, color = NULL,
+                      shape = NULL, legend = NULL, ntext = NULL, info = NULL,
                       orderA = NULL, orderD = NULL, group = NULL, community = NULL,
                       lwidth = NULL, lweight = NULL, lcolor = NULL, ltext = NULL,
                       nodeFilter = NULL, linkFilter = NULL, degreeFilter = NULL, nodeBipolar = FALSE, linkBipolar = FALSE,
@@ -11,7 +12,7 @@ netCoin<-function (nodes, links = NULL, tree = NULL, name = NULL,
                       main = NULL, note = NULL, help = NULL, helpOn = FALSE,
                       cex = 1, background = NULL, layout = NULL, controls = c(1,2,3), mode = c("network","heatmap"),
                       showCoordinates = FALSE, showArrows = FALSE, showLegend = TRUE, showAxes = FALSE, axesLabels = NULL,
-                      language = c("en", "es", "ca"), image = NULL, imageNames = NULL, dir = NULL, show = TRUE)
+                      language = c("en", "es", "ca"), image = NULL, imageNames = NULL, dir = NULL)
 {
   if(class(nodes)=="netCoin"){
     links <- nodes$links
@@ -79,6 +80,7 @@ netCoin<-function (nodes, links = NULL, tree = NULL, name = NULL,
       options[["nodeLabel"]] <- name
   else if(label!="")
       options[["nodeLabel"]] <- label
+  if (!is.null(labelSize)) options[["nodeLabelSize"]] <- labelSize
   if (!is.null(group)) options[["nodeGroup"]] <- group
   if (!is.null(size)) options[["nodeSize"]] <- size
   if (!is.null(color)) options[["nodeColor"]] <- color
@@ -103,7 +105,7 @@ netCoin<-function (nodes, links = NULL, tree = NULL, name = NULL,
   }
   
   # link options
-  if (!is.null(lwidth)) options[["linkWidth"]] <- lwidth
+  if (!is.null(lwidth)) options[["linkIntensity"]] <- options[["linkWidth"]] <- lwidth
   if (!is.null(lweight)) options[["linkWeight"]] <- lweight
   if (!is.null(lcolor)) options[["linkColor"]] <- lcolor
   if (!is.null(ltext)) options[["linkText"]] <- ltext
@@ -150,7 +152,7 @@ netCoin<-function (nodes, links = NULL, tree = NULL, name = NULL,
   }    
   
   if (!is.null(dir)) {
-    netCreate(net,dir,show)
+    netCreate(net,dir,FALSE)
   }
   return(net)
 }
@@ -940,7 +942,7 @@ plot.coin <- function(x, dir=tempdir(), language=c("en","es","ca"), ...){
     E <- edgeList(x,c("Frequencies","Expected"))
     options <- list(name = names(N)[1], coincidences = "coincidences", incidences = "incidences", expected = "expected", cex = 1, language = language[1])
     bar <- barStart(N, E, options)
-    if (!is.null(dir)) barCreate(bar, dir = dir, show = TRUE)
+    barCreate(bar,dir,TRUE)
 }
 
 plot.netCoin <- function(x, dir=tempdir(), ...){

@@ -48,6 +48,7 @@ var texts = {
     confidence: "+/- confidence interval",
     subjectselect: "Event selection",
     Label: "Label",
+    LabelSize: "Lab.Size",
     Group: "Group",
     OrderA: "A Order",
     OrderD: "D Order",

@@ -48,6 +48,7 @@ var texts = {
     confidence: "+/- intervalo de confianza",
     subjectselect: "Selección de eventos",
     Label: "Etiqueta",
+    LabelSize: "Tam.Eti.",
     Group: "Grupo",
     OrderA: "A Orden",
     OrderD: "D Orden",

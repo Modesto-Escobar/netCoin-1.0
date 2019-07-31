@@ -35,7 +35,7 @@ createHTML <- function(directory, styles, dependencies, json){
   if(is.function(json))
     json <- json()
   html <- sub("<!--json-->",paste0('<script type="application/json" id="data">',json,'</script>'),html)
-  con <- file(paste(directory, "index.html", sep = "/"))
+  con <- file(paste(directory, "index.html", sep = "/"), encoding="UTF-8")
   writeLines(html,con)
   close(con)
 }
