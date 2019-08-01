@@ -10,11 +10,11 @@ barStart <- function(nodes, links, options){
   structure(list(nodes=nodes, links=links, options=options), class="barCoin")
 }
 
-barCreate <- function(bar, dir = "barCoin", show = TRUE){
+barCreate <- function(bar, dir = "barCoin"){
   language <- getLanguageScript(bar)
   createHTML(dir, c("reset.css","styles.css"), c("d3.min.js","jspdf.min.js","functions.js",language,"colorScales.js","barplot.js"), barplotJSON(bar))
-  if(identical(show,TRUE))
-    browseURL(normalizePath(paste(dir, "index.html", sep = "/")))
+  bar$dir <- dir
+  invisible(bar)
 }
 
 barCoin<-function(data, variables = colnames(data), commonlabel = NULL,
@@ -166,7 +166,7 @@ barCoin<-function(data, variables = colnames(data), commonlabel = NULL,
         
 # preparing bar graph
     bar <- barStart(O, E, options)
-    if (!is.null(dir)) barCreate(bar, dir = dir, show = TRUE)
+    if (!is.null(dir)) bar <- barCreate(bar, dir)
     return(bar)
   }
   else warning("Input is not a dichotomous matrix of incidences")

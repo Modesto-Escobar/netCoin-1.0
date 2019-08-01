@@ -1,19 +1,6 @@
 #create json
 networkJSON<-function(net){
 
-  #parse possible numeric columns
-  for(item in c("nodes","links")){
-    for(i in seq_along(net[[item]])){
-      col <- net[[item]][,i]
-      if(is.character(col)){
-        numcol <- suppressWarnings(as.numeric(col[!is.na(col)]))
-        if(!sum(is.na(numcol))){
-          net[[item]][,i][!is.na(col)] <- numcol
-        }
-      }
-    }
-  }
-
   links <- net$links
   tree <- net$tree
   nodes <- net$nodes
@@ -177,14 +164,14 @@ imgWrapper <- function(net,dir){
 }
 
 #create html wrapper for network graph
-netCreate <- function(net, dir = "netCoin", show = FALSE){
+netCreate <- function(net, dir = "netCoin"){
   #get language
   language <- getLanguageScript(net)
 
   createHTML(dir, c("reset.css","styles.css"), c("d3.min.js","jspdf.min.js","jszip.min.js","functions.js",language,"colorScales.js","network.js"),function(){    return(imgWrapper(net,dir))
   })
-  if(identical(show,TRUE))
-    browseURL(normalizePath(paste(dir, "index.html", sep = "/")))
+  net$dir <- dir
+  invisible(net)
 }
 
 #meta function
@@ -250,7 +237,7 @@ fromIgraph <- function(G, layout=NULL, language = c("en","es","ca"), dir=NULL, .
     # net elaborarion    
     net <- netAll(nodes,links,layout=layout,language=language)
     net$options<-c(net$options,arguments)
-    if (!is.null(dir)) netCreate(net,dir=dir)
+    if (!is.null(dir)) net <- netCreate(net,dir=dir)
     return(net)
   }
   else warning("is not an igraph object")

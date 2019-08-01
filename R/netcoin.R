@@ -151,9 +151,7 @@ netCoin<-function (nodes, links = NULL, tree = NULL, name = NULL,
     net$options$nodeGroup <- "community"
   }    
   
-  if (!is.null(dir)) {
-    netCreate(net,dir,FALSE)
-  }
+  if (!is.null(dir)) net <- netCreate(net,dir)
   return(net)
 }
 
@@ -942,19 +940,31 @@ plot.coin <- function(x, dir=tempdir(), language=c("en","es","ca"), ...){
     E <- edgeList(x,c("Frequencies","Expected"))
     options <- list(name = names(N)[1], coincidences = "coincidences", incidences = "incidences", expected = "expected", cex = 1, language = language[1])
     bar <- barStart(N, E, options)
-    barCreate(bar,dir,TRUE)
+    barCreate(bar,dir)
+    browseURL(normalizePath(paste(dir, "index.html", sep = "/")))
 }
 
-plot.netCoin <- function(x, dir=tempdir(), ...){
-     netCreate(x,dir,TRUE)
+plot.netCoin <- function(x, dir = NULL, ...){
+  plotCoin(x, dir, netCreate)
 }
 
-plot.barCoin <- function(x, dir=tempdir(), ...){
-     barCreate(x,dir,TRUE)
+plot.barCoin <- function(x, dir = NULL, ...){
+  plotCoin(x, dir, barCreate)
 }
 
-plot.timeCoin <- function(x, dir=tempdir(), ...){
-     timeCreate(x,dir,TRUE)
+plot.timeCoin <- function(x, dir = NULL, ...){
+  plotCoin(x, dir, timeCreate)
+}
+
+plotCoin <- function(x,dir,callback){
+     if(!is.null(x$dir) && is.null(dir)){
+       dir <- x$dir
+     }else{
+       if(is.null(dir))
+         dir <- tempdir()
+       callback(x,dir)
+     }
+     browseURL(normalizePath(paste(dir, "index.html", sep = "/")))
 }
 
 summary.coin <- function(object, ...){
@@ -1567,17 +1577,17 @@ incTime<-function(data, name="name", beginning="birth", end="death") {
 shinyCoin <- function(x) UseMethod("shinyCoin", x)
 
 shinyCoin.netCoin <- function(x){
-    netCreate(x,"www",FALSE)
+    netCreate(x,"www")
     insertIncludeFile("www")
 }
 
 shinyCoin.barCoin <- function(x){
-    barCreate(x,"www",FALSE)
+    barCreate(x,"www")
     insertIncludeFile("www")
 }
 
 shinyCoin.timeCoin <- function(x){
-    timeCreate(x,"www",FALSE)
+    timeCreate(x,"www")
     insertIncludeFile("www")
 }
 
