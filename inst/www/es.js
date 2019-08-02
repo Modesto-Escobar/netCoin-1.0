@@ -50,6 +50,7 @@ var texts = {
     Label: "Etiqueta",
     LabelSize: "Tam.Eti.",
     Group: "Grupo",
+    Order: "Orden",
     OrderA: "A Orden",
     OrderD: "D Orden",
     Size: "Tamaño",
@@ -71,5 +72,6 @@ var texts = {
     trianglesquare: "Triángulo/cuadrado",
     selectacolorscale: "Selecciona una escala de color para ",
     outof: "de",
-    scenarios: "Número de escenarios"
+    scenarios: "Número de escenarios",
+    bydefault: "por defecto"
   };

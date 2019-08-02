@@ -50,6 +50,7 @@ var texts = {
     Label: "Etiqueta",
     LabelSize: "Gra.Eti.",
     Group: "Grup",
+    Order: "Ordre",
     OrderA: "Ordre A",
     OrderD: "Ordre B",
     Size: "Grandària",
@@ -71,5 +72,6 @@ var texts = {
     trianglesquare: "Triangle/cuadrat",
     selectacolorscale: "Selecciona una escala de color",
     outof: "de",
-    scenarios: "nombre d'escenaris"
+    scenarios: "nombre d'escenaris",
+    bydefault: "per defecte"
   };

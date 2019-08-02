@@ -67,9 +67,11 @@ function barplot(json){
         }
         return d3.max(d3.merge([[d[options.coincidences],d[options.expected]],conf]));
       }) : 0,
-      subject = nodes.filter(function(d){ return d[options.incidences]==maxIncidence; });
+      order = false,
+      filter = false,
+      subject = null; //nodes.filter(function(d){ return d[options.incidences]==maxIncidence; });
 
-  subject = subject[0][options.name];
+  //subject = subject[0][options.name];
 
   // top bar
   var topBar = body.append("div")
@@ -104,6 +106,8 @@ function barplot(json){
         .property("value",function(d){ return d[0]; })
         .text(function(d){ return d[1]; })
         .property("selected",function(d){ return d[0]==subject?true:null; })
+  if(subject == null)
+    eventSelect.node().selectedIndex = -1;
 
   // show barplot of incidences only (of all nodes)
   topBar.append("button")
@@ -114,12 +118,33 @@ function barplot(json){
       subject = null;
       displayGraph();
     })
+  topBar.append("span").style("padding","0 10px");
+
+  // node order
+  topOrder(topBar,nodes,displayGraph);
   topBar.append("span").style("padding","0 10px")
 
   // node filter
   topFilter(topBar,nodes,options.name,displayGraph);
+  topBar.append("span").style("padding","0 10px")
 
-  sigSlider();
+  if(options.confidence && options.confidence.length==2){
+    topBar.append("button")
+      .text(texts.outof)
+      .on("click",function(){
+        if(subject){
+          var newfilter = links.filter(function(d){
+            return (d.Source==subject || d.Target==subject) && (d[options.expected] < d[options.confidence[0]] || d[options.expected] > d[options.confidence[1]]);
+          }).map(function(d){ return (d.Source == subject ? d.Target : d.Source); });
+          displayGraph(newfilter);
+        }
+      })
+  }
+  
+
+  // significance filter
+  if(subject != null)
+    sigSlider();
 
   var topBarHeight = topBar.node().offsetHeight;
 
@@ -184,11 +209,13 @@ function barplot(json){
     }
   }
 
-  function displayGraph(filter){
-    //subject is global
+  function displayGraph(newfilter){
 
     var data = [],
         whiskers = subject && options.confidence && !options.significance;
+
+    if(newfilter)
+      filter = newfilter;
 
     if(subject){
       links.forEach(function(d){
@@ -228,11 +255,22 @@ function barplot(json){
       })
     }
 
-    data.sort(function(a,b){
-      var ab = a.b?a.b:a.c?a.c:a.a,
-          bb = b.b?b.b:b.c?b.c:b.a;
-      return b.a < a.a ? -1 : b.a > a.a ? 1 : bb < ab ? -1 : bb > ab ? 1 : 0;
-    });
+    if(!order){
+      data.sort(function(a,b){
+        var ab = a.b?a.b:a.c?a.c:a.a,
+            bb = b.b?b.b:b.c?b.c:b.a;
+        return b.a < a.a ? -1 : b.a > a.a ? 1 : bb < ab ? -1 : bb > ab ? 1 : 0;
+      });
+    }else{
+      data.sort(function(a,b){
+        var aa = nodes.filter(function(node){ return a.object==node[options.name]; })[0][order],
+            bb = nodes.filter(function(node){ return b.object==node[options.name]; })[0][order];
+        return aa < bb ? -1 : aa > bb ? 1 : aa >= bb ? 0 : NaN;
+      });
+    }
+
+    if(!options.scalebar)
+      height = data.length*20;
 
     if(height/data.length < 13)
       height = data.length*13;
@@ -267,6 +305,7 @@ function barplot(json){
       ".b { fill: #87CDDE; }"+
       ".c { fill: #D7EEF4; }" +
       (whiskers ? ".c, " : "") + ".axis path, .axis line { fill: none; stroke: #000; shape-rendering: crispEdges; }"+
+      ".dotted { stroke: #ddd; stroke-width: 2; stroke-dasharray: 1, 10; stroke-linecap: round; }" +
       ".y.axis path, .y.axis line { display: none; }"+
       ".line { stroke-dasharray: 2, 2; stroke: #333; }");
 
@@ -327,6 +366,7 @@ function barplot(json){
       gBar.attr("transform","translate(0,"+y(d.object)+")");
 
       if(whiskers){
+        display_dotline(gBar);
         display_square(gBar);
         display_whiskers(gBar);
         display_circle(gBar);
@@ -434,6 +474,19 @@ function barplot(json){
           return "M"+x1+",0v"+bandwidth+"v"+(-bandwidth/2)+"h"+(x2-x1)+"v"+(-bandwidth/2)+"v"+bandwidth;
         })
     }
+
+    function display_dotline(g){
+      var d = g.datum();
+      var dotline = g.append("line")
+        .attr("class","dotted")
+        .attr("x1", 0)
+        .attr("y1", bandwidth/2)
+        .attr("x2", 0)
+        .attr("y2", bandwidth/2)
+
+      dotline.transition().duration(1000)
+        .attr("x2", x(Math.min(d.a,d.b)));
+    }
   }
 
   function drawSig(d){
@@ -452,6 +505,34 @@ function barplot(json){
     var blob = new Blob([svgString], {type: 'image/svg+xml;charset=utf-8'});
     fileDownload(blob, d3.select("head>title").text()+'.svg');
   }
+
+function topOrder(topBar,data,displayGraph){
+
+  topBar.append("h3").text(texts.Order + ":")
+
+  var selFilter = topBar.append("select")
+    .on("change",function(){
+      order = this.value;
+      displayGraph();
+    })
+
+  var options = d3.keys(data[0]).sort();
+  selFilter.selectAll("option")
+        .data(options)
+      .enter().append("option")
+        .property("value",String)
+        .text(String)
+
+  selFilter.node().selectedIndex = -1;
+
+  topBar.append("button")
+    .text(texts.bydefault)
+    .on("click",function(){
+      order = false;
+      selFilter.node().selectedIndex = -1;
+      displayGraph();
+    })
+}
 
 function svg2pdf(){
 

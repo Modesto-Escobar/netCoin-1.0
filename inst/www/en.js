@@ -50,6 +50,7 @@ var texts = {
     Label: "Label",
     LabelSize: "Lab.Size",
     Group: "Group",
+    Order: "Order",
     OrderA: "A Order",
     OrderD: "D Order",
     Size: "Size",
@@ -71,5 +72,6 @@ var texts = {
     trianglesquare: "Triangle/square",
     selectacolorscale: "Select a color scale for ",
     outof: "out of",
-    scenarios: "Number of scenarios"
+    scenarios: "Number of scenarios",
+    bydefault: "default"
   };

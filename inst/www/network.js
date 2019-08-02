@@ -28,13 +28,10 @@ function network(Graph){
   if(options.background)
     body.style("background",options.background);
 
-  var splitMultiVariable = function(d,dataname){
+  var splitMultiVariable = function(d){
     for (var p in d) {
       if(typeof d[p] == "string" && d[p].indexOf("|")!=-1)
-        Graph[dataname].forEach(function(dd){
-          if(dd[p])
-            dd[p] = dd[p].split("|");
-        });
+        d[p] = d[p].split("|");
     }
   }
 
@@ -48,7 +45,7 @@ function network(Graph){
       node[d] = Graph.nodes[j][i];
     })
     node.degree = 0;
-    splitMultiVariable(node,"nodes");
+    splitMultiVariable(node);
     if(Graph.tree){
       node.childNodes = [];
       node.parentNode = false;
@@ -68,7 +65,7 @@ function network(Graph){
       Graph.linknames.forEach(function(d,j){
         link[d] = Graph.links[j][i];
       })
-      splitMultiVariable(link,"links");
+      splitMultiVariable(link);
       link.source = Graph.nodes[link.Source];
       link.Source = link.source[options.nodeName];
       link.target = Graph.nodes[link.Target];
@@ -1145,7 +1142,8 @@ function drawNet(){
 
     var size = Math.min(width, height),
         side = x.range()[1],
-        scale = (Math.log((size-100)/side)/Math.log(2))+1,
+        k = (14/3 + (1/15)*n)/10,
+        scale = size * (k < 0.8 ? k : 0.8) / side,
         scaledSide = side*scale,
         mtop = (height - scaledSide),
         mleft = (width - scaledSide)/2;
@@ -2552,7 +2550,11 @@ function showTables() {
     var table = d3.select("div.tables div."+name),
         last = -1,
     drawTable = function(d){
-      var tr = table.append("tr").datum(d.index);
+      var tr = table.append("tr")
+        .datum(d.index)
+        .classed("selected",function(dd){
+          return currentData[dd]._selected;
+        });
       columns.forEach(function(col){
           var txt = d[col],
               textAlign = null;
@@ -2568,9 +2570,9 @@ function showTables() {
               .style("text-align",textAlign)
               .on("mousedown",function(){ d3.event.preventDefault(); });
       });
-      tr.on("click",function(origin){
+      tr.on("click",function(origin,j){
           if(shiftKey && last!=-1)
-            var selecteds = d3.range(Math.min(last,origin),Math.max(last,origin)+1);
+            var selecteds = d3.range(Math.min(last,this.rowIndex),Math.max(last,this.rowIndex)+1);
           table.selectAll("tr").classed("selected", function(d,i){
             var selected = d3.select(this).classed("selected");
             if(selecteds){
@@ -2580,9 +2582,9 @@ function showTables() {
                 selected = selecteds.indexOf(i)!=-1;
             }else{
               if(ctrlKey)
-                selected = selected ^ i == origin;
+                selected = selected ^ d == origin;
               else
-                selected = i == origin;
+                selected = d == origin;
             }
             if(!heatmap){
               currentData[d]._selected = selected;                
@@ -2593,7 +2595,7 @@ function showTables() {
             simulation.restart();
 
           if(d3.select(this).classed("selected"))
-            last = origin;
+            last = this.rowIndex;
           else
             last = -1;
         });
