@@ -79,16 +79,15 @@ barCoin<-function(data, variables = colnames(data), commonlabel = NULL,
   }
   else data<-na.omit(data[,allvar])
 
-# data.frame setting
-  data[,variables]<-as_factor(data[,variables])
-  if (all(class(data)==c("tbl_df","tbl","data.frame"))) data<-as.data.frame(data) # convert haven objects
-
-
 # set dichotomies    
   if(length(dichotomies)>0) {
     dichos<-dicho(data,dichotomies,valueDicho)
     variables<-setdiff(variables,dichotomies)
   }
+
+# data.frame setting
+  data[,variables]<-as_factor(data[,variables])
+  if (all(class(data)==c("tbl_df","tbl","data.frame"))) data<-as.data.frame(data) # convert haven objects
   
 # dichotomizing factor variables
   if (length(variables)>0){
