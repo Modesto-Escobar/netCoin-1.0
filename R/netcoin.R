@@ -688,6 +688,8 @@ i.method<-function(method) {
 
 # Similatities
 sim<-function (input,procedures="Jaccard", level=.95, distance=FALSE, minimum=1, maximum=Inf, sort=FALSE, decreasing=FALSE) {
+  if (level >=1 & level < 100) level<- level/100
+  if (level <=0 & level >=100) warning("Not valid level")
   method<-c.method(procedures)
   if (is.matrix(input) & class(input)!="coin") {
     if (is.null(colnames(input))) dimnames(input)<-list(NULL,paste("X",1:ncol(input),sep=""))
