@@ -306,12 +306,19 @@ function selectedValues2str(selectedValues,data){
   return query;
 }
 
-function topFilter(topBar,data,name,displayGraph){
+function topFilter(){
 
-  topBar.append("h3").text(texts.filter + ":")
+  var data,
+      attr,
+      displayGraph,
+      selectedValues = {},
+      selFilter;
 
-  var selectedValues = {},
-    changeAttrSel = function(val){
+  function topFilter(topBar){
+
+    topBar.append("h3").text(texts.filter + ":")
+
+    var changeAttrSel = function(val){
       if(d3.select("body>div>div.window").empty()){
 
         var dat = d3.set(data.map(function(d){ return d[val]; })).values(),
@@ -320,8 +327,8 @@ function topFilter(topBar,data,name,displayGraph){
 
         panel.append("h3").text(val).style("margin-bottom","10px")
 
-        var type = d3.map(data.filter(function(d){ return d[val] !== null; }),function(d){ return typeof d[val]; }).keys();
-        if(type.length == 1 && type[0] == 'number'){
+        var type = dataType(data.filter(function(d){ return d[val] !== null; }),val);
+        if(type == 'number'){
           var extent = d3.extent(data, function(d){ return d[val]; }),
               tempValues;
           brushSlider(panel.append("div"),extent,selectedValues[val],function(s){ tempValues = s; },vp.width/3);
@@ -373,34 +380,62 @@ function topFilter(topBar,data,name,displayGraph){
       }
     }
 
-  var selFilter = topBar.append("select")
-    .on("click",function(){ this.selectedIndex = 0; })
-    .on("change",function(){ changeAttrSel(this.value); })
+    selFilter = topBar.append("select")
+      .on("change",function(){ changeAttrSel(this.value); })
 
-  var options = d3.keys(data[0]).sort();
-  options.unshift("-"+texts.none+"-");
-  selFilter.selectAll("option")
+    var options = d3.keys(data[0]).sort();
+    options.unshift("-"+texts.none+"-");
+    selFilter.selectAll("option")
         .data(options)
       .enter().append("option")
+        .property("disabled",function(d,i){ return !i; })
         .property("value",String)
         .text(String)
 
-  topBar.append("button")
-    .text(texts.reset)
-    .on("click",function(){
-      selectedValues = {};
-      applyfilter();
-    })
+    topBar.append("button")
+      .text(texts.apply)
+      .on("click",applyfilter)
 
-  topBar.append("button")
-    .text(texts.apply)
-    .on("click",applyfilter)
+    topBar.append("button")
+      .text(texts.removefilter)
+      .on("click",removeFilter)
+  }
 
   function applyfilter(){
       var query = selectedValues2str(selectedValues,data);
-      var names = data.filter(function(d){ return eval(query); }).map(function(d){ return d[name]; });
+      var names = data.filter(function(d){ return eval(query); }).map(function(d){ return d[attr]; });
       displayGraph(names);
   }
+
+  function removeFilter(){
+      selFilter.node().selectedIndex = 0;
+      selectedValues = {};
+      displayGraph(false);
+  }
+
+  topFilter.removeFilter = function(){
+    removeFilter();
+  }
+
+  topFilter.data = function(x) {
+    if (!arguments.length) return data;
+    data = x;
+    return topFilter;
+  };
+
+  topFilter.attr = function(x) {
+    if (!arguments.length) return attr;
+    attr = x;
+    return topFilter;
+  };
+
+  topFilter.displayGraph = function(x) {
+    if (!arguments.length) return displayGraph;
+    displayGraph = x;
+    return topFilter;
+  };
+
+  return topFilter;
 }
 
 function tooltip(sel,text){

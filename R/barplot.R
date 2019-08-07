@@ -19,8 +19,9 @@ barCreate <- function(bar, dir = "barCoin"){
 
 barCoin<-function(data, variables = colnames(data), commonlabel = NULL,
                   dichotomies = c("_all","_none"), valueDicho = 1,
-                  weight = NULL, subsample = FALSE, sort = FALSE, decreasing = TRUE,
-                  nodes = NULL, name = NULL, note = NULL, label = NULL, text = NULL,
+                  weight = NULL, subsample = FALSE, sort = NULL, decreasing = TRUE,
+                  nodes = NULL, name = NULL, select = NULL, scalebar = FALSE,
+                  note = NULL, label = NULL, text = NULL,
                   expected = FALSE, confidence = FALSE, level = .95, significance = FALSE, 
                   minimum = 1 , maximum = nrow(data), 
                   percentages = FALSE,
@@ -91,7 +92,7 @@ barCoin<-function(data, variables = colnames(data), commonlabel = NULL,
   
 # dichotomizing factor variables
   if (length(variables)>0){
-    incidences<-dichotomize(data, variables, "", min=minimum, length=0, values=NULL, sparse=FALSE, add=FALSE, sort=sort)
+    incidences<-dichotomize(data, variables, "", min=minimum, length=0, values=NULL, sparse=FALSE, add=FALSE, sort=TRUE)
     if(exists("dichos")) incidences<-cbind(dichos,incidences)
   } 
   else if(exists("dichos")) incidences<-dichos
@@ -111,7 +112,7 @@ barCoin<-function(data, variables = colnames(data), commonlabel = NULL,
   incidences<-na.omit(incidences)
   if(!is.null(nodes)) incidences <- incidences[,intersect(unlist(nodes[name]),colnames(incidences))]
   if (all(incidences==0 | incidences==1)) {
-    C<-coin(incidences, minimum, maximum, sort, decreasing, weight=weight, subsample=subsample)
+    C<-coin(incidences, minimum, maximum, sort=TRUE, decreasing=TRUE, weight=weight, subsample=subsample)
 
 # nodes data.frame elaboration
     O<-asNodes(C, !percentages, percentages, language = language) # Attention to !percentages
@@ -132,7 +133,7 @@ barCoin<-function(data, variables = colnames(data), commonlabel = NULL,
                 directed=FALSE, diagonal= FALSE, sort= NULL)
 
 # definition of options
-    options <-list(name= name, incidences= "incidences", coincidences= "coincidences")
+    options <-list(name = name, incidences = "incidences", coincidences = "coincidences", level = level)
     if (expected || confidence) options[["expected"]] <- "expected"
     if (confidence){
       if(significance){
@@ -156,6 +157,22 @@ barCoin<-function(data, variables = colnames(data), commonlabel = NULL,
       options[["label"]] <- label
     if(!is.null(text))
       options[["text"]] <- text
+    if(!is.null(select)){
+      if(select %in% O[,name])
+        options[["select"]] <- select
+      else
+        warning("select: must be in 'nodes' name column")
+    }
+    options[["rev"]] <- as.integer(!decreasing)
+    if(!is.null(sort)){
+      if(sort %in% colnames(O)){
+        options[["order"]] <- sort
+        options[["rev"]] <- bitwXor(as.integer(is.numeric(O[,sort])),as.integer(decreasing))
+      }else
+        warning("sort: must be a 'nodes' column")
+    }
+    if(scalebar)
+      options[["scalebar"]] <- TRUE
 
 # convertion to percentages
     if (percentages) {

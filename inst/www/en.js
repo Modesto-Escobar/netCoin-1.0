@@ -45,8 +45,8 @@ var texts = {
     withsomeone: "with",
     incidences: "Incidences",
     expected: "Expected",
-    confidence: "+/- confidence interval",
-    subjectselect: "Event selection",
+    confidence: "+/- Expected confidence",
+    subjectselect: "Event",
     Label: "Label",
     LabelSize: "Lab.Size",
     Group: "Group",
@@ -73,5 +73,6 @@ var texts = {
     selectacolorscale: "Select a color scale for ",
     outof: "out of",
     scenarios: "Number of scenarios",
-    bydefault: "default"
+    resetzoom: "Reset zoom",
+    removefilter: "Remove filter"
   };

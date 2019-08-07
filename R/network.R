@@ -143,23 +143,46 @@ netAddLayout <- function(net,layout){
   return(net)
 }
 
-#copy images to net graph
-images2net <- function(images,dir){
-  imgDir <- paste(dir,"images",sep="/")
-  dir.create(imgDir, showWarnings = FALSE)
-  file.copy(images, imgDir)
-  if(length(images)==1)
-    return(paste("images",sub("^.*/","",images),sep="/"))
-  else
-    return(vapply(strsplit(images,"/"),function(x) paste("images",x[length(x)],sep="/"),character(1)))
+getRawName <- function(filepath){
+  filename <- strsplit(basename(filepath), split="\\.")[[1]]
+  ext <- filename[length(filename)]
+  filename <- paste0(filename[-length(filename)],collapse="")
+  return(paste(paste0(as.character(charToRaw(filename)),collapse=""),ext,sep="."))
 }
 
+#copy images to net graph
 imgWrapper <- function(net,dir){
-  if("imageItems" %in% names(net$options))
-    for(img in net$options[["imageItems"]])
-      net$nodes[[img]] <- images2net(gsub("\\\\","/",net$nodes[[img]]),dir)
-  if(!is.null(net$options[["background"]]) && file.exists(net$options[["background"]]))
-    net$options[["background"]] <- paste0('url("',images2net(net$options[["background"]],dir),'")')
+  imgDir <- paste(dir,"images",sep="/")
+  if("imageItems" %in% names(net$options)){
+    dir.create(imgDir, showWarnings = FALSE)
+    if(is.null(net$options[["imageNames"]])){
+      net$options[["imageNames"]] <- net$options[["imageItems"]]
+      net$options[["imageItems"]] <- paste0(net$options[["imageItems"]],"_url")
+      for(i in seq_along(net$options[["imageItems"]])){
+        net$nodes[[net$options[["imageItems"]][i]]] <- net$nodes[[net$options[["imageNames"]][i]]]
+        net$nodes[[net$options[["imageNames"]][i]]] <- sub("\\.[a-zA-Z0-9]+$","",basename(net$nodes[[net$options[["imageNames"]][i]]]))
+      }
+    }
+    for(img in net$options[["imageItems"]]){
+      net$nodes[[img]] <- vapply(net$nodes[[img]],function(filepath){
+        rawname <- getRawName(filepath)
+        file.copy(filepath, paste(imgDir,rawname,sep="/"))
+        paste("images",rawname,sep="/")
+      },character(1))
+    }
+  }
+  if(!is.null(net$options[["background"]])){
+    if(file.exists(net$options[["background"]])){
+      filepath <- net$options[["background"]]
+      rawname <- getRawName(filepath)
+      dir.create(imgDir, showWarnings = FALSE)
+      file.copy(filepath, paste(imgDir,rawname,sep="/"))
+      net$options[["background"]] <- paste0('url("',paste("images",rawname,sep="/"),'")')
+    }else{
+      warning("background: No such file or directory")
+      net$options[["background"]] <- NULL
+    }
+  }
   return(networkJSON(net))
 }
 

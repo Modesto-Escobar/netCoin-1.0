@@ -11,8 +11,9 @@ Object of class \code{barCoin}.
 \usage{
 barCoin(data, variables = colnames(data), commonlabel = NULL,
         dichotomies = c("_all","_none"), valueDicho = 1,
-        weight = NULL, subsample = FALSE, sort = FALSE, decreasing = TRUE,
-        nodes = NULL, name = NULL, note = NULL, label = NULL, text = NULL,
+        weight = NULL, subsample = FALSE, sort = NULL, decreasing = TRUE,
+        nodes = NULL, name = NULL, select = NULL, scalebar = FALSE,
+        note = NULL, label = NULL, text = NULL,
         expected = FALSE, confidence = FALSE, level = .95, significance = FALSE, 
         minimum = 1 , maximum = nrow(data), percentages = FALSE,
         criteria = c("Z","hyp"), Bonferroni = FALSE, support = 1,
@@ -27,10 +28,12 @@ barCoin(data, variables = colnames(data), commonlabel = NULL,
 \item{valueDicho}{value to be selected for dichotomous variables. Default is 1}
 \item{weight}{a vector of weights. Optimal for data.framed tables.}
 \item{subsample}{retrict the analysis to scenarios with at least one event.}
-\item{sort}{sort the coincidence matrix according to frequency of events.}
-\item{decreasing}{decreasing or increasing sort of the matrix}
+\item{sort}{name of the vector in the nodes data frame to order the graph.}
+\item{decreasing}{decreasing or increasing sort of the graph order.}
 \item{nodes}{a data frame with at least two vectors of names and incidences.}
 \item{name}{name of the vector with names in the nodes data frame.}
+\item{select}{Name of the event (in nodes name column) to start the visualization.}
+\item{scalebar}{Should the bars fill the screen height? Default = FALSE.}
 \item{note}{lower title of the graph.}
 \item{label}{name of the vector with labels in the nodes data frame.}
 \item{text}{name of the vector with html text in the nodes data frame.}

@@ -17,9 +17,10 @@ netCoin(nodes, links = NULL, tree = NULL, name = NULL, label = NULL,
         lwidth = NULL, lweight = NULL, lcolor = NULL, ltext = NULL,
         nodeFilter = NULL, linkFilter = NULL, degreeFilter = NULL,
         nodeBipolar = FALSE, linkBipolar = FALSE, defaultColor = "#1f77b4",
-        repulsion = 25, distance = 10, scenarios = NULL, main = NULL,
-        note = NULL, help = NULL, helpOn = FALSE, cex = 1, background = NULL,
-        layout = NULL, controls = c(1,2,3), mode = c("network","heatmap"),
+        repulsion = 25, distance = 10, scale = 1, scenarios = NULL,
+        main = NULL, note = NULL, help = NULL, helpOn = FALSE, cex = 1,
+        background = NULL, layout = NULL, controls = c(1,2,3),
+        mode = c("network","heatmap"),
         showCoordinates = FALSE, showArrows = FALSE, showLegend = TRUE,
         showAxes = FALSE, axesLabels = NULL, language = c("en","es","ca"),
         image = NULL, imageNames = NULL, dir = NULL)
@@ -53,6 +54,7 @@ netCoin(nodes, links = NULL, tree = NULL, name = NULL, label = NULL,
 \item{defaultColor}{a character vector giving a valid html color.}
 \item{repulsion}{a percentage for repulsion between nodes.}
 \item{distance}{a percentage for distance of links.}
+\item{scale}{a number between 0.1 and 10 to start displaying zoom.}
 \item{scenarios}{a note showing number of scenarios.}
 \item{main}{upper title of the graph.}
 \item{note}{lower title of the graph.}

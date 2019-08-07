@@ -25,7 +25,11 @@ function timeline(json){
       topBar.append("select").style("visibility","hidden");
 
   // node filter
-  topFilter(topBar,nodes,"name",displayGraph);
+  var topFilterInst = topFilter()
+    .data(nodes)
+    .attr("name")
+    .displayGraph(displayGraph);
+  topBar.call(topFilterInst);
 
   if(options.main)
     body.append("div")

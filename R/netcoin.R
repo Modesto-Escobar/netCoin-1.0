@@ -8,7 +8,7 @@ netCoin<-function (nodes, links = NULL, tree = NULL, name = NULL,
                       orderA = NULL, orderD = NULL, group = NULL, community = NULL,
                       lwidth = NULL, lweight = NULL, lcolor = NULL, ltext = NULL,
                       nodeFilter = NULL, linkFilter = NULL, degreeFilter = NULL, nodeBipolar = FALSE, linkBipolar = FALSE,
-                      defaultColor = "#1f77b4", repulsion = 25, distance = 10, scenarios = NULL,
+                      defaultColor = "#1f77b4", repulsion = 25, distance = 10, scale = 1, scenarios = NULL,
                       main = NULL, note = NULL, help = NULL, helpOn = FALSE,
                       cex = 1, background = NULL, layout = NULL, controls = c(1,2,3), mode = c("network","heatmap"),
                       showCoordinates = FALSE, showArrows = FALSE, showLegend = TRUE, showAxes = FALSE, axesLabels = NULL,
@@ -49,6 +49,10 @@ netCoin<-function (nodes, links = NULL, tree = NULL, name = NULL,
     options[["distance"]] <- distance
   else
     warning("distance: must be numeric between 0 and 100")
+  if(is.numeric(scale) && scale>=0.1 && scale<=10)
+    options[["scale"]] <- scale
+  else
+    warning("scale: must be numeric between 0.1 and 10")
   if (!is.null(scenarios)){
     if(is.numeric(scenarios))
       options[["scenarios"]] <- scenarios

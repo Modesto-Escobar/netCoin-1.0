@@ -99,6 +99,7 @@ function network(Graph){
       linkWeightRange = [200,40], // link weight range (link distance)
       linkWidthRange = [1,5], // link width range
       axisExtension = 50, // pixels to increase the axes size
+      sliderWidth = 200, // width of the sliders
       infoPanelLeft = docSize.width * (2/3), // information panel left position
       noShowFields = ["Source","Target","x","y","source","target","vx","vy","fx","fy","id","selected","nodeSize","noShow", "childNodes", "parentNode"]; // not to show in sidebar controllers or tables
 
@@ -156,10 +157,14 @@ function network(Graph){
   else
     options.cex = 1;
 
+  if(options.imageNames && !Array.isArray(options.imageNames))
+    options.imageNames = [options.imageNames];
+  else
+    options.imageNames = [];
   if(options.imageItems){
     if(!Array.isArray(options.imageItems))
       options.imageItems = [options.imageItems];
-    options.nodeShape = options.imageItems[0];
+    options.nodeShape = options.imageNames[0];
     images = {};
     Graph.nodes.forEach(function(node){
       options.imageItems.forEach(function(col){
@@ -171,16 +176,18 @@ function network(Graph){
   }else
     options.imageItems = [];
 
+  options.imageItems.forEach(function(d){
+    noShowFields.push(d);
+  })
+
   if(options.hasOwnProperty("controls")){
     if(!Array.isArray(options.controls)){
       if(options.controls)
-        options.controls = [0,options.controls];
+        options.controls = [options.controls];
       else
         options.controls = [0];
-    }else{
-      if(options.controls.indexOf(0)==-1)
-        options.controls.unshift(0);
     }
+    options.showButtons = true;
   }else{
     options.controls = [];
   }
@@ -367,6 +374,37 @@ if(options.controls.indexOf(2)+options.controls.indexOf(3)!=-2){
   }
 }
 
+  var sideArrow = function(div){
+    div.style("left",options.showSidebar? "-5px" : "0")
+       .style("border-radius",options.showSidebar? "0 50% 50% 0" : null)
+       .html(options.showSidebar? "&#9666;" : "&#9656;");
+  },
+      buttonArrow = function(div){
+    div.style("left", options.showButtons? (sliderWidth+80) + "px" : "20px")
+       .html(options.showButtons? "&#9666;" : "&#9656;")
+  }
+
+  panel.append("div")
+    .attr("class","showhideArrow")
+    .style("top","10px")
+    .call(buttonArrow)
+    .on("click",function(){
+      options.showButtons = !options.showButtons;
+      d3.select(this).call(buttonArrow);
+      plot.call(drawSVG);
+    })
+
+  panel.append("div")
+    .attr("class","showhideArrow")
+    .style("top","10px")
+    .attr("title",texts.showhidesidebar)
+    .call(sideArrow)
+    .on("click",function(){
+      options.showSidebar = !options.showSidebar;
+      d3.select(this).call(sideArrow);
+      displaySidebar();
+    })
+
   displaySidebar();
 
   if(options.helpOn)
@@ -508,8 +546,6 @@ function displaySidebar(){
   }
   dragbar.style("height",(8 + parseInt(sidebar.style("height"))) + "px");
   width = docSize.width - sidebarOffset - 20;
-  plot.select("canvas").remove();
-  plot.select("svg").remove();
   plot.style("width",width+"px");
   plot.call(drawSVG);
   applyDegreeFilter();
@@ -813,6 +849,9 @@ Query.prototype = {
 
 function drawSVG(sel){
 
+  sel.select("canvas").remove();
+  sel.select("svg").remove();
+
   var zoom = d3.zoom()
     .scaleExtent([0.1, 10])
     .on("zoom", zoomed);
@@ -932,7 +971,7 @@ function drawSVG(sel){
   if(!options.hasOwnProperty("linkDistance"))
       options.linkDistance = linkDistanceRange[1] * (options.distance/100);
 
-  if(options.controls.indexOf(0)!=-1){
+  if(options.showButtons){
     var buttons = svg.append("g")
         .attr("class", "buttons")
         .attr("transform", "translate(20,20)")
@@ -947,6 +986,9 @@ function drawSVG(sel){
   }
 
   drawNet();
+
+  if(options.scale && options.scale!=1)
+    zoom.scaleBy(svg, options.scale);
 
   function zoomed() {
     if(!shiftKey){
@@ -977,11 +1019,11 @@ function drawSVG(sel){
   function displaySlider(sliders, y, domain, txt, name){
     var scale = d3.scaleLinear()
         .domain(domain)
-        .range([0, 200])
+        .range([0, sliderWidth])
         .clamp(true);
 
     var brush = d3.brushX()
-        .extent([[-6,0], [206,12]])
+        .extent([[-6,0], [sliderWidth + 6,12]])
         .on("brush", brushed);
 
         sliders = sliders.append("g")
@@ -990,7 +1032,7 @@ function drawSVG(sel){
     var x = 0;
 
     sliders.append("text")
-        .attr("x", x + 210)
+        .attr("x", x + sliderWidth + 10)
         .attr("y", y + 3*options.cex)
         .text(txt);
 
@@ -1092,7 +1134,8 @@ function drawNet(){
     link.target.degree = +link.target.degree+1;
   })
 
-  options.imageItem = options.imageItems.indexOf(options.nodeShape)!=-1 ? options.nodeShape : false;
+  var imgidx = options.imageNames.indexOf(options.nodeShape);
+  options.imageItem = imgidx!=-1 ? options.imageItems[imgidx] : false;
 
   // compute colors
   var colorNodesScale = setColorScale(options.nodeColor=="degree" ? nodes : Graph.nodes,'node',"nodeColor"),
@@ -1468,27 +1511,15 @@ function drawNet(){
   }
 
   if(!heatmap && options.imageItem){
-    if(options.imageItems){
-      var dat2 = false;
-      if(options.imageNames){
-        dat = nodes.map(function(d){ return [d[options.imageNames],d[options.imageItem]]; })
-        dat.sort(function(a,b){
+    if(options.imageItems && options.imageNames){
+      dat = nodes.map(function(d){ return [d[options.imageNames[options.imageItems.indexOf(options.imageItem)]],d[options.imageItem]]; })
+      dat.sort(function(a,b){
           return sortAsc(a[0],b[0]);
-        })
-        dat2 = d3.map(dat, function(d){ return d[0]; }).keys()
-        dat = d3.map(dat, function(d){ return d[1]; }).keys()
-        if(dat2.length!=dat.length)
+      })
+      var dat2 = d3.map(dat, function(d){ return d[0]; }).keys()
+      dat = d3.map(dat, function(d){ return d[1]; }).keys()
+      if(dat2.length!=dat.length)
           dat2 = false;
-      }else{
-        dat = d3.map(nodes, function(d){ return d[options.imageItem]; }).keys();
-      }
-      if(!dat2){
-        dat.sort(function(a,b){
-          a = getImageName(a);
-          b = getImageName(b);
-          return sortAsc(a,b);
-        })
-      }
       displayLegend(gScale,options.imageItem,'image',dat2,dat);
     }
   }
@@ -1693,7 +1724,7 @@ function drawNet(){
         var coords = getLinkTextCoords(link),
             x = (coords[0]*scale)+translate[0],
             y = (coords[1]*scale)+translate[1],
-            t = formatter(link[options.linkText]),
+            t = String(formatter(link[options.linkText])),
             tAlign = "left";
         if(link.linkNum && link.linkNum%2==0)
           tAlign = "right";
@@ -2173,22 +2204,25 @@ function displayInfoPanel(d,i){
 }
 
 function loadSVGbuttons(){
-  if(options.controls.indexOf(0)==-1)
+  if(!options.showButtons)
     return;
 
   var buttons = d3.select(".plot svg g.buttons"),
       dat = [],
       datStopResume = {txt: texts.stopresume, callback: stopResumeNet},
-      datSidebar = {txt: texts.showhidesidebar, callback: function(){
-        options.showSidebar = !options.showSidebar;
-        displaySidebar();
+      datScale = {txt: texts.resetzoom, callback: function(){
+        transform = d3.zoomIdentity;
+        d3.select("div.plot svg").node().__zoom = transform;
+        d3.select("div.plot g.net").attr("transform", transform);
+        if(!heatmap)
+          simulation.restart();
       }, gap: 5},
       datDirectional = {txt: texts.directional, callback: function(){
         options.showArrows = !options.showArrows;
         if(heatmap)
           drawNet();
         else
-          simulation.restart(); 
+          simulation.restart();
       }},
       datLegend = {txt: texts.showhidelegend, callback: function(){
         options.showLegend = !options.showLegend;
@@ -2215,7 +2249,7 @@ function loadSVGbuttons(){
   else
     dat = [datStopResume];
 
-  dat.push(datSidebar);
+  dat.push(datScale);
   dat.push(datDirectional);
   dat.push(datLegend);
   if(!heatmap) dat.push(datAxes);
@@ -2391,7 +2425,7 @@ function clickHide(items, show) {
       .style("opacity", +show);
 }
 
-function displayLegend(scale, txt, color, shape, dat){
+function displayLegend(scale, key, color, shape, dat){
   var y = scale.node().getBBox().height;
   if(y!=0)
     y = y + 40*options.cex;
@@ -2401,7 +2435,9 @@ function displayLegend(scale, txt, color, shape, dat){
   if(dat.length > (height-y)/(20*options.cex) - 1.1)
     return 0;
 
-  var key = txt;
+  var txt = key;
+  if(color=="image" && shape)
+    txt = options.imageNames[options.imageItems.indexOf(key)];
 
   var legend = scale.append("g")
     .attr("class","legend")
@@ -2537,9 +2573,6 @@ function displayScale(domain, fill, title){
 
 function showTables() {
   var noShow = noShowFields.slice(options.showCoordinates ? 4 : 2);
-  options.imageItems.forEach(function(d){
-    noShow.push(d);
-  })
 
   var tableWrapper = function(dat, name, columns){
     var currentData;
@@ -2878,9 +2911,7 @@ function embedImages(callback){
         try{
             images64[imgSrc] = canvas.toDataURL();
         }catch(e){
-            options.nodeShape = null;
-            drawNet();
-            i = imgLinks.length;
+            console.log(e);
         }finally{
             if(i<imgLinks.length){
               loadImage(i);
@@ -2915,8 +2946,6 @@ window.onresize = function(){
       height = height - (38 + 12*options.cex);
   }
 
-  plot.select("canvas").remove();
-  plot.select("svg").remove();
   plot.style("width",width+"px");
   plot.style("height",height+"px");
   plot.call(drawSVG);
