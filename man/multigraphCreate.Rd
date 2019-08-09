@@ -9,11 +9,12 @@ The function creates a folder in your computer with an HTML document named index
 }
 
 \usage{
-multigraphCreate(..., parallel = FALSE, dir = "MultiGraph", show = TRUE)
+multigraphCreate(..., mode = c("default","parallel","frame"),
+                 dir = "MultiGraph", show = TRUE)
 }
 \arguments{
 \item{...}{coin graphs (netCoin, barCoin, timeCoin) objects or html "directories".}
-\item{parallel}{a logical value true to show all graphs simultaneously. Default = FALSE.}
+\item{mode}{a string specifying the displaying mode. The "default" displays graphs one by one, "parallel" splits screen and "frame" allows dinamic graphs in time.}
 \item{dir}{a "character" string representing the directory where the graph will be saved.}
 \item{show}{a logical value true if the graph is to be shown. Default = TRUE.}
 }

@@ -19,7 +19,7 @@ netCoin(nodes, links = NULL, tree = NULL, name = NULL, label = NULL,
         nodeBipolar = FALSE, linkBipolar = FALSE, defaultColor = "#1f77b4",
         repulsion = 25, distance = 10, scale = 1, scenarios = NULL,
         main = NULL, note = NULL, help = NULL, helpOn = FALSE, cex = 1,
-        background = NULL, layout = NULL, controls = c(1,2,3),
+        background = NULL, layout = NULL, controls = 1:5,
         mode = c("network","heatmap"),
         showCoordinates = FALSE, showArrows = FALSE, showLegend = TRUE,
         showAxes = FALSE, axesLabels = NULL, language = c("en","es","ca"),
@@ -64,7 +64,7 @@ netCoin(nodes, links = NULL, tree = NULL, name = NULL, label = NULL,
 \item{layout}{a matrix with two columns or an algorithm to elaborate the coordinates: davidson.harel
 drl("da"), circle("ci"), fruchterman.reingold("fr"), gem("ge"), grid("gr"), kamada.kawai("ka"), lgl("lg"), mds("md"), random("ra"), reingold.tilfo("re"), star("sta"), sugiyama("sug")}
 \item{cex}{number indicating the amount by which plotting text should be scaled relative to the default. Default = 1.}
-\item{controls}{a numeric vector indicating which controls will be shown. 1 = sidebar, 2 = selection buttons, 3 = tables.}
+\item{controls}{a numeric vector indicating which controls will be shown. 1 = sidebar, 2 = selection buttons, 3 = tables, 4 = sliders & buttons, 5 = export buttons.}
 \item{mode}{a character vector indicating the graph mode allowed: network, heatmap or both (both by default).}
 \item{showCoordinates}{a logical value true if the coordinates are to be shown in tables. Default = FALSE.}
 \item{showArrows}{a logical value true if the directional arrows are to be shown. Default = FALSE.}

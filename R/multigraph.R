@@ -39,15 +39,45 @@ polyGraph <- function(multi,dir){
   multiGraph(multi,paste0(dir,"/multiGraph"))
 }
 
+frameGraph <- function(multi,dir){
+  name <- unique(vapply(multi,function(x){ return(x$options$nodeName) },character(1)))
+  if(length(name)!=1){
+    warning("name: all graphs must have the same name")
+    multiGraph(multi,dir)
+  }else{
+    links <- lapply(multi,function(x){ return(x$links) })
+    names(links) <- names(multi)
+    for(frame in names(links)){
+      links[[frame]][["_frame_"]] <- frame
+    }
+    links <- do.call(rbind,links)
+    rownames(links) <- NULL
+
+    nodes <- lapply(multi,function(object){
+      return(object$nodes)
+    })
+    nodes <- do.call(rbind,nodes)
+    rownames(nodes) <- NULL
+    nodes <- aggregate(nodes,by=list(nodes[[name]]),function(x){ x[1] })[-1]
+
+    options <- multi[[1]]$options
+    net <- structure(list(links=links,nodes=nodes,options=options),class="netCoin")
+    netCoin(net,dir=dir)
+  }
+}
+
 #create html wrapper for multigraph
-multigraphCreate <- function(...,  parallel = FALSE, dir = "MultiGraph", show = TRUE){
+multigraphCreate <- function(...,  mode = c("default","parallel","frame"), dir = "MultiGraph", show = TRUE){
 multi <- list(...)
 if(is.null(names(multi)) || !all(!duplicated(names(multi)))){
-  warning("Graph names will be generated automatically.")
+  warning("Graph names will be generated automatically")
   names(multi) <- paste0("graph",seq_along(multi))
 }
-if(parallel){
+mode <- substr(mode[1],1,1)
+if(mode=="p"){
   polyGraph(multi,dir)
+}else if(mode=="f"){
+  frameGraph(multi,dir)
 }else{
   multiGraph(multi,dir)
 }

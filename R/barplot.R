@@ -18,29 +18,27 @@ barCreate <- function(bar, dir = "barCoin"){
 }
 
 barCoin<-function(data, variables = colnames(data), commonlabel = NULL,
-                  dichotomies = c("_all","_none"), valueDicho = 1,
-                  weight = NULL, subsample = FALSE, sort = NULL, decreasing = TRUE,
-                  nodes = NULL, name = NULL, select = NULL, scalebar = FALSE,
-                  note = NULL, label = NULL, text = NULL,
-                  expected = FALSE, confidence = FALSE, level = .95, significance = FALSE, 
-                  minimum = 1 , maximum = nrow(data), 
-                  percentages = FALSE,
-                  criteria = c("Z","hyp"), Bonferroni = FALSE,
-                  support = 1, minL = -Inf, maxL = 1, language = c("en","es","ca"), cex =1.0,
-                  dir = NULL)
+        dichotomies = c("_all","_none"), valueDicho = 1, weight = NULL,
+        subsample = FALSE, sort = NULL, decreasing = TRUE, nodes = NULL,
+        name = NULL, select = NULL, scalebar = FALSE, note = NULL, label = NULL,
+        text = NULL, color = NULL, defaultColor = "#1f77b4", expected = FALSE,
+        confidence = FALSE, level = .95, significance = FALSE, minimum = 1 ,
+        maximum = nrow(data), percentages = FALSE, criteria = c("Z","hyp"),
+        Bonferroni = FALSE, support = 1, minL = -Inf, maxL = 1,
+        language = c("en","es","ca"), cex = 1.0, dir = NULL)
 {
 
   name <- nameByLanguage(name = name, language =language, nodes = nodes)
   dicho<-function(input,variables,value) {
-  datum<-as.data.frame(ifelse(input[,variables]==value,1,0))
-  if (all(class(input)==c("tbl_df","tbl","data.frame"))) {
-    # L<-sapply(datum[,variables],attr,"label")
-    M<-sapply(sapply(datum,attr,"label"),function(X) ifelse(is.null(X),NA,X))
-    L<-ifelse(is.na(M),variables,M)
-    names(datum)<-L
+    datum<-as.data.frame(ifelse(input[,variables]==value,1,0))
+    if (all(class(input)==c("tbl_df","tbl","data.frame"))) {
+      # L<-sapply(datum[,variables],attr,"label")
+      M<-sapply(sapply(datum,attr,"label"),function(X) ifelse(is.null(X),NA,X))
+      L<-ifelse(is.na(M),variables,M)
+      names(datum)<-L
+    }
+    return(datum)
   }
-  return(datum)
-}
 
 # model of bar
   if (confidence) procedures <- c("Frequencies","Expected","Confidence")
@@ -117,7 +115,7 @@ barCoin<-function(data, variables = colnames(data), commonlabel = NULL,
 # nodes data.frame elaboration
     O<-asNodes(C, !percentages, percentages, language = language) # Attention to !percentages
     if(name!="name") names(O)[1]<-name
-    names(O)[2]<-"incidences"
+    names(O)[2] <- "incidences"
     if(!is.null(nodes)) {
       O<-merge(O,nodes[,setdiff(names(nodes),frecuencyList),drop=FALSE],by.x=name,by.y=name,all.x=TRUE)
     }else {
@@ -128,12 +126,13 @@ barCoin<-function(data, variables = colnames(data), commonlabel = NULL,
       }
     }
 
-# making edgeList     
+# making edgeList
+    level <- checkLevel(level)
     E<-edgeList(C, procedures, criteria, level, Bonferroni, minL, maxL, support, 
                 directed=FALSE, diagonal= FALSE, sort= NULL)
 
 # definition of options
-    options <-list(name = name, incidences = "incidences", coincidences = "coincidences", level = level)
+    options <-list(name = name, incidences = "incidences", coincidences = "coincidences", level = level, defaultColor = defaultColor)
     if (expected || confidence) options[["expected"]] <- "expected"
     if (confidence){
       if(significance){
@@ -157,6 +156,8 @@ barCoin<-function(data, variables = colnames(data), commonlabel = NULL,
       options[["label"]] <- label
     if(!is.null(text))
       options[["text"]] <- text
+    if(!is.null(color))
+      options[["color"]] <- color
     if(!is.null(select)){
       if(select %in% O[,name])
         options[["select"]] <- select

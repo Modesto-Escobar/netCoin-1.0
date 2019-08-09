@@ -10,7 +10,7 @@ netCoin<-function (nodes, links = NULL, tree = NULL, name = NULL,
                       nodeFilter = NULL, linkFilter = NULL, degreeFilter = NULL, nodeBipolar = FALSE, linkBipolar = FALSE,
                       defaultColor = "#1f77b4", repulsion = 25, distance = 10, scale = 1, scenarios = NULL,
                       main = NULL, note = NULL, help = NULL, helpOn = FALSE,
-                      cex = 1, background = NULL, layout = NULL, controls = c(1,2,3), mode = c("network","heatmap"),
+                      cex = 1, background = NULL, layout = NULL, controls = 1:5, mode = c("network","heatmap"),
                       showCoordinates = FALSE, showArrows = FALSE, showLegend = TRUE, showAxes = FALSE, axesLabels = NULL,
                       language = c("en", "es", "ca"), image = NULL, imageNames = NULL, dir = NULL)
 {
@@ -29,14 +29,14 @@ netCoin<-function (nodes, links = NULL, tree = NULL, name = NULL,
     links <- links[links$Source%in%nodes[[name]]&links$Target%in%nodes[[name]],]
     if(nrow(links)==0){
       links <- NULL
-      warning("links: no row (source and target) matches the name column of the nodes")
+      warning("links: no row (Source and Target) matches the name column of the nodes")
     }
   }
   if(!is.null(tree)){
     tree <- tree[tree$Source%in%nodes[[name]]&tree$Target%in%nodes[[name]],]
     if(nrow(tree)==0){
       tree <- NULL
-      warning("tree: no row (source and target) matches the name column of the nodes")
+      warning("tree: no row (Source and Target) matches the name column of the nodes")
     }
   }
   
@@ -225,7 +225,7 @@ allNet<-function(incidences, weight = NULL, subsample = FALSE,
       arguments$nodes<-O
     }else{
       nodesOrder<-as.character(arguments$nodes[[arguments$name]])
-      arguments$nodes<-merge(O,arguments$nodes[,setdiff(names(arguments$nodes),frecuencyList),drop=FALSE],by.x=arguments$name,by.y=arguments$name,all.y=TRUE, sort=FALSE)
+      arguments$nodes<-merge(O,arguments$nodes[,setdiff(names(arguments$nodes),frequencyList),drop=FALSE],by.x=arguments$name,by.y=arguments$name,all.y=TRUE, sort=FALSE)
       row.names(arguments$nodes)<-arguments$nodes[[arguments$name]]
       arguments$nodes<-arguments$nodes[nodesOrder,]
     }
@@ -337,10 +337,10 @@ surCoin<-function(data,variables=names(data), commonlabel=NULL,
     O<-asNodes(C,frequency,percentages,arguments$language)
     names(O)[1]<-name
     if(!is.null(nodes)) {
-      O<-merge(O,nodes[,setdiff(names(nodes),frecuencyList),drop=FALSE],by.x=name,by.y=name,all.x=TRUE)
+      O<-merge(O,nodes[,setdiff(names(nodes),frequencyList),drop=FALSE],by.x=name,by.y=name,all.x=TRUE)
     }else {
       if (!is.null(commonlabel)) { # Preserve the prename (variable) of a node if specified in commonlabel
-        arguments$label<-labelByLanguage(arguments$language)
+        arguments$label<-getByLanguage(labelList,arguments$language)
         provlabels<-as.character(O[[name]])
         O[[arguments$label]]<-ifelse(substr(O[[name]],1,regexpr('\\:',O[[name]])-1) %in% commonlabel,provlabels,substr(O[[name]],regexpr('\\:',O[[name]])+1,1000000L))
       }
@@ -588,6 +588,7 @@ valuesof<-function(x,length=0,min=0,sort=TRUE,sep="") {
 # Links. See below funcs="shape"
 edgeList <- function(data, procedures="Haberman", criteria="Z", level = .95, Bonferroni=FALSE, min=-Inf, max=Inf, support=-Inf, 
                      directed=FALSE, diagonal=FALSE, sort=NULL, decreasing=TRUE) {
+  level <- checkLevel(level)
   if (tolower(substr(criteria,1,2))%in%c("z","hy") & substr(tolower(procedures[1]),1,2)!="sh") {
     if (max==Inf) max<-.50
     if (Bonferroni ) max<-max/choose(nrow(data),2) # Changes of Z max criterium (Bonferroni)
@@ -690,10 +691,19 @@ i.method<-function(method) {
   return(similarities)
 }
 
+checkLevel <- function(level){
+  if (level >=1 & level < 100)
+    level <- level/100
+  if (level <=0 | level >=100) {
+    level <- .95
+    warning("Not valid level")
+  }
+  return(level)
+}
+
 # Similatities
 sim<-function (input,procedures="Jaccard", level=.95, distance=FALSE, minimum=1, maximum=Inf, sort=FALSE, decreasing=FALSE) {
-  if (level >=1 & level < 100) level<- level/100
-  if (level <=0 & level >=100) warning("Not valid level")
+  level <- checkLevel(level)
   method<-c.method(procedures)
   if (is.matrix(input) & class(input)!="coin") {
     if (is.null(colnames(input))) dimnames(input)<-list(NULL,paste("X",1:ncol(input),sep=""))
@@ -963,7 +973,7 @@ plot.timeCoin <- function(x, dir = NULL, ...){
 }
 
 plotCoin <- function(x,dir,callback){
-     if(!is.null(x$dir) && is.null(dir)){
+     if(is.null(dir) && !is.null(x$dir) && file.exists(x$dir)){
        dir <- x$dir
      }else{
        if(is.null(dir))
@@ -996,8 +1006,8 @@ summary.timeCoin <- function(object, ...){
 
 summaryNet <- function(x){
   cat(dim(x$nodes)[1], "nodes and", dim(x$links)[1], "links.\n")
-  if(any(frecuencyList %in% names(x$nodes))) {
-    for(i in frecuencyList)
+  if(any(frequencyList %in% names(x$nodes))) {
+    for(i in frequencyList)
       if(i %in% names(x$nodes))
         freq <- i
     cat(freq," distribution of nodes:","\n", sep="")
@@ -1030,15 +1040,10 @@ asNodes<-function(C, frequency = TRUE, percentages = FALSE, language = c("en","e
     else if (!frequency & percentages) nodes<-data.frame(name=as.character(colnames(C)),"%"=diag(C)/attr(C,"n")*100,check.names=FALSE)
     else if (percentages & frequency)nodes<-data.frame(name=as.character(colnames(C)),frequency=diag(C), "%"=diag(C)/attr(C,"n")*100,check.names=FALSE)
     else nodes<-data.frame(name=as.character(colnames(C)),check.names=FALSE)
-    language <- language[1]
-    if (language=="es") {
-      colnames(nodes)[colnames(nodes)=="frequency"]<-frecuencyList['es']
-      colnames(nodes)[colnames(nodes)=="name"]<-nameList['es']
-    }
-    if (language=="ca"){
-      colnames(nodes)[colnames(nodes)=="frequency"]<-frecuencyList['ca']
-      colnames(nodes)[colnames(nodes)=="name"]<-nameList['ca']
-    }       
+    if(language[1]!="en"){
+      colnames(nodes)[colnames(nodes)=="frequency"] <- getByLanguage(frequencyList,language)
+      colnames(nodes)[colnames(nodes)=="name"] <- getByLanguage(nameList,language)
+    }     
   }
   else if (min(c("Source", "Target") %in% names(C))) nodes<-data.frame(name=sort(union(C$Source,C$Target)))
   else warning("Is neither a coin object or an edge data frame")
@@ -1357,19 +1362,15 @@ languages <- c("en","es","ca")
 nameList <- c('name','nombre','nom')
 names(nameList) <- languages
 
-frecuencyList <- c("frequency","frecuencia","freq\uFC\uE8ncia","%")
-names(frecuencyList) <- languages
+frequencyList <- c("frequency","frecuencia","freq\uFC\uE8ncia","%")
+names(frequencyList) <- languages
 
 labelList <- c('label','etiqueta','etiqueta')
 names(labelList) <- languages
 
 nameByLanguage <- function(name,language,nodes){
-  varlist <- nameList
   if(is.null(name)){
-    if(!is.null(language) && language[1] %in% names(varlist))
-      name <- varlist[language[1]]
-    else
-      name <- "name"
+    name <- getByLanguage(nameList,language)
   }
   if(!is.null(nodes)){
     if(!(name %in% colnames(nodes)))
@@ -1380,17 +1381,7 @@ nameByLanguage <- function(name,language,nodes){
   return(name)
 }
 
-frequencyByLanguage <- function(language){
-  varlist <- frecuencyList
-  if(!is.null(language) && language[1] %in% names(varlist))
-    language <- language[1]
-  else
-    language <- "en"
-  return(varlist[language])
-}
-
-labelByLanguage <- function(language){
-  varlist <- labelList
+getByLanguage <- function(varlist,language){
   if(!is.null(language) && language[1] %in% names(varlist))
     language <- language[1]
   else

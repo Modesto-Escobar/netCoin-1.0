@@ -4,9 +4,7 @@ function barplot(json){
       nodes = json.nodes,
       links = json.links,
       filter = false,
-      sigFilter = 0,
-      color = categoryColors[0],
-      colorScaleAttr = false;
+      sigFilter = 0;
 
   var body = d3.select("body");
 
@@ -14,6 +12,9 @@ function barplot(json){
     body.style("font-size", 10*options.cex + "px")
   else
     options.cex = 1;
+
+  if(!options.defaultColor)
+    options.defaultColor = categoryColors[0];
 
   var wordSVG = d3.select("body").append("svg"),
       words = nodes.map(function(node){ return node[options.label?options.label:options.name]; }),
@@ -57,7 +58,7 @@ function barplot(json){
     main = "concoincidences";
     textLegend = ["coincidences","expected"];
     if(options.confidence)
-      textLegend.push("confidence");
+      textLegend.push(Array.isArray(options.confidence)?"confidenceinterval":"expectedconfidence");
   }
 
   var maxIncidence = d3.max(nodes, function(d){ return d[options.incidences]; }),
@@ -88,17 +89,19 @@ function barplot(json){
     multiGraph.graphSelect(topBar);
   }
 
-  // subjects
+  // events
   topBar.append("h3").text(texts.subjectselect + ":")
 
   var eventSelect = topBar.append("select")
     .on("change",function(){
       subject = this.value;
-      if(subject=="-total-"){
-        topBar.select(".topbar>.slider").remove();
+      if(subject=="-default-"){
+        topBar.selectAll(".topbar>.slider, .topbar>button.sig").remove();
         subject = null;
-      }else
+      }else{
+        sigButton();
         sigSlider();
+      }
       displayGraph();
     })
   var nodeslist = nodes.map(function(d){
@@ -106,7 +109,7 @@ function barplot(json){
         }).sort(function(a,b){
           return a[1] < b[1] ? -1 : a[1] > b[1] ? 1 : a[1] >= b[1] ? 0 : NaN;
         });
-  nodeslist.unshift(["-total-","-"+texts.total+"-"]);
+  nodeslist.unshift(["-default-","-"+texts.total+"-"]);
   eventSelect.selectAll("option")
         .data(nodeslist)
       .enter().append("option")
@@ -117,25 +120,14 @@ function barplot(json){
   // node order
   topOrder(topBar,nodes,displayGraph);
 
-  // node filter
-  var topFilterInst = topFilter()
-    .data(nodes)
-    .attr(options.name)
-    .displayGraph(displayGraph);
-
-  topBar.call(topFilterInst);
-  topBar.append("span").style("padding","0 10px");
-
-  sigButton();
-
   // colors
   topBar.append("h3").text(texts.Color + ":")
 
   var colorSelect = topBar.append("select")
     .on("change",function(){
-      colorScaleAttr = this.value;
-      if(colorScaleAttr=="-"+texts.none+"-")
-        colorScaleAttr = false;
+      options.color = this.value;
+      if(options.color=="-"+texts.none+"-")
+        options.color = false;
       displayGraph();
     })
   var opt = d3.keys(nodes[0]).sort();
@@ -145,6 +137,7 @@ function barplot(json){
       .enter().append("option")
         .property("value",String)
         .text(String)
+        .property("selected",function(d){ return d==options.color?true:null; })
 
   topBar.append("button")
       .text(texts.Color)
@@ -160,11 +153,24 @@ function barplot(json){
             .style("background-color",String)
             .text(String)
             .on("click",function(){
-              color = this.textContent;
+              options.defaultColor = this.textContent;
               displayGraph();
               d3.select(panel.node().parentNode).remove();
             })
       })
+  topBar.append("span").style("padding","0 10px");
+
+  // node filter
+  var topFilterInst = topFilter()
+    .data(nodes)
+    .attr(options.name)
+    .displayGraph(displayGraph);
+
+  topBar.call(topFilterInst);
+  topBar.append("span").style("padding","0 10px");
+
+  if(subject != null)
+    sigButton();
 
   // significance filter
   if(subject != null)
@@ -187,16 +193,18 @@ function barplot(json){
 
   function sigButton(){
     if(options.expected && !options.significance){
-      topBar.append("button")
-        .text(options.confidence ? "Sig." : ">Exp.")
-        .on("click",function(){
-          if(subject){
-            sigFilter = !sigFilter;
-            d3.select(this).style("background-color",sigFilter?"#ccc":null)
-            displayGraph();
-          }
-        })
-      topBar.append("span").style("padding","0 10px");
+      if(topBar.select(".topbar>button.sig").empty()){
+        topBar.append("button")
+         .attr("class","sig")
+           .text(options.confidence ? "Sig." : ">Exp.")
+           .on("click",function(){
+            if(subject){
+              sigFilter = !sigFilter;
+              d3.select(this).style("background-color",sigFilter?"#ccc":null)
+              displayGraph();
+            }
+          })
+      }
     }
   }
 
@@ -266,7 +274,7 @@ function barplot(json){
               return;
           }else if(sigFilter && options.expected){
             if(options.confidence){
-              if(options.confidence.length==2 && (d[options.expected] >= d[options.confidence[0]] && d[options.expected] <= d[options.confidence[1]]))
+              if(Array.isArray(options.confidence) && (d[options.expected] >= d[options.confidence[0]] && d[options.expected] <= d[options.confidence[1]]))
                 return;
             }else{
               if(d[options.coincidences] <= d[options.expected])
@@ -365,22 +373,22 @@ function barplot(json){
       return [color1.toString(),color2.toString(),color3.toString()];
     }
 
-    var colors = getColors(color);
+    var colors = getColors(options.defaultColor);
 
-    if(colorScaleAttr){
-      var type = dataType(nodes,colorScaleAttr);
+    if(options.color){
+      var type = dataType(nodes,options.color);
       if(type=="number"){
           var colorScaleLinear = d3.scaleLinear()
             .range([0.2,1])
             .domain(d3.extent(nodes,function(node){
-              return node[colorScaleAttr];
+              return node[options.color];
             }))
       }
       if(type=="string"){
           var colorScaleOrdinal = d3.scaleOrdinal()
             .range(categoryColors)
             .domain(d3.map(nodes,function(node){
-              return node[colorScaleAttr];
+              return node[options.color];
             }).keys())
       }
     }
@@ -423,7 +431,7 @@ function barplot(json){
     legend.selectAll("text")
           .data(subject?textLegend:["incidences"])
         .enter().append("text")
-          .text(function(d){ return texts[d]+(d=="confidence" && options.level?" "+(options.level*100)+"%":""); })
+          .text(function(d){ return texts[d]+((d=="expectedconfidence" || d=="confidenceinterval") && options.level?" "+(options.level*100)+"%":""); })
           .attr("x",function(d,i){ return i*110*options.cex + 20; })
 
     legend.selectAll("path")
@@ -436,7 +444,8 @@ function barplot(json){
              case "incidences":
              case "expected":
                return "b";
-             case "confidence":
+             case "expectedconfidence":
+             case "confidenceinterval":
                return "c";
             }
           })
@@ -453,7 +462,7 @@ function barplot(json){
               }
               if(d=="expected")
                 return "M"+(x+((width-height)/2))+","+y+"h"+height+"v"+height+"h"+(-height)+"Z";
-              if(d=="confidence")
+              if(d=="confidenceinterval")
                 return "M"+x+","+y+"v"+height+"v"+(-height/2)+"h"+width+"v"+(height/2)+"v"+(-height);
             }else
               return "M"+x+","+y+"h"+width+"v"+height+"h"+(-width)+"Z";
@@ -482,8 +491,8 @@ function barplot(json){
         display_bar(gBar,"a");
       }
 
-     if(colorScaleAttr){
-        var val = nodes.filter(function(node){ return d.object==node[options.name]; })[0][colorScaleAttr];
+     if(options.color){
+        var val = nodes.filter(function(node){ return d.object==node[options.name]; })[0][options.color];
         if(colorScaleLinear){
           gBar.style("opacity",function(d){
             return colorScaleLinear(val);
@@ -629,21 +638,29 @@ function topOrder(topBar,data,displayGraph){
   var selOrder = topBar.append("select")
     .on("change",function(){
       options.order = this.value;
-      if(options.order=="-"+texts.coincidences+"-")
+      if(options.order=="-default-")
         options.order = false;
       displayGraph();
     })
 
-  var opt = d3.keys(data[0]).sort();
-  opt.unshift("-"+texts.coincidences+"-");
+  var opt = d3.keys(data[0]).sort(function(a,b){
+    if(a=="incidences")
+      return -1;
+    if(b=="incidences")
+      return 1;
+    return a < b ? -1 : a > b ? 1 : a >= b ? 0 : NaN;
+  }).map(function(d){ return [d,d]; });
+  if(opt[0][0]=="incidences")
+    opt[0][1] = texts.incidences;
+  opt.unshift(["-default-","-"+texts.coincidences+"-"]);
   selOrder.selectAll("option")
         .data(opt)
       .enter().append("option")
         .property("selected",function(d){
-          return d==options.order;
+          return d[0]==options.order;
         })
-        .property("value",String)
-        .text(String)
+        .property("value",function(d){ return d[0]; })
+        .text(function(d){ return d[1]; })
 
   topBar.append("button")
     .style("background-color",options.rev?"#ccc":null)
