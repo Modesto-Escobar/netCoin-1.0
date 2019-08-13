@@ -193,18 +193,20 @@ function barplot(json){
 
   function sigButton(){
     if(options.expected && !options.significance){
-      if(topBar.select(".topbar>button.sig").empty()){
-        topBar.append("button")
+      var button = topBar.select(".topbar>button.sig")
+      if(button.empty()){
+        button = topBar.append("button")
          .attr("class","sig")
-           .text(options.confidence ? "Sig." : ">Exp.")
-           .on("click",function(){
+         .text(options.confidence ? "Sig." : ">Exp.")
+         .on("click",function(){
             if(subject){
               sigFilter = !sigFilter;
               d3.select(this).style("background-color",sigFilter?"#ccc":null)
               displayGraph();
             }
-          })
+         })
       }
+      button.style("background-color",sigFilter?"#ccc":null);
     }
   }
 
@@ -403,6 +405,7 @@ function barplot(json){
 
     svg.on("dblclick",function(){
       sigFilter = 0;
+      sigButton();
       sigSlider();
       topFilterInst.removeFilter();
     })
@@ -521,6 +524,7 @@ function barplot(json){
         .call(yAxis)
       .selectAll(".tick > text").on("dblclick",function(d){
         subject = d;
+        sigButton();
         sigSlider();
         displayGraph();
         eventSelect.node().selectedIndex = nodeslist.map(function(d){ return d[0]; }).indexOf(subject);

@@ -117,7 +117,7 @@ barCoin<-function(data, variables = colnames(data), commonlabel = NULL,
     if(name!="name") names(O)[1]<-name
     names(O)[2] <- "incidences"
     if(!is.null(nodes)) {
-      O<-merge(O,nodes[,setdiff(names(nodes),frecuencyList),drop=FALSE],by.x=name,by.y=name,all.x=TRUE)
+      O<-merge(O,nodes[,setdiff(names(nodes),frequencyList),drop=FALSE],by.x=name,by.y=name,all.x=TRUE)
     }else {
       if (!is.null(commonlabel)) { # Preserve the prename (variable) of a node if specified in commonlabel
         label<-labelByLanguage(language)

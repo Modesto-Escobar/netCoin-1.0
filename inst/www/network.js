@@ -102,6 +102,7 @@ function network(Graph){
       nodeLabelSizeRange = [8,20], // node label size range
       linkWeightRange = [200,40], // link weight range (link distance)
       linkWidthRange = [1,5], // link width range
+      zoomRange = [0.1, 10], // zoom range
       axisExtension = 50, // pixels to increase the axes size
       sliderWidth = 200, // width of the sliders
       infoPanelLeft = docSize.width * (2/3), // information panel left position
@@ -160,6 +161,9 @@ function network(Graph){
     body.style("font-size", 10*options.cex + "px")
   else
     options.cex = 1;
+
+  if(!options.hasOwnProperty("zoom"))
+    options.zoom = 1;
 
   if(options.imageNames && !Array.isArray(options.imageNames))
     options.imageNames = [options.imageNames];
@@ -376,7 +380,7 @@ function displayBottomPanel(){
     tables.select("div.switchNodeLink > div").style("background","#f5f5f5")
   }
 
-  if(options.showExport){
+  if(options.showExport!==false){
     if(options.help){
       iconButton(tables,"help",infoIcon_b64,"info",function(){
         var win = displayWindow();
@@ -966,14 +970,14 @@ function drawSVG(sel){
   sel.select("svg").remove();
 
   var zoom = d3.zoom()
-    .scaleExtent([0.1, 10])
+    .scaleExtent(zoomRange)
     .on("zoom", zoomed);
 
   adaptLayout();
 
   simulation
-      .force("x", d3.forceX(0).strength(0.1))
-      .force("y", d3.forceY(0).strength(0.1))
+      .force("x", d3.forceX().strength(0.1))
+      .force("y", d3.forceY().strength(0.1))
 
   body
     .on("keydown", keyflip)
@@ -1028,8 +1032,8 @@ function drawSVG(sel){
   defs.append("clipPath")
     .attr("id","heatmapClip")
     .append("rect")
-      .attr("x",-((height*2)-width)/2)
-      .attr("y",0)
+      .attr("x",-height)
+      .attr("y",-height/2)
       .attr("width",height*2)
       .attr("height",height)
 
@@ -1050,10 +1054,10 @@ function drawSVG(sel){
           });
           var extent = d3.event.selection;
           if(extent){
-            extent[0][0] = 1/transform.k * (extent[0][0] - transform.x);
-            extent[0][1] = 1/transform.k * (extent[0][1] - transform.y);
-            extent[1][0] = 1/transform.k * (extent[1][0] - transform.x);
-            extent[1][1] = 1/transform.k * (extent[1][1] - transform.y);
+            extent[0][0] = transform.invertX(extent[0][0]);
+            extent[0][1] = transform.invertY(extent[0][1]);
+            extent[1][0] = transform.invertX(extent[1][0]);
+            extent[1][1] = transform.invertY(extent[1][1]);
             Graph.nodes.forEach(function(node) {
               node.selected = node.selected ^ (extent[0][0] <= node.x && node.x < extent[1][0] && extent[0][1] <= node.y && node.y < extent[1][1]);
             });
@@ -1083,6 +1087,8 @@ function drawSVG(sel){
       options.charge = chargeRange[1] * (options.repulsion/100);
   if(!options.hasOwnProperty("linkDistance"))
       options.linkDistance = linkDistanceRange[1] * (options.distance/100);
+  if(!options.hasOwnProperty("zoomScale"))
+      options.zoomScale = options.zoom;
 
   if(options.showButtons){
     var buttons = svg.append("g")
@@ -1092,16 +1098,38 @@ function drawSVG(sel){
     var sliders = buttons.append("g")
         .attr("class","sliders")
         .attr("transform",!options.showSidebar && !options.main && typeof multiGraph != 'undefined' && !d3.select(".sidebar").empty() ? "translate("+(parseInt(d3.select(".sidebar").style("width"))+15)+",0)":null)
-        .style("opacity",options.stopped?0:null);
 
-    displaySlider(sliders, 5*options.cex, chargeRange, texts.repulsion, 'charge');
-    displaySlider(sliders, 20*options.cex, linkDistanceRange, texts.distance, 'linkDistance');
+    sliders.call(displaySlider()
+      .y(5*options.cex)
+      .domain(chargeRange)
+      .text(texts.repulsion)
+      .prop('charge')
+      .callback(update_forces));
+    sliders.call(displaySlider()
+      .y(20*options.cex)
+      .domain(linkDistanceRange)
+      .text(texts.distance)
+      .prop('linkDistance')
+      .callback(update_forces));
+
+    var zoomSlider = displaySlider()
+      .y(35*options.cex)
+      .domain(zoomRange)
+      .text("Zoom")
+      .prop('zoomScale')
+      .callback(function(){
+          transform.k = options.zoomScale;
+          net.attr("transform", transform);
+          if(!heatmap)
+            simulation.restart();
+      });
+    sliders.call(zoomSlider);
+
+    loadSVGbuttons();
   }
 
-  if(!heatmap)
-    zoom.translateBy(svg,width/2,height/2);
-  if(options.scale && options.scale!=1)
-    zoom.scaleBy(svg, options.scale);
+  resetZoom();
+  net.attr("transform", transform);
 
   if(options.frames){
       clearInterval(frameInterval);
@@ -1125,9 +1153,8 @@ function drawSVG(sel){
   function zoomed() {
     if(!shiftKey){
       transform = d3.event.transform;
-      net.attr("transform", transform);
-      if(!heatmap)
-        simulation.restart();
+      options.zoomScale = transform.k;
+      zoomSlider.moveHandler();
     }
   }
 
@@ -1148,27 +1175,124 @@ function drawSVG(sel){
       brushg.style("display","none");
   }
 
-  function displaySlider(sliders, y, domain, txt, name){
-    var scale = d3.scaleLinear()
+  function loadSVGbuttons(){
+  var dat = [],
+      datStopResume = {txt: texts.stopresume, callback: stopResumeNet},
+      datScale = {txt: texts.resetzoom, callback: function(){
+        resetZoom();
+        zoomSlider.moveHandler();
+      }, gap: 5},
+      datDirectional = {txt: texts.directional, callback: function(){
+        options.showArrows = !options.showArrows;
+        if(heatmap)
+          drawNet();
+        else
+          simulation.restart();
+      }},
+      datLegend = {txt: texts.showhidelegend, callback: function(){
+        options.showLegend = !options.showLegend;
+        clickHide(d3.selectAll(".scale"), options.showLegend);
+      }},
+      datAxes = {txt: texts.showhideaxes, callback: function(){
+        options.showAxes = !options.showAxes;
+        clickHide(d3.selectAll(".net .axis"), options.showAxes);
+        clickHide(d3.selectAll(".net .axisLabel"), options.showAxes);
+      }},
+      datMode = {txt: texts.netheatmap, callback: function(){
+        heatmap = !heatmap;
+        displaySidebar();
+      }, gap: 5},
+      datReset = {txt: texts.reset, callback: function(){ location.reload(); }},
+      datPyramid = {txt : texts.trianglesquare, callback: function(){
+        heatmapTriangle = !heatmapTriangle;
+        drawNet();
+      }};
+
+  if(heatmap)
+    dat = [datPyramid];
+  else
+    dat = [datStopResume];
+
+  dat.push(datScale);
+  dat.push(datDirectional);
+  dat.push(datLegend);
+  if(!heatmap) dat.push(datAxes);
+
+  if(Array.isArray(options.mode))
+    dat.push(datMode);
+  else
+    datReset.gap = 5;
+
+  dat.push(datReset);
+  
+  var gButton = buttons.selectAll(".button")
+        .data(dat, function(d){ return d.txt; })
+
+  gButton.exit().remove();
+
+  var count = 60;
+
+  gButton.enter().append("g")
+    .attr("class","button")
+    .each(function(d,i){
+
+  d3.select(this).append("rect")
+    .attr("x",0)
+    .attr("y",5*(options.cex-1))
+    .attr("rx",2)
+    .attr("ry",2)
+    .attr("width",30)
+    .attr("height",10)
+    .on("click",function(){
+      d.callback();
+    });
+
+  d3.select(this).append("text")
+      .attr("x",35)
+    .attr("y",9*options.cex)
+    .text(d.txt);
+
+    })
+  .merge(gButton)
+    .attr("transform",function(d){
+      if(d.gap)
+        count = count + d.gap;
+      var val = "translate(0,"+count+")";
+      count = count + 15*options.cex;
+      return val;
+    })
+
+  }
+
+  function displaySlider(){
+    var scale,
+        brush,
+        slider,
+        y = 0,
+        domain = [1,0],
+        text = "",
+        prop = "",
+        callback = null;
+
+    function displaySlider(sliders){
+      scale = d3.scaleLinear()
+        .clamp(true)
         .domain(domain)
         .range([0, sliderWidth])
-        .clamp(true);
 
-    var brush = d3.brushX()
-        .extent([[-6,0], [sliderWidth + 6,12]])
-        .on("brush", brushed);
+      brush = d3.brushX().extent([[-6,0], [sliderWidth + 6,12]]);
 
-        sliders = sliders.append("g")
-            .attr("class","slider "+name)
+      sliders = sliders.append("g")
+            .attr("class","slider "+prop)
 
-    var x = 0;
+      var x = 0;
 
-    sliders.append("text")
+      sliders.append("text")
         .attr("x", x + sliderWidth + 10)
         .attr("y", y + 3*options.cex)
-        .text(txt);
+        .text(text);
 
-    var slider = sliders.append("g")
+      slider = sliders.append("g")
         .attr("transform", "translate("+ x +","+ y +")")
         .attr("class", "x axis brushSlider")
         .call(d3.axisBottom(scale)
@@ -1179,12 +1303,11 @@ function drawSVG(sel){
           .attr("transform", "translate(0,-5)")
           .call(brush);
 
-    slider
-        .call(brush.move,[scale(options[name])-6,scale(options[name])+6]);
+      displaySlider.moveHandler();
 
-    slider.selectAll('.handle').remove();
-    slider.selectAll('.overlay').remove();
-    slider.selectAll('rect.selection')
+      slider.selectAll('.handle').remove();
+      slider.selectAll('.overlay').remove();
+      slider.selectAll('rect.selection')
       .attr("fill",null)
       .attr("fill-opacity",null)
       .attr("stroke",null)
@@ -1192,12 +1315,50 @@ function drawSVG(sel){
       .attr("rx",6)
       .attr("ry",6)
 
+      brush.on("brush", brushed);
+    }
+
     function brushed() {
       var value = d3.mean(d3.event.selection.map(scale.invert, scale));
-
-      options[name] = value;
-      update_forces();
+      options[prop] = value;
+      callback();
     }
+
+    displaySlider.moveHandler = function(){
+      slider.call(brush.move,[scale(options[prop])-6,scale(options[prop])+6]);
+    }
+
+    displaySlider.y = function(x) {
+      if (!arguments.length) return y;
+      y = x;
+      return displaySlider;
+    };
+
+    displaySlider.domain = function(x) {
+      if (!arguments.length) return domain;
+      domain = x;
+      return displaySlider;
+    };
+
+    displaySlider.text = function(x) {
+      if (!arguments.length) return text;
+      text = x;
+      return displaySlider;
+    };
+
+    displaySlider.prop = function(x) {
+      if (!arguments.length) return prop;
+      prop = x;
+      return displaySlider;
+    };
+
+    displaySlider.callback = function(x) {
+      if (!arguments.length) return callback;
+      callback = x;
+      return displaySlider;
+    };
+
+    return displaySlider;
   }
 }
 
@@ -1214,11 +1375,8 @@ function update_forces(){
 }
 
 function drawNet(){
-  loadSVGbuttons();
-
-  d3.select(".sliders").transition()
-    .duration(500)
-        .style("opacity",heatmap||options.stopped?0:1);
+  d3.selectAll(".slider.charge, .slider.linkDistance")
+    .style("opacity",heatmap||options.stopped?0:1);
   
   var svg = d3.select(".plot svg g.net");
 
@@ -1325,15 +1483,13 @@ function drawNet(){
 
     var size = Math.min(width, height),
         side = x.range()[1],
-        k = (14/3 + (1/15)*n)/10,
+        k = 14/30 + n/150,
         scale = size * (k < 0.8 ? k : 0.8) / side,
-        scaledSide = side*scale,
-        mtop = (height - scaledSide),
-        mleft = (width - scaledSide)/2;
+        scaledSide = side*scale;
 
     svg.attr("transform", heatmapTriangle ?
-      "translate(" + (width - (Math.sqrt(scaledSide*scaledSide*2))) / 2 + "," + height + ")scale(" + scale + ")rotate(-45)" :
-      "translate(" + mleft + "," + mtop + ")scale(" + scale + ")");
+      "translate(" + -(width - (Math.sqrt(scaledSide*scaledSide*2))) / 4 + "," + height/2 + ")scale(" + scale + ")rotate(-45)" :
+      "translate(" + (-scaledSide/2) + "," + (height/2 - scaledSide) + ")scale(" + scale + ")");
 
     nodes.forEach(function(node, i) {
       node.index = i;
@@ -2191,22 +2347,15 @@ function forceEnd(){
     var nodes = Graph.nodes.filter(function(d){ return !d.noShow; }),
         extX = d3.extent(nodes, function(d){ return d.x; }),
         extY = d3.extent(nodes, function(d){ return d.y; });
-    if(width - extX[1] < extX[0])
-      extX[0] = width - extX[1];
-    else
-      extX[1] = width - extX[0];
-    if(height - extY[1] < extY[0])
-      extY[0] = height - extY[1];
-    else
-      extY[1] = height - extY[0];
+
     var size = Math.max((extX[1]-extX[0]),(extY[1]-extY[0]));
     size = size + axisExtension;
 
     d3.selectAll(".net .axis")
-        .attr("x1",function(d){ return (d[0]*size/2) + (width-size)/2; })
-        .attr("y1",function(d){ return (d[1]*size/2) + (height-size)/2; })
-        .attr("x2",function(d){ return (size/(d[0]+1)) + (width-size)/2; })
-        .attr("y2",function(d){ return (size/(d[1]+1)) + (height-size)/2; })
+        .attr("x1",function(d){ return -(d[0]*size/2); })
+        .attr("y1",function(d){ return -(d[1]*size/2); })
+        .attr("x2",function(d){ return (d[0]*size/2); })
+        .attr("y2",function(d){ return (d[1]*size/2); })
         .style("opacity",+options.showAxes)
 
     d3.selectAll(".net .axisLabel")
@@ -2214,25 +2363,25 @@ function forceEnd(){
       .attr("x",function(d,i){
         switch(i){
           case 1:
-            return size/2 + (width-size)/2;
+            return 0;
           case 2:
-            return (width-size)/2 - 2;
+            return (-size-4)/2;
           case 3:
-            return size/2 + (width-size)/2;
+            return 0;
           default:
-            return size + (width-size)/2;
+            return size/2;
         }
       })
       .attr("y",function(d,i){
         switch(i){
           case 1:
-            return (height-size)/2 - 2;
+            return (-size-4)/2;
           case 2:
-            return size/2 + (height-size)/2 + 4*options.cex;
+            return 4*options.cex;
           case 3:
-            return size + (height-size)/2 + 8*options.cex;
+            return size/2 + 8*options.cex;
           default:
-            return size/2 + (height-size)/2 + 4*options.cex;
+            return 4*options.cex;
         }
       })
 }
@@ -2343,103 +2492,6 @@ function displayInfoPanel(d,i){
   }
 }
 
-function loadSVGbuttons(){
-  if(!options.showButtons)
-    return;
-
-  var buttons = d3.select(".plot svg g.buttons"),
-      dat = [],
-      datStopResume = {txt: texts.stopresume, callback: stopResumeNet},
-      datScale = {txt: texts.resetzoom, callback: function(){
-        resetZoom();
-        d3.select("div.plot svg").node().__zoom = transform;
-        d3.select("div.plot g.net").attr("transform", transform);
-        if(!heatmap)
-          simulation.restart();
-      }, gap: 5},
-      datDirectional = {txt: texts.directional, callback: function(){
-        options.showArrows = !options.showArrows;
-        if(heatmap)
-          drawNet();
-        else
-          simulation.restart();
-      }},
-      datLegend = {txt: texts.showhidelegend, callback: function(){
-        options.showLegend = !options.showLegend;
-        clickHide(d3.selectAll(".scale"), options.showLegend);
-      }},
-      datAxes = {txt: texts.showhideaxes, callback: function(){
-        options.showAxes = !options.showAxes;
-        clickHide(d3.selectAll(".net .axis"), options.showAxes);
-        clickHide(d3.selectAll(".net .axisLabel"), options.showAxes);
-      }},
-      datMode = {txt: texts.netheatmap, callback: function(){
-        heatmap = !heatmap;
-        resetZoom();
-        displaySidebar();
-      }, gap: 5},
-      datReset = {txt: texts.reset, callback: function(){ location.reload(); }},
-      datPyramid = {txt : texts.trianglesquare, callback: function(){
-        heatmapTriangle = !heatmapTriangle;
-        drawNet();
-      }};
-
-  if(heatmap)
-    dat = [datPyramid];
-  else
-    dat = [datStopResume];
-
-  dat.push(datScale);
-  dat.push(datDirectional);
-  dat.push(datLegend);
-  if(!heatmap) dat.push(datAxes);
-
-  if(Array.isArray(options.mode))
-    dat.push(datMode);
-  else
-    datReset.gap = 5;
-
-  dat.push(datReset);
-  
-  var gButton = buttons.selectAll(".button")
-        .data(dat, function(d){ return d.txt; })
-
-  gButton.exit().remove();
-
-  var count = 50;
-
-  gButton.enter().append("g")
-    .attr("class","button")
-    .each(function(d,i){
-
-  d3.select(this).append("rect")
-    .attr("x",0)
-    .attr("y",5*(options.cex-1))
-    .attr("rx",2)
-    .attr("ry",2)
-    .attr("width",30)
-    .attr("height",10)
-    .on("click",function(){
-      d.callback();
-    });
-
-  d3.select(this).append("text")
-      .attr("x",35)
-    .attr("y",9*options.cex)
-    .text(d.txt);
-
-    })
-  .merge(gButton)
-    .attr("transform",function(d){
-      if(d.gap)
-        count = count + d.gap;
-      var val = "translate(0,"+count+")";
-      count = count + 15*options.cex;
-      return val;
-    })
-
-}
-
 function selectAllNodes(){
   if(Graph.nodes.filter(function(d){ return !d.selected; }).length)
     Graph.nodes.forEach(function(d){
@@ -2547,14 +2599,12 @@ function stopResumeNet(){
     }
   });
   if(!options.stopped){
-    d3.select(".sliders").transition()
-    .duration(500)
-        .style("opacity",1);
+    d3.selectAll(".slider.charge, .slider.linkDistance")
+      .style("opacity",1);
     update_forces();
   }else{
-    d3.select(".sliders").transition()
-    .duration(500)
-        .style("opacity",0);
+    d3.selectAll(".slider.charge, .slider.linkDistance")
+      .style("opacity",0);
     simulation.stop();
   }
 }
@@ -2991,11 +3041,16 @@ function adaptLayout(){
     xrange = [(width-size)/2,(width-size)/2+size];
     yrange = [(height-size)/2,(height-size)/2+size];
   }else{
-    xdim = centerDim(d3.extent(Graph.nodes,function(d){ return d.fx }));
-    ydim = centerDim(d3.extent(Graph.nodes,function(d){ return d.fy }));
+    if(options.hasOwnProperty("limits") && options.limits.length==4){
+      xdim = [options.limits[0],options.limits[2]];
+      ydim = [options.limits[1],options.limits[3]];
+    }else{
+      xdim = centerDim(d3.extent(Graph.nodes,function(d){ return d.fx }));
+      ydim = centerDim(d3.extent(Graph.nodes,function(d){ return d.fy }));
+    }
     size = size/1.2;
-    xrange = [(width-size)/2,(width-size)/2+size];
-    yrange = [(height-size)/2+size,(height-size)/2];
+    xrange = [-size/2,-size/2 +size];
+    yrange = [-size/2 +size,-size/2];
   }
 
   oldWidth = width;
@@ -3075,14 +3130,9 @@ function svg2pdf(){
 }
 
 function resetZoom(){
-  transform.k = 1;
-  if(heatmap){
-    transform.x = 0;
-    transform.y = 0;
-  }else{
-    transform.x = width/2;
-    transform.y = height/2;
-  }
+  transform.k = options.zoomScale = options.zoom;
+  transform.x = width/2;
+  transform.y = height/2;
 }
 
 function computeHeight(){
@@ -3102,9 +3152,10 @@ window.onresize = function(){
   width = docSize.width;
 
   width = width - parseInt(panel.style("left")) - 20;
+  height = computeHeight();
 
   plot.style("width",width+"px");
-  plot.style("height",computeHeight()+"px");
+  plot.style("height",height+"px");
   plot.call(drawSVG);
 }
 

@@ -8,9 +8,9 @@ netCoin<-function (nodes, links = NULL, tree = NULL, name = NULL,
                       orderA = NULL, orderD = NULL, group = NULL, community = NULL,
                       lwidth = NULL, lweight = NULL, lcolor = NULL, ltext = NULL,
                       nodeFilter = NULL, linkFilter = NULL, degreeFilter = NULL, nodeBipolar = FALSE, linkBipolar = FALSE,
-                      defaultColor = "#1f77b4", repulsion = 25, distance = 10, scale = 1, scenarios = NULL,
+                      defaultColor = "#1f77b4", repulsion = 25, distance = 10, zoom = 1, scenarios = NULL,
                       main = NULL, note = NULL, help = NULL, helpOn = FALSE,
-                      cex = 1, background = NULL, layout = NULL, controls = 1:5, mode = c("network","heatmap"),
+                      cex = 1, background = NULL, layout = NULL, limits = NULL, controls = 1:5, mode = c("network","heatmap"),
                       showCoordinates = FALSE, showArrows = FALSE, showLegend = TRUE, showAxes = FALSE, axesLabels = NULL,
                       language = c("en", "es", "ca"), image = NULL, imageNames = NULL, dir = NULL)
 {
@@ -41,6 +41,11 @@ netCoin<-function (nodes, links = NULL, tree = NULL, name = NULL,
   }
   
   # graph options
+  options[["cex"]] <- 1
+  if(is.numeric(cex))
+    options[["cex"]] <- cex
+  else
+    warning("cex: must be numeric")
   if(is.numeric(repulsion) && repulsion>=0 && repulsion<=100)
     options[["repulsion"]] <- repulsion
   else
@@ -49,10 +54,10 @@ netCoin<-function (nodes, links = NULL, tree = NULL, name = NULL,
     options[["distance"]] <- distance
   else
     warning("distance: must be numeric between 0 and 100")
-  if(is.numeric(scale) && scale>=0.1 && scale<=10)
-    options[["scale"]] <- scale
+  if(is.numeric(zoom) && zoom>=0.1 && zoom<=10)
+    options[["zoom"]] <- zoom
   else
-    warning("scale: must be numeric between 0.1 and 10")
+    warning("zoom: must be numeric between 0.1 and 10")
   if (!is.null(scenarios)){
     if(is.numeric(scenarios))
       options[["scenarios"]] <- scenarios
@@ -68,11 +73,11 @@ netCoin<-function (nodes, links = NULL, tree = NULL, name = NULL,
   if(nodeBipolar) options[["nodeBipolar"]] <- TRUE
   if(linkBipolar) options[["linkBipolar"]] <- TRUE
   if(helpOn) options[["helpOn"]] <- TRUE
-  options[["cex"]] <- as.numeric(cex)
   if (!is.null(defaultColor)) options[["defaultColor"]] <- defaultColor
   if (!is.null(controls)) options[["controls"]] <- as.numeric(controls)
   if (!is.null(mode)) options[["mode"]] <- tolower(substr(as.character(mode),1,1))
   if (!is.null(axesLabels)) options[["axesLabels"]] <- as.character(axesLabels)
+  if (!is.null(limits)) options[["limits"]] <- as.numeric(limits)
   
   if(showCoordinates) options[["showCoordinates"]] <- TRUE
   if(showArrows) options[["showArrows"]] <- TRUE
