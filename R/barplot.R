@@ -120,7 +120,7 @@ barCoin<-function(data, variables = colnames(data), commonlabel = NULL,
       O<-merge(O,nodes[,setdiff(names(nodes),frequencyList),drop=FALSE],by.x=name,by.y=name,all.x=TRUE)
     }else {
       if (!is.null(commonlabel)) { # Preserve the prename (variable) of a node if specified in commonlabel
-        label<-labelByLanguage(language)
+        label<-getByLanguage(labelList,language)
         provlabels<-as.character(O[[name]])
         O[[label]]<-ifelse(substr(O[[name]],1,regexpr('\\:',O[[name]])-1) %in% commonlabel,provlabels,substr(O[[name]],regexpr('\\:',O[[name]])+1,1000000L))
       }

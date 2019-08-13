@@ -12,7 +12,7 @@ function network(Graph){
       heatmapTriangle = false,
       shiftKey = false,
       transform = d3.zoomIdentity,
-      frameInterval,
+      frameControls = false,
       options;
 
   var simulation = d3.forceSimulation()
@@ -80,8 +80,15 @@ function network(Graph){
     Graph.linknames = [];
   }
 
-  if(Graph.linknames.indexOf("_frame_")!=-1)
-      options.frames = true;
+  if(Graph.linknames.indexOf("_frame_")!=-1){
+    frameControls = {
+      "play": true,
+      "frame": 0,
+      "frames": d3.map(Graph.links,function(link){ return link['_frame_']; }).keys(),
+      "frameInterval": null,
+      "time": 3000
+    };
+  }
 
   if(Graph.tree){
     len = Graph.tree[0].length;
@@ -563,6 +570,74 @@ function displaySidebar(){
   divControl = sideLinks.append("div")
       .attr("class","linkSelect filter");
   addController(divControl, Graph.links, applyFuncObject);
+
+// sidebar frame controls
+  if(frameControls){
+    var sideFrames = sidebar.append("div")
+      .attr("class", "subSidebar frames")
+
+    sideFrames.append("button") // |<
+      .html(getSVG(['M0,0L2,0L2,8L0,8Z','M8,0L8,8L2,4Z']))
+      .on("click",function(){
+        frameControls.frame = frameControls.frame-2;
+        if(frameControls.frame < 0)
+          frameControls.frame = frameControls.frames.length+frameControls.frame;
+        frameControls.play = false;
+        handleFrames();
+      })
+    sideFrames.append("button") // []
+      .html(getSVG(['M0,0L8,0L8,8L0,8Z']))
+      .on("click",function(){
+        frameControls.frame = 0;
+        frameControls.play = false;
+        handleFrames();
+      })
+    sideFrames.append("button") // ||
+      .html(getSVG(['M1,0L3,0L3,8L1,8Z','M5,0L7,0L7,8L5,8Z']))
+      .on("click",function(){
+        frameControls.play = false;
+        clearInterval(frameControls.frameInterval);
+      })
+    sideFrames.append("button") // >
+      .html(getSVG(['M1,0L1,8L7,4Z']))
+      .on("click",function(){
+        frameControls.time = 5000;
+        frameControls.play = true;
+        handleFrames();
+      })
+    sideFrames.append("button") // >>
+      .html(getSVG(['M0,0L4,4L0,8Z','M4,0L8,4L4,8Z']))
+      .on("click",function(){
+        frameControls.time = 3000;
+        frameControls.play = true;
+        handleFrames();
+      })
+    sideFrames.append("button") // >>>
+      .html(getSVG(['M0,0L3,4L0,8Z','M2.5,0L2.5,8L5.5,4Z','M5,0L8,4L5,8Z']))
+      .on("click",function(){
+        frameControls.time = 1000;
+        frameControls.play = true;
+        handleFrames();
+      })
+    sideFrames.append("button") // >|
+      .html(getSVG(['M0,0L0,8L6,4Z','M8,0L6,0L6,8L8,8Z']))
+      .on("click",function(){
+        frameControls.play = false;
+        handleFrames();
+      })
+
+    sideFrames.selectAll("button")
+      .style("text-align","center")
+      .style("width","30px");
+
+    function getSVG(d){
+      var path = '';
+      d.forEach(function(dd){
+        path += '<path d="'+dd+'"></path>';
+      })
+      return '<svg xmlns="http://www.w3.org/2000/svg" width="8" height="8">'+path+'</svg>';
+    }
+  }
 
 // sidebar simple/advanced button
   var advanced = false;
@@ -1090,6 +1165,18 @@ function drawSVG(sel){
   if(!options.hasOwnProperty("zoomScale"))
       options.zoomScale = options.zoom;
 
+  var zoomSlider = displaySlider()
+      .y(35*options.cex)
+      .domain(zoomRange)
+      .text("Zoom")
+      .prop('zoomScale')
+      .callback(function(){
+          transform.k = options.zoomScale;
+          net.attr("transform", transform);
+          if(!heatmap)
+            simulation.restart();
+      });
+
   if(options.showButtons){
     var buttons = svg.append("g")
         .attr("class", "buttons")
@@ -1112,17 +1199,6 @@ function drawSVG(sel){
       .prop('linkDistance')
       .callback(update_forces));
 
-    var zoomSlider = displaySlider()
-      .y(35*options.cex)
-      .domain(zoomRange)
-      .text("Zoom")
-      .prop('zoomScale')
-      .callback(function(){
-          transform.k = options.zoomScale;
-          net.attr("transform", transform);
-          if(!heatmap)
-            simulation.restart();
-      });
     sliders.call(zoomSlider);
 
     loadSVGbuttons();
@@ -1131,23 +1207,9 @@ function drawSVG(sel){
   resetZoom();
   net.attr("transform", transform);
 
-  if(options.frames){
-      clearInterval(frameInterval);
-      var frames = d3.map(Graph.links,function(link){ return link['_frame_']; }).keys();
-      var i = 0;
-      step();
-      frameInterval = setInterval(step, 3000);
-
-      function step(){
-        Graph.links.forEach(function(link){
-          link.noShow = link['_frame_']!=frames[i];
-        })
-        i++;
-        if(i>=frames.length)
-          i=0;
-        drawNet();
-      }
-  }else
+  if(frameControls)
+    handleFrames();
+  else
     drawNet();
 
   function zoomed() {
@@ -1325,7 +1387,10 @@ function drawSVG(sel){
     }
 
     displaySlider.moveHandler = function(){
-      slider.call(brush.move,[scale(options[prop])-6,scale(options[prop])+6]);
+      if(slider)
+        slider.call(brush.move,[scale(options[prop])-6,scale(options[prop])+6]);
+      else
+        callback();
     }
 
     displaySlider.y = function(x) {
@@ -1370,7 +1435,33 @@ function update_forces(){
           simulation.force("link")
             .distance(options.linkDistance)
 
-        simulation.alpha(options.frames?0.1:1).restart();
+        simulation.alpha(frameControls?0.1:1).restart();
+      }
+}
+
+function handleFrames(){
+      clearInterval(frameControls.frameInterval);
+      step();
+
+      if(frameControls.play)
+        frameControls.frameInterval = setInterval(step, frameControls.time);
+
+      function step(){
+        Graph.nodes.forEach(function(node){
+          node.noShow = true;
+        });
+        Graph.links.forEach(function(link){
+          link.noShow = link['_frame_']!=frameControls.frames[frameControls.frame];
+          if(!link.noShow){
+            delete link.source.noShow;
+            delete link.target.noShow;
+            delete link.noShow;
+          }
+        });
+        frameControls.frame++;
+        if(frameControls.frame>=frameControls.frames.length)
+          frameControls.frame=0;
+        drawNet();
       }
 }
 
@@ -1423,14 +1514,6 @@ function drawNet(){
     link.source.degree = +link.source.degree+1;
     link.target.degree = +link.target.degree+1;
   })
-
-  if(options.frames){
-    var nodes = nodes.filter(function(node){
-      return node.degree!=0;
-    });
-    if(nodes.length==0)
-      return 0;
-  }
 
   var imgidx = options.imageNames.indexOf(options.nodeShape);
   options.imageItem = imgidx!=-1 ? options.imageItems[imgidx] : false;
@@ -1927,7 +2010,7 @@ function drawNet(){
       ctx.font = 10*options.cex+"px sans-serif";
       nodes.forEach(function(node) {
         if(options.nodeLabelSize){
-          if(!node[options.nodeLabelSize])
+          if(node[options.nodeLabelSize]<0)
             return;
           ctx.font = node.nodeLabelSize+"px sans-serif";
         }
