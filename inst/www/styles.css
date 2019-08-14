@@ -314,6 +314,18 @@ div.showhideArrow {
   cursor: pointer;
 }
 
+div.divFrameCtrl {
+  float: right;
+  margin: 0 1rem;
+}
+div.divFrameCtrl svg path {
+  fill: #333;
+}
+div.divFrameCtrl button {
+  text-align: center;
+  width: 30px;
+}
+
 /* svg buttons and brush */
 .close-button {
   font-size: 20px;

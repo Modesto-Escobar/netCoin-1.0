@@ -46,7 +46,7 @@ frameGraph <- function(multi,dir){
     multiGraph(multi,dir)
   }else{
     links <- lapply(multi,function(x){ return(x$links) })
-    names(links) <- names(multi)
+    frames <- names(links) <- names(multi)
     for(frame in names(links)){
       links[[frame]][["_frame_"]] <- frame
     }
@@ -61,6 +61,20 @@ frameGraph <- function(multi,dir){
     nodes <- aggregate(nodes,by=list(nodes[[name]]),function(x){ x[1] })[-1]
 
     options <- multi[[1]]$options
+    getAll <- function(opt,item){
+      items <- vapply(multi,function(x){
+        if(!is.null(x$options[[item]]))
+          return(x$options[[item]])
+        else
+          return("")
+      },character(1))
+      if(length(unique(items))!=1)
+        opt[[item]] <- items
+      return(opt)
+    }
+    options <- getAll(options,"main")
+    options <- getAll(options,"note")
+    options$frames <- frames
     net <- structure(list(links=links,nodes=nodes,options=options),class="netCoin")
     netCoin(net,dir=dir)
   }

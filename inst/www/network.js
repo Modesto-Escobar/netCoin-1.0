@@ -80,13 +80,13 @@ function network(Graph){
     Graph.linknames = [];
   }
 
-  if(Graph.linknames.indexOf("_frame_")!=-1){
+  if(options.frames && Graph.linknames.indexOf("_frame_")!=-1){
     frameControls = {
       "play": true,
-      "frame": 0,
-      "frames": d3.map(Graph.links,function(link){ return link['_frame_']; }).keys(),
+      "frame": -1,
+      "frames": options.frames,
       "frameInterval": null,
-      "time": 3000
+      "time": 5000
     };
   }
 
@@ -113,7 +113,7 @@ function network(Graph){
       axisExtension = 50, // pixels to increase the axes size
       sliderWidth = 200, // width of the sliders
       infoPanelLeft = docSize.width * (2/3), // information panel left position
-      noShowFields = ["Source","Target","x","y","source","target","vx","vy","fx","fy","id","selected","nodeSize","noShow", "childNodes", "parentNode"]; // not to show in sidebar controllers or tables
+      noShowFields = ["Source","Target","x","y","source","target","vx","vy","fx","fy","id","selected","nodeSize","noShow", "childNodes", "parentNode","_frame_"]; // not to show in sidebar controllers or tables
 
   ["nodeText","nodeInfo"].forEach(function(d){
     if(options[d])
@@ -248,7 +248,7 @@ function network(Graph){
   if(options.main){
     body.append("div")
       .attr("class", "main")
-      .html(options.main);
+      .html(typeof options.main == "string" ? options.main : "");
   }
 
 // panel
@@ -265,7 +265,7 @@ function network(Graph){
   if(options.note){
     var divNote = plot.append("div")
       .attr("class", "note")
-      .html(options.note);
+      .html(typeof options.note == "string" ? options.note : "");
   }
 
   plot
@@ -399,6 +399,86 @@ function displayBottomPanel(){
       iconButton(tables,"xlsx",xlsxIcon_b64,texts.downloadtable,tables2xlsx);
 
     iconButton(tables,"pdf",pdfIcon_b64,texts.pdfexport,function(){ embedImages(svg2pdf); });
+  }
+
+  if(frameControls){
+    var divFrameCtrl = tables.append("div")
+      .attr("class", "divFrameCtrl")
+
+    divFrameCtrl.append("button") // |<
+      .html(getSVG(['M0,0L2,0L2,8L0,8Z','M8,0L8,8L2,4Z']))
+      .on("click",function(){
+        frameControls.frame = frameControls.frame-2;
+        if(frameControls.frame < 0)
+          frameControls.frame = frameControls.frames.length+frameControls.frame;
+        frameControls.play = false;
+        clickThis();
+        handleFrames();
+      })
+    divFrameCtrl.append("button") // []
+      .html(getSVG(['M0,0L8,0L8,8L0,8Z']))
+      .on("click",function(){
+        frameControls.frame = -1;
+        frameControls.play = false;
+        clickThis();
+        handleFrames();
+      })
+    divFrameCtrl.append("button") // ||
+      .attr("class","pause")
+      .html(getSVG(['M1,0L3,0L3,8L1,8Z','M5,0L7,0L7,8L5,8Z']))
+      .on("click",function(){
+        frameControls.play = false;
+        clickThis(this);
+        clearInterval(frameControls.frameInterval);
+      })
+    divFrameCtrl.append("button") // >
+      .style("background-color","#ccc")
+      .html(getSVG(['M1,0L1,8L7,4Z']))
+      .on("click",function(){
+        frameControls.time = 5000;
+        frameControls.play = true;
+        clickThis(this);
+        handleFrames();
+      })
+    divFrameCtrl.append("button") // >>
+      .html(getSVG(['M0,0L4,4L0,8Z','M4,0L8,4L4,8Z']))
+      .on("click",function(){
+        frameControls.time = 3000;
+        frameControls.play = true;
+        clickThis(this);
+        handleFrames();
+      })
+    divFrameCtrl.append("button") // >>>
+      .html(getSVG(['M0,0L3,4L0,8Z','M2.5,0L2.5,8L5.5,4Z','M5,0L8,4L5,8Z']))
+      .on("click",function(){
+        frameControls.time = 1000;
+        frameControls.play = true;
+        clickThis(this);
+        handleFrames();
+      })
+    divFrameCtrl.append("button") // >|
+      .html(getSVG(['M0,0L0,8L6,4Z','M8,0L6,0L6,8L8,8Z']))
+      .on("click",function(){
+        frameControls.play = false;
+        clickThis();
+        handleFrames();
+      })
+
+    function clickThis(self){
+      divFrameCtrl.selectAll("button").style("background-color",null);
+      if(self)
+        d3.select(self).style("background-color","#ccc");
+      else
+        divFrameCtrl.select("button.pause").style("background-color","#ccc");
+    }
+
+    function getSVG(d){
+      var path = '';
+      d.forEach(function(dd){
+        path += '<path d="'+dd+'"></path>';
+      })
+      return '<svg xmlns="http://www.w3.org/2000/svg" width="8" height="8">'+path+'</svg>';
+    }
   }
 
   if(options.showButtons2){
@@ -570,74 +650,6 @@ function displaySidebar(){
   divControl = sideLinks.append("div")
       .attr("class","linkSelect filter");
   addController(divControl, Graph.links, applyFuncObject);
-
-// sidebar frame controls
-  if(frameControls){
-    var sideFrames = sidebar.append("div")
-      .attr("class", "subSidebar frames")
-
-    sideFrames.append("button") // |<
-      .html(getSVG(['M0,0L2,0L2,8L0,8Z','M8,0L8,8L2,4Z']))
-      .on("click",function(){
-        frameControls.frame = frameControls.frame-2;
-        if(frameControls.frame < 0)
-          frameControls.frame = frameControls.frames.length+frameControls.frame;
-        frameControls.play = false;
-        handleFrames();
-      })
-    sideFrames.append("button") // []
-      .html(getSVG(['M0,0L8,0L8,8L0,8Z']))
-      .on("click",function(){
-        frameControls.frame = 0;
-        frameControls.play = false;
-        handleFrames();
-      })
-    sideFrames.append("button") // ||
-      .html(getSVG(['M1,0L3,0L3,8L1,8Z','M5,0L7,0L7,8L5,8Z']))
-      .on("click",function(){
-        frameControls.play = false;
-        clearInterval(frameControls.frameInterval);
-      })
-    sideFrames.append("button") // >
-      .html(getSVG(['M1,0L1,8L7,4Z']))
-      .on("click",function(){
-        frameControls.time = 5000;
-        frameControls.play = true;
-        handleFrames();
-      })
-    sideFrames.append("button") // >>
-      .html(getSVG(['M0,0L4,4L0,8Z','M4,0L8,4L4,8Z']))
-      .on("click",function(){
-        frameControls.time = 3000;
-        frameControls.play = true;
-        handleFrames();
-      })
-    sideFrames.append("button") // >>>
-      .html(getSVG(['M0,0L3,4L0,8Z','M2.5,0L2.5,8L5.5,4Z','M5,0L8,4L5,8Z']))
-      .on("click",function(){
-        frameControls.time = 1000;
-        frameControls.play = true;
-        handleFrames();
-      })
-    sideFrames.append("button") // >|
-      .html(getSVG(['M0,0L0,8L6,4Z','M8,0L6,0L6,8L8,8Z']))
-      .on("click",function(){
-        frameControls.play = false;
-        handleFrames();
-      })
-
-    sideFrames.selectAll("button")
-      .style("text-align","center")
-      .style("width","30px");
-
-    function getSVG(d){
-      var path = '';
-      d.forEach(function(dd){
-        path += '<path d="'+dd+'"></path>';
-      })
-      return '<svg xmlns="http://www.w3.org/2000/svg" width="8" height="8">'+path+'</svg>';
-    }
-  }
 
 // sidebar simple/advanced button
   var advanced = false;
@@ -1447,9 +1459,19 @@ function handleFrames(){
         frameControls.frameInterval = setInterval(step, frameControls.time);
 
       function step(){
+        frameControls.frame++;
+        if(frameControls.frame>=frameControls.frames.length)
+          frameControls.frame=0;
+
+        if(Array.isArray(options.main))
+          body.select("div.main").html(options.main[frameControls.frame]);
+        if(Array.isArray(options.note))
+          body.select("div.note").html(options.note[frameControls.frame]);
+
         Graph.nodes.forEach(function(node){
           node.noShow = true;
         });
+
         Graph.links.forEach(function(link){
           link.noShow = link['_frame_']!=frameControls.frames[frameControls.frame];
           if(!link.noShow){
@@ -1458,9 +1480,7 @@ function handleFrames(){
             delete link.noShow;
           }
         });
-        frameControls.frame++;
-        if(frameControls.frame>=frameControls.frames.length)
-          frameControls.frame=0;
+
         drawNet();
       }
 }
@@ -1494,10 +1514,8 @@ function drawNet(){
     node.degree = 0;
     return !node.noShow;
   });
-  if(nodes.length==0)
-    return 0;
 
-  var links = Graph.links.filter(function(d){ return !d.noShow && !d.target.noShow && !d.source.noShow; });
+  var links = Graph.links.filter(function(link){ return !link.noShow & !link.target.noShow & !link.source.noShow; });
 
   for(var i=1; i<links.length; i++){
     for(var j = i-1; j>=0; j--){
@@ -1829,7 +1847,8 @@ function drawNet(){
 
     svg.select("g.heatmap").remove();
 
-    //hide link distance slider for link weight representation or no links
+    //hide sliders
+    d3.select(".slider.charge").style("display",nodes.length<2?"none":null)
     d3.select(".slider.linkDistance").style("display",!links.length || options.linkWeight?"none":null)
 
     simulation.nodes(nodes)
@@ -2427,12 +2446,18 @@ function getLinkTextCoords(link){
 
 function forceEnd(){
   //update axes
-    var nodes = Graph.nodes.filter(function(d){ return !d.noShow; }),
-        extX = d3.extent(nodes, function(d){ return d.x; }),
-        extY = d3.extent(nodes, function(d){ return d.y; });
+    var nodes = Graph.nodes.filter(function(d){ return !d.noShow; });
 
-    var size = Math.max((extX[1]-extX[0]),(extY[1]-extY[0]));
-    size = size + axisExtension;
+    if(nodes.length>1){
+      var extX = d3.extent(nodes, function(d){ return d.x; }),
+          extY = d3.extent(nodes, function(d){ return d.y; });
+      var size = Math.max((extX[1]-extX[0]),(extY[1]-extY[0]));
+      size = size + axisExtension;
+    }else{
+      var size = Math.min(width,height)-axisExtension;
+    }
+
+
 
     d3.selectAll(".net .axis")
         .attr("x1",function(d){ return -(d[0]*size/2); })
@@ -2602,7 +2627,22 @@ function isolateNodes(){
 }
 
 function deleteNoShow(){
-  Graph.nodes.forEach(function(d){ delete d.noShow; });
+  if(frameControls){
+    Graph.nodes.forEach(function(node){
+          node.noShow = true;
+    });
+    Graph.links.forEach(function(link){
+          link.noShow = link['_frame_']!=frameControls.frames[frameControls.frame];
+          if(!link.noShow){
+            delete link.source.noShow;
+            delete link.target.noShow;
+            delete link.noShow;
+          }
+    });
+  }else{
+    Graph.nodes.forEach(function(d){ delete d.noShow; });
+    Graph.links.forEach(function(d){ delete d.noShow; });
+  }
   drawNet();
 }
 
