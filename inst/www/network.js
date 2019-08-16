@@ -1146,7 +1146,7 @@ function drawSVG(sel){
             extent[1][0] = transform.invertX(extent[1][0]);
             extent[1][1] = transform.invertY(extent[1][1]);
             Graph.nodes.forEach(function(node) {
-              node.selected = node.selected ^ (extent[0][0] <= node.x && node.x < extent[1][0] && extent[0][1] <= node.y && node.y < extent[1][1]);
+              node.selected = (!node.noShow & !node._hideFrame) & (node.selected ^ (extent[0][0] <= node.x && node.x < extent[1][0] && extent[0][1] <= node.y && node.y < extent[1][1]));
             });
           }else
             Graph.nodes.forEach(function(node) { return node.selected = false; });
@@ -1469,15 +1469,15 @@ function handleFrames(){
           body.select("div.note").html(options.note[frameControls.frame]);
 
         Graph.nodes.forEach(function(node){
-          node.noShow = true;
+          node._hideFrame = true;
         });
 
         Graph.links.forEach(function(link){
-          link.noShow = link['_frame_']!=frameControls.frames[frameControls.frame];
-          if(!link.noShow){
-            delete link.source.noShow;
-            delete link.target.noShow;
-            delete link.noShow;
+          link._hideFrame = link['_frame_']!=frameControls.frames[frameControls.frame];
+          if(!link._hideFrame){
+            delete link.source._hideFrame;
+            delete link.target._hideFrame;
+            delete link._hideFrame;
           }
         });
 
@@ -1512,10 +1512,10 @@ function drawNet(){
 
   var nodes = Graph.nodes.filter(function(node){
     node.degree = 0;
-    return !node.noShow;
+    return !node.noShow & !node._hideFrame;
   });
 
-  var links = Graph.links.filter(function(link){ return !link.noShow & !link.target.noShow & !link.source.noShow; });
+  var links = Graph.links.filter(function(link){ return !link.noShow & !link.target.noShow & !link.source.noShow & !link._hideFrame; });
 
   for(var i=1; i<links.length; i++){
     for(var j = i-1; j>=0; j--){
@@ -1717,12 +1717,12 @@ function drawNet(){
       .on("dblclick", row | !options.linkIntensity ? function(){
         d3.event.stopPropagation();
         Graph.links.forEach(function(d){
-          if(!d.noShow && (((!options.showArrows || heatmapTriangle)&&d.target.selected)||(d.source.selected))){
+          if(!d.noShow & !d._hideFrame & (((!options.showArrows | heatmapTriangle) & d.target.selected) | d.source.selected)){
                 d.source.neighbor = d.target.neighbor = true;
           }
         });
         Graph.nodes.forEach(function(d){
-          d.noShow = d.noShow || (!d.neighbor && !d.selected);
+          d.noShow = d.noShow | (!d.neighbor & !d.selected);
           delete d.neighbor;
         });
         drawNet();
@@ -1820,7 +1820,7 @@ function drawNet(){
   function click(p){
     links.forEach(function(l){ checkNeighbors(l,p); });
     nodes.forEach(function(n){
-      n.selected = !n.noShow && n.neighbor;
+      n.selected = !n.noShow & n.neighbor;
       delete n.neighbor;
     });
     showTables();
@@ -1830,15 +1830,15 @@ function drawNet(){
     d3.event.stopPropagation();
     links.forEach(function(l){ checkNeighbors(l,p); });
     nodes.forEach(function(n){
-      n.selected = (!n.noShow && (n.index == p.x || n.index == p.y))? true : false;
-      n.noShow = n.noShow || !n.neighbor;
+      n.selected = (!n.noShow & (n.index == p.x | n.index == p.y))? true : false;
+      n.noShow = n.noShow | !n.neighbor;
       delete n.neighbor;
     });
     drawNet();
   }
 
     function checkNeighbors(l,p){
-      if(!l.noShow && (((!options.showArrows || heatmapTriangle)&&(l.target.index==p.x || l.target.index==p.y)) || (l.source.index==p.x || l.source.index==p.y))){
+      if(!l.noShow & !l._hideFrame & (((!options.showArrows | heatmapTriangle) & (l.target.index==p.x | l.target.index==p.y)) | (l.source.index==p.x | l.source.index==p.y))){
         l.source.neighbor = l.target.neighbor = true;
       }
     }
@@ -2446,7 +2446,7 @@ function getLinkTextCoords(link){
 
 function forceEnd(){
   //update axes
-    var nodes = Graph.nodes.filter(function(d){ return !d.noShow; });
+    var nodes = Graph.nodes.filter(function(d){ return !d.noShow & !d._hideFrame; });
 
     if(nodes.length>1){
       var extX = d3.extent(nodes, function(d){ return d.x; }),
@@ -2601,9 +2601,9 @@ function displayInfoPanel(d,i){
 }
 
 function selectAllNodes(){
-  if(Graph.nodes.filter(function(d){ return !d.selected; }).length)
+  if(Graph.nodes.filter(function(d){ return !d.selected & !d._hideFrame; }).length)
     Graph.nodes.forEach(function(d){
-      if(!d.noShow)
+      if(!d.noShow & !d._hideFrame)
         d.selected = true;
     });
   else
@@ -2627,22 +2627,8 @@ function isolateNodes(){
 }
 
 function deleteNoShow(){
-  if(frameControls){
-    Graph.nodes.forEach(function(node){
-          node.noShow = true;
-    });
-    Graph.links.forEach(function(link){
-          link.noShow = link['_frame_']!=frameControls.frames[frameControls.frame];
-          if(!link.noShow){
-            delete link.source.noShow;
-            delete link.target.noShow;
-            delete link.noShow;
-          }
-    });
-  }else{
-    Graph.nodes.forEach(function(d){ delete d.noShow; });
-    Graph.links.forEach(function(d){ delete d.noShow; });
-  }
+  Graph.nodes.forEach(function(d){ delete d.noShow; });
+  Graph.links.forEach(function(d){ delete d.noShow; });
   drawNet();
 }
 
@@ -2651,7 +2637,7 @@ function selectNeighbors(){
     displayWindow(texts.alertnonodes);
   }else{
     Graph.links.forEach(function(d){
-      if(!d.noShow)
+      if(!d.noShow & !d._hideFrame)
         if(d.source.selected || d.target.selected)
           d.source.neighbor = d.target.neighbor = true;
     });
@@ -2669,7 +2655,7 @@ function egoNet(){
     displayWindow(texts.alertnonodes);
   }else{
     Graph.links.forEach(function(d){
-      if(!d.noShow)
+      if(!d.noShow & !d._hideFrame)
         if(d.source.selected || d.target.selected)
           d.target.neighbor = d.source.neighbor = true;
     });
@@ -2684,7 +2670,7 @@ function egoNet(){
 function treeAction(){
   if(!Graph.nodes.filter(function(d){ return d.selected; }).length)
     Graph.nodes.forEach(function(d){
-      if(!d.noShow)
+      if(!d.noShow & !d._hideFrame)
         d.selected = true;
     });
   Graph.nodes.forEach(function(d){
@@ -2711,7 +2697,7 @@ function stopResumeNet(){
   options.stopped = !options.stopped;
 
   Graph.nodes.forEach(function(node){
-    if(!node.noShow){
+    if(!node.noShow & !node._hideFrame){
       if(!options.stopped){
         delete node.fx;
         delete node.fy;
@@ -2810,7 +2796,7 @@ function displayLegend(scale, key, color, shape, dat){
         var selecteds = d3.selectAll(".legend > g").filter(function(){ return this.selected; })
         Graph.nodes.forEach(function(d){
            d.selected = false;
-           if(!d.noShow){
+           if(!d.noShow & !d._hideFrame){
              selecteds.each(function(p){
                if((p=="null" && d[this.selected]===null) || (p=="0" && d[this.selected]===0) || (d[this.selected] && (d[this.selected]==p || (typeof d[this.selected] == 'object' && d[this.selected].indexOf(p)!=-1))))
                  d.selected = true;
@@ -3032,11 +3018,11 @@ function showTables() {
 
   var nodesData = Graph.nodes.filter(function(d){
         delete d._selected;
-        return !d.noShow && d.selected;
+        return !d.noShow & !d._hideFrame & d.selected;
       }).map(cleanData),
       linksData = Graph.links.filter(function(d){
         delete d._selected;
-        return !d.noShow && (d.source.selected && d.target.selected);
+        return !d.noShow & !d._hideFrame & (d.source.selected && d.target.selected);
       }).map(cleanData),
       nodeColumns = Graph.nodenames.filter(filterNoShow),
       linkColumns = Graph.linknames.filter(filterNoShow);
