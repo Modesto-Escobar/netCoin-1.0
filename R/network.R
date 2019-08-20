@@ -16,9 +16,6 @@ networkJSON<-function(net){
 
   name <- nodes[[options$nodeName]] <- as.character(nodes[[options$nodeName]])
 
-  nodesid <- (seq_along(name))-1
-  uniqueid <- data.frame(nodesid,name)
-
   if(length(links)){
 
     sourcenames <- as.character(links$Source)
@@ -28,24 +25,24 @@ networkJSON<-function(net){
     source <- numeric(nlinks)
     target <- numeric(nlinks)
     for(i in seq_len(nlinks)){
-      source[i] <- uniqueid[(sourcenames[i]==uniqueid[,2]),1]
-      target[i] <- uniqueid[(targetnames[i]==uniqueid[,2]),1]
+      source[i] <- which(sourcenames[i]==name)-1
+      target[i] <- which(targetnames[i]==name)-1
     }
 
     links$Source <- source
     links$Target <- target
   }
   if(length(tree)){
-      sourcenames <- as.vector(tree$Source)
-      targetnames <- as.vector(tree$Target)
+      sourcenames <- as.character(tree$Source)
+      targetnames <- as.character(tree$Target)
 
       if(all(!duplicated(targetnames))){
         nlinks <- nrow(net$tree)
         source <- numeric(nlinks)
         target <- numeric(nlinks)
         for(i in seq_len(nlinks)){
-          source[i] <- uniqueid[(sourcenames[i]==uniqueid[,2]),1]
-          target[i] <- uniqueid[(targetnames[i]==uniqueid[,2]),1]
+          source[i] <- which(sourcenames[i]==name)-1
+          target[i] <- which(targetnames[i]==name)-1
         }
 
         tree$Source <- source
@@ -146,7 +143,7 @@ netAddLayout <- function(net,layout){
 getRawName <- function(filepath){
   filename <- strsplit(basename(filepath), split="\\.")[[1]]
   ext <- filename[length(filename)]
-  filename <- paste0(filename[-length(filename)],collapse="")
+  filename <- paste0(filename[-length(filename)],collapse=".")
   return(paste(paste0(as.character(charToRaw(filename)),collapse=""),ext,sep="."))
 }
 

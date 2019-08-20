@@ -1391,7 +1391,7 @@ getByLanguage <- function(varlist,language){
     language <- language[1]
   else
     language <- "en"
-  return(varlist[language])
+  return(unname(varlist[language]))
 }
 
 layoutCircle <- function(N,nodes,deg=0,name=NULL){

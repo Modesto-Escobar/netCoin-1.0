@@ -15,93 +15,7 @@ function network(Graph){
       frameControls = false,
       options;
 
-  var simulation = d3.forceSimulation()
-      .force("link", d3.forceLink())
-      .force("charge", d3.forceManyBody())
-      .on("end", forceEnd)
-      .stop();
-
-  body = d3.select("body");
-
-  options = Graph.options;
-  delete Graph.options;
-
-  if(options.background)
-    body.style("background",options.background);
-
-  var splitMultiVariable = function(d){
-    for (var p in d) {
-      if(typeof d[p] == "string" && d[p].indexOf("|")!=-1)
-        d[p] = d[p].split("|");
-    }
-  }
-
-  var nodes = [],
-      len = 0;
-
-  len = Graph.nodes[0].length;
-  for(var i = 0; i<len; i++){
-    var node = {};
-    Graph.nodenames.forEach(function(d,j){
-      node[d] = Graph.nodes[j][i];
-    })
-    node.degree = 0;
-    splitMultiVariable(node);
-    if(Graph.tree){
-      node.childNodes = [];
-      node.parentNode = false;
-    }
-    nodes.push(node);
-  }
-  Graph.nodenames.push("degree");
-
-  Graph.nodes = nodes;
-
-  if(Graph.links){
-    var links = [];
-
-    len = Graph.links[0].length;
-    for(var i = 0; i<len; i++){
-      var link = {};
-      Graph.linknames.forEach(function(d,j){
-        link[d] = Graph.links[j][i];
-      })
-      splitMultiVariable(link);
-      link.source = Graph.nodes[link.Source];
-      link.Source = link.source[options.nodeName];
-      link.target = Graph.nodes[link.Target];
-      link.Target = link.target[options.nodeName];
-      links.push(link);
-    }
-
-    Graph.links = links;
-  }else{
-    Graph.links = [];
-    Graph.linknames = [];
-  }
-
-  if(options.frames && Graph.linknames.indexOf("_frame_")!=-1){
-    frameControls = {
-      "play": true,
-      "frame": -1,
-      "frames": options.frames,
-      "frameInterval": null,
-      "time": 5000
-    };
-  }
-
-  if(Graph.tree){
-    len = Graph.tree[0].length;
-    for(var i = 0; i<len; i++){
-      var source = Graph.tree[0][i],
-          target = Graph.tree[1][i];
-      Graph.nodes[source].childNodes.push(Graph.nodes[target]);
-      Graph.nodes[target].parentNode = Graph.nodes[source];
-    }
-    Graph.tree = true;
-  }
-  
-  var defaultColor = options.defaultColor? options.defaultColor : "#1f77b4", // nodes and areas default color
+  var defaultColor = "#1f77b4", // nodes and areas default color
       defaultLinkColor = "#999", // links default color
       defaultShape = "Circle", // node shape by default
       symbolTypes = ["Circle","Square","Diamond","Triangle","Cross","Star","Wye"], // list of available shapes
@@ -115,143 +29,24 @@ function network(Graph){
       infoPanelLeft = docSize.width * (2/3), // information panel left position
       noShowFields = ["Source","Target","x","y","source","target","vx","vy","fx","fy","id","selected","nodeSize","noShow", "childNodes", "parentNode","_frame_"]; // not to show in sidebar controllers or tables
 
-  ["nodeText","nodeInfo"].forEach(function(d){
-    if(options[d])
-      noShowFields.push(options[d]);
-  });
+  var simulation = d3.forceSimulation()
+      .force("link", d3.forceLink())
+      .force("charge", d3.forceManyBody())
+      .on("end", forceEnd)
+      .stop();
 
-  options.colorScalenodeColor = "RdWhGn"; // default linear scale for nodes
-  options.colorScalelinkColor = "RdBkGn"; // default linear scale for links
+  var body = d3.select("body");
 
-  if(options.nodeBipolar){
-    switch(defaultColor) {
-      case "black":
-      case "#000":
-      case "#000000":
-        options.colorScalenodeColor = "RdWhBk";
-        break;
-      case "#2ca02c":
-        options.colorScalenodeColor = "RdWhGn";
-        break;
-      default:
-        colorScales['custom1'] = ["#d62728","#ffffff",defaultColor];
-        colorScales['custom2'] = [defaultColor,"#ffffff","#d62728"];
-        options.colorScalenodeColor = "custom1";
-    }
-  }else{
-    switch(defaultColor) {
-      case "black":
-      case "#000":
-      case "#000000":
-        options.colorScalenodeColor = "WhBk";
-        break;
-      case "#1f77b4":
-        options.colorScalenodeColor = "WhBu";
-        break;
-      case "#2ca02c":
-        options.colorScalenodeColor = "WhGn";
-        break;
-      case "#d62728":
-        options.colorScalenodeColor = "WhRd";
-        break;
-      default:
-        var custom = d3.scaleLinear()
-          .domain([1,3])
-          .range(["#ffffff",defaultColor])
-        colorScales['custom1'] = [defaultColor,custom(2),"#ffffff"];
-        colorScales['custom2'] = ["#ffffff",custom(2),defaultColor];
-        options.colorScalenodeColor = "custom2";
-    }
-  }
+  checkGraphData();
 
-  if(options.cex)
-    body.style("font-size", 10*options.cex + "px")
-  else
-    options.cex = 1;
-
-  if(!options.hasOwnProperty("zoom"))
-    options.zoom = 1;
-
-  if(options.imageNames && !Array.isArray(options.imageNames))
-    options.imageNames = [options.imageNames];
-  else
-    options.imageNames = [];
-  if(options.imageItems){
-    if(!Array.isArray(options.imageItems))
-      options.imageItems = [options.imageItems];
-    options.nodeShape = options.imageNames[0];
-    images = {};
-    Graph.nodes.forEach(function(node){
-      options.imageItems.forEach(function(col){
-        var img = new Image();
-        img.src = node[col];
-        images[node[col]] = img;
-      })
-    })
-  }else
-    options.imageItems = [];
-
-  options.imageItems.forEach(function(d){
-    noShowFields.push(d);
-  })
-
-  var showControls = function(n){
-    if(options.hasOwnProperty("controls")){
-      if(options.controls===0)
-        return false;
-      if(options.controls==-n)
-        return false;
-      if(options.controls==n)
-        return true;
-      if(Array.isArray(options.controls)){
-        if(options.controls.indexOf(-n)!=-1)
-          return false;
-        if(options.controls.indexOf(n)!=-1)
-          return true;
-      }
-    }
-    return null;
-  }
-
-  options.showSidebar = showControls(1);
-  options.showButtons2 = showControls(2);
-  options.showTables = showControls(3);
-  options.showButtons = showControls(4);
-  options.showExport = showControls(5);
-
-  if(Array.isArray(options.axesLabels)){
-    if(options.axesLabels.length>4)
-      options.axesLabels.length = 4;
-  }else{
-    if(options.axesLabels)
-      options.axesLabels = [options.axesLabels];
-    else
-      options.axesLabels = [];
-  }
-
-  if(!Array.isArray(options.degreeFilter)){
-    if(options.degreeFilter)
-      options.degreeFilter = [options.degreeFilter,Infinity];
-  }
-
-  if(options.mode=="h" || options.mode[0]=="h"){
-    heatmap = true;
-  }
-
-  if(!options.hasOwnProperty("repulsion"))
-    options.repulsion = 25;
-
-  if(!options.hasOwnProperty("distance"))
-    options.distance = 10;
-
-// main title
+  // main title
   if(options.main){
     body.append("div")
       .attr("class", "main")
       .html(typeof options.main == "string" ? options.main : "");
   }
 
-// panel
+  // panel
   var panel = body.append("div")
       .attr("class", "panel");
 
@@ -279,7 +74,223 @@ function network(Graph){
   if(options.helpOn)
     displayWindow().html(options.help);
 
+  function checkGraphData(){
+
+    options = Graph.options;
+    delete Graph.options;
+
+    simulation.force("link").id(function(d) { return d[options.nodeName]; });
+
+    if(options.background)
+      body.style("background",options.background);
+
+    var splitMultiVariable = function(d){
+      for (var p in d) {
+        if(typeof d[p] == "string" && d[p].indexOf("|")!=-1)
+          d[p] = d[p].split("|");
+      }
+    }
+
+    var nodes = [],
+        len = 0;
+
+    len = Graph.nodes[0].length;
+    for(var i = 0; i<len; i++){
+      var node = {};
+      Graph.nodenames.forEach(function(d,j){
+        node[d] = Graph.nodes[j][i];
+      })
+      node.degree = 0;
+      splitMultiVariable(node);
+      if(Graph.tree){
+        node.childNodes = [];
+        node.parentNode = false;
+      }
+      nodes.push(node);
+    }
+    Graph.nodenames.push("degree");
+
+    Graph.nodes = nodes;
+
+    if(Graph.links){
+      var links = [];
+
+      len = Graph.links[0].length;
+      for(var i = 0; i<len; i++){
+        var link = {};
+        Graph.linknames.forEach(function(d,j){
+          link[d] = Graph.links[j][i];
+        })
+        splitMultiVariable(link);
+        link.source = Graph.nodes[link.Source];
+        link.Source = link.source[options.nodeName];
+        link.target = Graph.nodes[link.Target];
+        link.Target = link.target[options.nodeName];
+        links.push(link);
+      }
+
+      Graph.links = links;
+    }else{
+      Graph.links = [];
+      Graph.linknames = [];
+    }
+
+    if(options.frames && Graph.linknames.indexOf("_frame_")!=-1){
+      frameControls = {
+        "play": true,
+        "frame": -1,
+        "frames": options.frames,
+        "frameInterval": null,
+        "time": 5000
+      };
+    }
+
+    if(Graph.tree){
+      len = Graph.tree[0].length;
+      for(var i = 0; i<len; i++){
+        var source = Graph.tree[0][i],
+            target = Graph.tree[1][i];
+        Graph.nodes[source].childNodes.push(Graph.nodes[target]);
+        Graph.nodes[target].parentNode = Graph.nodes[source];
+      }
+      Graph.tree = true;
+    }
+
+    ["nodeText","nodeInfo"].forEach(function(d){
+      if(options[d])
+        noShowFields.push(options[d]);
+    });
+
+    if(options.defaultColor)
+      defaultColor = options.defaultColor;
+
+    options.colorScalenodeColor = "RdWhGn"; // default linear scale for nodes
+    options.colorScalelinkColor = "RdBkGn"; // default linear scale for links
+
+    if(options.nodeBipolar){
+      switch(defaultColor) {
+        case "black":
+        case "#000":
+        case "#000000":
+          options.colorScalenodeColor = "RdWhBk";
+          break;
+        case "#2ca02c":
+          options.colorScalenodeColor = "RdWhGn";
+          break;
+        default:
+          colorScales['custom1'] = ["#d62728","#ffffff",defaultColor];
+          colorScales['custom2'] = [defaultColor,"#ffffff","#d62728"];
+          options.colorScalenodeColor = "custom1";
+      }
+    }else{
+      switch(defaultColor) {
+        case "black":
+        case "#000":
+        case "#000000":
+          options.colorScalenodeColor = "WhBk";
+          break;
+        case "#1f77b4":
+          options.colorScalenodeColor = "WhBu";
+          break;
+        case "#2ca02c":
+          options.colorScalenodeColor = "WhGn";
+          break;
+        case "#d62728":
+          options.colorScalenodeColor = "WhRd";
+          break;
+        default:
+          var custom = d3.scaleLinear()
+            .domain([1,3])
+            .range(["#ffffff",defaultColor])
+          colorScales['custom1'] = [defaultColor,custom(2),"#ffffff"];
+          colorScales['custom2'] = ["#ffffff",custom(2),defaultColor];
+          options.colorScalenodeColor = "custom2";
+      }
+    }
+
+    if(options.cex)
+      body.style("font-size", 10*options.cex + "px")
+    else
+      options.cex = 1;
+
+    if(!options.hasOwnProperty("zoom"))
+      options.zoom = 1;
+
+    if(options.imageNames && !Array.isArray(options.imageNames))
+      options.imageNames = [options.imageNames];
+    else
+      options.imageNames = [];
+    if(options.imageItems){
+      if(!Array.isArray(options.imageItems))
+        options.imageItems = [options.imageItems];
+      options.nodeShape = options.imageNames[0];
+      images = {};
+      Graph.nodes.forEach(function(node){
+        options.imageItems.forEach(function(col){
+          var img = new Image();
+          img.src = node[col];
+          images[node[col]] = img;
+        })
+      })
+    }else
+      options.imageItems = [];
+
+    options.imageItems.forEach(function(d){
+      noShowFields.push(d);
+    })
+
+    var showControls = function(n){
+      if(options.hasOwnProperty("controls")){
+        if(options.controls===0)
+          return false;
+        if(options.controls==-n)
+          return false;
+        if(options.controls==n)
+          return true;
+        if(Array.isArray(options.controls)){
+          if(options.controls.indexOf(-n)!=-1)
+            return false;
+          if(options.controls.indexOf(n)!=-1)
+            return true;
+        }
+      }
+      return null;
+    }
+
+    options.showSidebar = showControls(1);
+    options.showButtons2 = showControls(2);
+    options.showTables = showControls(3);
+    options.showButtons = showControls(4);
+    options.showExport = showControls(5);
+
+    if(Array.isArray(options.axesLabels)){
+      if(options.axesLabels.length>4)
+        options.axesLabels.length = 4;
+    }else{
+      if(options.axesLabels)
+        options.axesLabels = [options.axesLabels];
+      else
+        options.axesLabels = [];
+    }
+
+    if(!Array.isArray(options.degreeFilter)){
+      if(options.degreeFilter)
+        options.degreeFilter = [options.degreeFilter,Infinity];
+    }
+
+    if(options.mode=="h" || options.mode[0]=="h"){
+      heatmap = true;
+    }
+
+    if(!options.hasOwnProperty("repulsion"))
+      options.repulsion = 25;
+
+    if(!options.hasOwnProperty("distance"))
+      options.distance = 10;
+  }
+
 function displayArrows(){
+
   var sidebarArrow = visArrow()
     .item("showSidebar")
     .top("10px")
@@ -1189,6 +1200,10 @@ function drawSVG(sel){
             simulation.restart();
       });
 
+  var left = !options.showSidebar && !options.main && typeof multiGraph != 'undefined' && !d3.select(".sidebar").empty() ? parseInt(d3.select(".sidebar").style("width"))+15 : 0;
+
+  sel.selectAll(".showhideArrow").filter(function(d,i){ return i<2; }).style("left",left+"px");
+
   if(options.showButtons){
     var buttons = svg.append("g")
         .attr("class", "buttons")
@@ -1196,7 +1211,7 @@ function drawSVG(sel){
 
     var sliders = buttons.append("g")
         .attr("class","sliders")
-        .attr("transform",!options.showSidebar && !options.main && typeof multiGraph != 'undefined' && !d3.select(".sidebar").empty() ? "translate("+(parseInt(d3.select(".sidebar").style("width"))+15)+",0)":null)
+        .attr("transform",left ? "translate("+left+",0)":null)
 
     sliders.call(displaySlider()
       .y(5*options.cex)
@@ -1216,7 +1231,7 @@ function drawSVG(sel){
     loadSVGbuttons();
   }
 
-  resetZoom();
+  resetPan();
   net.attr("transform", transform);
 
   if(frameControls)
@@ -1448,7 +1463,8 @@ function update_forces(){
             .distance(options.linkDistance)
 
         simulation.alpha(frameControls?0.1:1).restart();
-      }
+      }else
+        simulation.restart();
 }
 
 function handleFrames(){
@@ -1859,10 +1875,7 @@ function drawNet(){
 
     simulation.on("tick", tick);
 
-    if(options.stopped)
-      simulation.restart();
-    else
-      update_forces();
+    update_forces();
 
     //axes
     var axes = svg.selectAll(".axis")
@@ -2695,23 +2708,19 @@ function treeAction(){
 
 function stopResumeNet(){
   options.stopped = !options.stopped;
-
-  Graph.nodes.forEach(function(node){
-    if(!node.noShow & !node._hideFrame){
-      if(!options.stopped){
+  if(!options.stopped){
+    Graph.nodes.forEach(function(node){
         delete node.fx;
         delete node.fy;
-      }else{
-        node.fx = node.x;
-        node.fy = node.y;
-      }
-    }
-  });
-  if(!options.stopped){
+    });
     d3.selectAll(".slider.charge, .slider.linkDistance")
       .style("opacity",1);
     update_forces();
   }else{
+    Graph.nodes.forEach(function(node){
+        node.fx = node.x ? node.x : 0;
+        node.fy = node.y ? node.y : 0;
+    });
     d3.selectAll(".slider.charge, .slider.linkDistance")
       .style("opacity",0);
     simulation.stop();
@@ -3238,10 +3247,14 @@ function svg2pdf(){
     displayWindow("The network is not loaded yet!");
 }
 
-function resetZoom(){
-  transform.k = options.zoomScale = options.zoom;
+function resetPan(){
   transform.x = width/2;
   transform.y = height/2;
+}
+
+function resetZoom(){
+  transform.k = options.zoomScale = options.zoom;
+  resetPan();
 }
 
 function computeHeight(){

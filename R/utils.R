@@ -14,30 +14,29 @@ createHTML <- function(directory, styles, dependencies, json){
   name <- name[length(name)]
   html <- sub("titulo", name, html)
 
-  if(length(dependencies))
-    dir.create(paste(directory, "scripts", sep = "/"),FALSE)
   scripts <- "<!--scripts-->";
-  for(i in dependencies){
-    scripts <- paste(scripts, paste0("<script src=\"scripts/",i,"\"></script>"), sep = "\n");
-    file.copy(paste(www, i, sep = "/"), paste(directory, "scripts", sep = "/"))
-  }
-  html <- sub("<!--scripts-->", scripts, html)
-
   if(length(styles))
     dir.create(paste(directory, "styles", sep = "/"),FALSE)
-  scripts <- "<!--scripts-->";
   for(i in styles){
     scripts <- paste(scripts, paste0("<link rel=\"stylesheet\" type=\"text/css\" href=\"styles/",i,"\"></link>"), sep = "\n");
     file.copy(paste(www, i, sep = "/"), paste(directory, "styles", sep = "/"))
   }
-  html <- sub("<!--scripts-->", scripts, html)
+
+  if(length(dependencies))
+    dir.create(paste(directory, "scripts", sep = "/"),FALSE)
+  for(i in dependencies){
+    scripts <- paste(scripts, paste0("<script src=\"scripts/",i,"\"></script>"), sep = "\n");
+    file.copy(paste(www, i, sep = "/"), paste(directory, "scripts", sep = "/"))
+  }
+  html[html=="<!--scripts-->"] <- scripts
 
   if(is.function(json))
     json <- json()
-  html <- sub("<!--json-->",paste0('<script type="application/json" id="data">',json,'</script>'),html)
+
+  html[html=="<!--json-->"] <- paste0('<script type="application/json" id="data">',json,'</script>')
   enc <- Encoding(json)
   if(enc!="unknown")
-    html <- sub('<meta charset="utf-8">',paste0('<meta charset="',enc,'">'),html)
+    html[html=='<meta charset="utf-8">'] <- paste0('<meta charset="',enc,'">')
   con <- file(paste(directory, "index.html", sep = "/"))
   writeLines(html,con)
   close(con)
@@ -57,8 +56,14 @@ getLanguageScript <- function(obj){
 
 
 toJSON <- function(x){
-  sanitize.string <- function(x){
-    return(paste0('"',gsub('"','\'',gsub("[\r\n\t]","",x)),'"'))
+  sanitize_string <- function(x){
+    x <- unname(x)
+    for(i in seq_len(nchar(x))){
+      raw <- charToRaw(substr(x,i,i))
+      if((length(raw)==1 && raw<0x20) || length(raw)>2)
+        substr(x,i,i) <- "_"
+    }
+    return(deparse(x))
   }
   json <- ""
   if(length(x)<=1){
@@ -66,8 +71,12 @@ toJSON <- function(x){
       json <- "null"
     }else{
       if(is.vector(x)){
-        if(is.numeric(x))
-          json <- signif(x,4)
+        if(is.numeric(x)){
+          if(x%%1==0)
+            json <- x
+          else
+            json <- signif(x,4)
+        }
         if(is.logical(x)){
           if(x)
             json <- "true"
@@ -75,7 +84,7 @@ toJSON <- function(x){
             json <- "false"
         }
         if(is.character(x))
-          json <- sanitize.string(x)
+          json <- sanitize_string(x)
         if(is.list(x)){
           if(length(x)==0)
             json <- "{}"
@@ -90,7 +99,7 @@ toJSON <- function(x){
         }
       }
       if(is.factor(x)){
-        json <- sanitize.string(x)
+        json <- sanitize_string(as.character(x))
       }
       if(is.array(x)){
         aux <- "null"
