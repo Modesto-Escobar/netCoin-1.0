@@ -56,6 +56,12 @@ getLanguageScript <- function(obj){
 
 
 toJSON <- function(x){
+  prepare_number <- function(x){
+    if(!suppressWarnings(x%%1))
+      return(x)
+    else
+      return(signif(x,4))
+  }
   sanitize_string <- function(x){
     x <- unname(x)
     for(i in seq_len(nchar(x))){
@@ -63,7 +69,11 @@ toJSON <- function(x){
       if((length(raw)==1 && raw<0x20) || length(raw)>2)
         substr(x,i,i) <- "_"
     }
-    return(deparse(x))
+    n <- suppressWarnings(as.numeric(x))
+    if(is.na(n))
+      return(deparse(x))
+    else
+      return(prepare_number(n))
   }
   json <- ""
   if(length(x)<=1){
@@ -71,12 +81,8 @@ toJSON <- function(x){
       json <- "null"
     }else{
       if(is.vector(x)){
-        if(is.numeric(x)){
-          if(x%%1==0)
-            json <- x
-          else
-            json <- signif(x,4)
-        }
+        if(is.numeric(x))
+          json <- prepare_number(x)
         if(is.logical(x)){
           if(x)
             json <- "true"

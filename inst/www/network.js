@@ -12,6 +12,7 @@ function network(Graph){
       heatmapTriangle = false,
       shiftKey = false,
       transform = d3.zoomIdentity,
+      backupNodes = false,
       frameControls = false,
       options;
 
@@ -63,9 +64,7 @@ function network(Graph){
       .html(typeof options.note == "string" ? options.note : "");
   }
 
-  plot
-    .style("width",width+"px")
-    //.style("height",height+"px")
+  plot.style("width",width+"px")
 
   displayArrows();
   displayBottomPanel();
@@ -84,11 +83,17 @@ function network(Graph){
     if(options.background)
       body.style("background",options.background);
 
-    var splitMultiVariable = function(d){
-      for (var p in d) {
-        if(typeof d[p] == "string" && d[p].indexOf("|")!=-1)
-          d[p] = d[p].split("|");
+    if(options.frames){
+      if(Graph.linknames.indexOf("_frame_")!=-1){
+        frameControls = {
+          "play": true,
+          "frame": -1,
+          "frames": options.frames,
+          "frameInterval": null,
+          "time": 5000
+        };
       }
+      delete options.frames;
     }
 
     var nodes = [],
@@ -112,6 +117,16 @@ function network(Graph){
 
     Graph.nodes = nodes;
 
+    if(frameControls){
+      Graph.nodes.forEach(function(node){
+        if(node.hasOwnProperty("fx") & !Array.isArray(node.fx))
+          node.fx = frameControls.frames.map(function(){ return node.fx; });
+        if(node.hasOwnProperty("fy") & !Array.isArray(node.fy))
+          node.fy = frameControls.frames.map(function(){ return node.fy; });
+      })
+      backupNodes = JSON.parse(JSON.stringify(Graph.nodes));
+    }
+
     if(Graph.links){
       var links = [];
 
@@ -133,16 +148,6 @@ function network(Graph){
     }else{
       Graph.links = [];
       Graph.linknames = [];
-    }
-
-    if(options.frames && Graph.linknames.indexOf("_frame_")!=-1){
-      frameControls = {
-        "play": true,
-        "frame": -1,
-        "frames": options.frames,
-        "frameInterval": null,
-        "time": 5000
-      };
     }
 
     if(Graph.tree){
@@ -239,24 +244,6 @@ function network(Graph){
       noShowFields.push(d);
     })
 
-    var showControls = function(n){
-      if(options.hasOwnProperty("controls")){
-        if(options.controls===0)
-          return false;
-        if(options.controls==-n)
-          return false;
-        if(options.controls==n)
-          return true;
-        if(Array.isArray(options.controls)){
-          if(options.controls.indexOf(-n)!=-1)
-            return false;
-          if(options.controls.indexOf(n)!=-1)
-            return true;
-        }
-      }
-      return null;
-    }
-
     options.showSidebar = showControls(1);
     options.showButtons2 = showControls(2);
     options.showTables = showControls(3);
@@ -278,7 +265,7 @@ function network(Graph){
         options.degreeFilter = [options.degreeFilter,Infinity];
     }
 
-    if(options.mode=="h" || options.mode[0]=="h"){
+    if(options.mode && (options.mode=="h" || options.mode[0]=="h")){
       heatmap = true;
     }
 
@@ -287,6 +274,45 @@ function network(Graph){
 
     if(!options.hasOwnProperty("distance"))
       options.distance = 10;
+
+    function splitMultiVariable(d){
+      for (var p in d) {
+        if(p!=options.nodeName){
+          if(typeof d[p] == "string" && d[p].indexOf("|")!=-1){
+            var aux = d[p].split("|");
+            if(!frameControls || aux.length==frameControls.frames.length)
+              d[p] = aux.map(function(d){ return isNaN(d) ? d : +d; });
+          }
+        }
+      }
+    }
+
+    function showControls(n){
+      if(options.hasOwnProperty("controls")){
+        if(options.controls===0)
+          return false;
+        if(options.controls==-n)
+          return false;
+        if(options.controls==n)
+          return true;
+        if(Array.isArray(options.controls)){
+          if(options.controls.indexOf(-n)!=-1)
+            return false;
+          if(options.controls.indexOf(n)!=-1)
+            return true;
+        }
+      }
+      return null;
+    }
+  }
+
+  function loadFrameData(frame){
+    for(var i=0; i<Graph.nodes.length; i++){
+      Graph.nodenames.forEach(function(col){
+        if(Array.isArray(backupNodes[i][col]))
+          Graph.nodes[i][col] = backupNodes[i][col][frame];
+      })
+    }
   }
 
 function displayArrows(){
@@ -1185,8 +1211,10 @@ function drawSVG(sel){
       options.charge = chargeRange[1] * (options.repulsion/100);
   if(!options.hasOwnProperty("linkDistance"))
       options.linkDistance = linkDistanceRange[1] * (options.distance/100);
-  if(!options.hasOwnProperty("zoomScale"))
-      options.zoomScale = options.zoom;
+  if(!options.hasOwnProperty("zoomScale")){
+      resetZoom();
+      net.attr("transform", transform);
+  }
 
   var zoomSlider = displaySlider()
       .y(35*options.cex)
@@ -1230,9 +1258,6 @@ function drawSVG(sel){
 
     loadSVGbuttons();
   }
-
-  resetPan();
-  net.attr("transform", transform);
 
   if(frameControls)
     handleFrames();
@@ -1478,6 +1503,8 @@ function handleFrames(){
         frameControls.frame++;
         if(frameControls.frame>=frameControls.frames.length)
           frameControls.frame=0;
+
+        loadFrameData(frameControls.frame);
 
         if(Array.isArray(options.main))
           body.select("div.main").html(options.main[frameControls.frame]);
@@ -2901,8 +2928,12 @@ function showTables() {
               textAlign = null;
           if(txt == null)
             txt = "";
-          if(typeof txt == 'object')
-            txt = txt.join("; ");
+          if(typeof txt == 'object'){
+            if(frameControls)
+              txt = txt[frameControls.frame];
+            else
+              txt = txt.join("; ");
+          }
           if(typeof txt == 'number'){
             txt = formatter(txt);
             textAlign = "right";
@@ -3134,64 +3165,85 @@ function selectNodesFromTable(){
 }
 
 function adaptLayout(){
-  var anyFixed = false;
-  for(var i=0; i<Graph.nodes.length; i++){
-    if(typeof Graph.nodes[i].fx == 'number' || typeof Graph.nodes[i].fy == 'number'){
-      anyFixed = true;
-      break;
-    }
+  var anyFixed = false,
+      nodes = backupNodes ? backupNodes : Graph.nodes;
+
+  for(var i=0; i<nodes.length; i++){
+      if(nodes[i].hasOwnProperty("fx") | nodes[i].hasOwnProperty("fy")){
+        anyFixed = true;
+        break;
+      }
   }
   if(anyFixed){
-  var size = Math.min(width,height),
-      xdim, ydim, xrange, yrange,
-      centerDim = function(dim){
-        if(dim[0]==dim[1]){
-          dim[0] = dim[0] - 1;
-          dim[1] = dim[1] + 1;
+    var size = Math.min(width,height),
+        xdim, ydim, xrange, yrange,
+        centerDim = function(dim){
+          if(dim[0]==dim[1]){
+            dim[0] = dim[0] - 1;
+            dim[1] = dim[1] + 1;
+          }
+          return dim;
         }
-        return dim;
-      }
 
-  if(oldWidth && oldHeight){
-    var oldSize = Math.min(oldWidth,oldHeight);
-    xdim = [(oldWidth-oldSize)/2,(oldWidth-oldSize)/2+oldSize];
-    ydim = [(oldHeight-oldSize)/2,(oldHeight-oldSize)/2+oldSize];
-    xrange = [(width-size)/2,(width-size)/2+size];
-    yrange = [(height-size)/2,(height-size)/2+size];
-  }else{
-    if(options.hasOwnProperty("limits") && options.limits.length==4){
-      xdim = [options.limits[0],options.limits[2]];
-      ydim = [options.limits[1],options.limits[3]];
+    if(oldWidth && oldHeight){
+      var oldSize = Math.min(oldWidth,oldHeight);
+      xdim = [(oldWidth-oldSize)/2,(oldWidth-oldSize)/2+oldSize];
+      ydim = [(oldHeight-oldSize)/2,(oldHeight-oldSize)/2+oldSize];
+      xrange = [(width-size)/2,(width-size)/2+size];
+      yrange = [(height-size)/2,(height-size)/2+size];
     }else{
-      xdim = centerDim(d3.extent(Graph.nodes,function(d){ return d.fx }));
-      ydim = centerDim(d3.extent(Graph.nodes,function(d){ return d.fy }));
+      if(options.hasOwnProperty("limits") && options.limits.length==4){
+        xdim = [options.limits[0],options.limits[2]];
+        ydim = [options.limits[1],options.limits[3]];
+      }else{
+        if(backupNodes){
+          xdim = centerDim(d3.extent(d3.merge(nodes.map(function(d){ return d.fx }))));
+          ydim = centerDim(d3.extent(d3.merge(nodes.map(function(d){ return d.fy }))));
+        }else{
+          xdim = centerDim(d3.extent(nodes,function(d){ return d.fx }));
+          ydim = centerDim(d3.extent(nodes,function(d){ return d.fy }));
+        }
+      }
+      size = size/1.2;
+      xrange = [-size/2,-size/2 +size];
+      yrange = [-size/2 +size,-size/2];
     }
-    size = size/1.2;
-    xrange = [-size/2,-size/2 +size];
-    yrange = [-size/2 +size,-size/2];
-  }
 
-  oldWidth = width;
-  oldHeight = height;
+    oldWidth = width;
+    oldHeight = height;
 
-  var x = d3.scaleLinear()
-    .range(xrange)
-    .domain(xdim);
+    var x = d3.scaleLinear()
+      .range(xrange)
+      .domain(xdim);
 
-  var y = d3.scaleLinear()
-    .range(yrange)
-    .domain(ydim);
+    var y = d3.scaleLinear()
+      .range(yrange)
+      .domain(ydim);
 
-  Graph.nodes.forEach(function(d){
-    if(typeof d.fx == 'number')
-      d.fx = x(d.fx);
-    else
-      options.stopped = false;
-    if(typeof d.fy == 'number')
-      d.fy = y(d.fy);
-    else
-      options.stopped = false;
-  });
+
+    if(backupNodes){
+      backupNodes.forEach(function(d){
+        if(d.hasOwnProperty("fx"))
+          d.fx = d.fx.map(function(e){ return(x(e)); });
+        else
+          options.stopped = false;
+        if(d.hasOwnProperty("fy"))
+          d.fy = d.fy.map(function(e){ return(y(e)); });
+        else
+          options.stopped = false;
+      });
+    }else{
+      Graph.nodes.forEach(function(d){
+        if(typeof d.fx == 'number')
+          d.fx = x(d.fx);
+        else
+          options.stopped = false;
+        if(typeof d.fy == 'number')
+          d.fy = y(d.fy);
+        else
+          options.stopped = false;
+      });
+    }
   }
 }
 
@@ -3247,14 +3299,10 @@ function svg2pdf(){
     displayWindow("The network is not loaded yet!");
 }
 
-function resetPan(){
-  transform.x = width/2;
-  transform.y = height/2;
-}
-
 function resetZoom(){
   transform.k = options.zoomScale = options.zoom;
-  resetPan();
+  transform.x = width/2;
+  transform.y = height/2;
 }
 
 function computeHeight(){

@@ -64,6 +64,12 @@ netCoin<-function (nodes, links = NULL, tree = NULL, name = NULL,
     else
       warning("scenarios: must be numeric")
   }
+  if (!is.null(limits)){
+    if(length(limits)!=4)
+      print("limits: must be a numeric list of length 4")
+    else
+      options[["limits"]] <- as.numeric(limits)
+  }
   if (!is.null(main)) options[["main"]] <- main
   if (!is.null(note)) options[["note"]] <- note
   if (!is.null(help)) options[["help"]] <- help
@@ -77,7 +83,6 @@ netCoin<-function (nodes, links = NULL, tree = NULL, name = NULL,
   if (!is.null(controls)) options[["controls"]] <- as.numeric(controls)
   if (!is.null(mode)) options[["mode"]] <- tolower(substr(as.character(mode),1,1))
   if (!is.null(axesLabels)) options[["axesLabels"]] <- as.character(axesLabels)
-  if (!is.null(limits)) options[["limits"]] <- as.numeric(limits)
   
   if(showCoordinates) options[["showCoordinates"]] <- TRUE
   if(showArrows) options[["showArrows"]] <- TRUE
