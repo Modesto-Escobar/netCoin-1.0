@@ -221,9 +221,10 @@ function network(Graph){
     if(!options.hasOwnProperty("zoom"))
       options.zoom = 1;
 
-    if(options.imageNames && !Array.isArray(options.imageNames))
-      options.imageNames = [options.imageNames];
-    else
+    if(options.imageNames){
+      if(!Array.isArray(options.imageNames))
+        options.imageNames = [options.imageNames];
+    }else
       options.imageNames = [];
     if(options.imageItems){
       if(!Array.isArray(options.imageItems))
@@ -1213,8 +1214,8 @@ function drawSVG(sel){
       options.linkDistance = linkDistanceRange[1] * (options.distance/100);
   if(!options.hasOwnProperty("zoomScale")){
       resetZoom();
-      net.attr("transform", transform);
   }
+  net.attr("transform", transform);
 
   var zoomSlider = displaySlider()
       .y(35*options.cex)
@@ -1314,6 +1315,7 @@ function drawSVG(sel){
       }},
       datMode = {txt: texts.netheatmap, callback: function(){
         heatmap = !heatmap;
+        resetZoom();
         displaySidebar();
       }, gap: 5},
       datReset = {txt: texts.reset, callback: function(){ location.reload(); }},

@@ -3,7 +3,13 @@ function timeline(json){
   var nodes = json.nodes,
       options = json.options;
 
+  var ctrlKey = false;
+
   var body = d3.select("body");
+
+  body
+    .on("keydown", keyflip)
+    .on("keyup", keyflip)
 
   if(options.cex)
     body.style("font-size", 10*options.cex + "px")
@@ -131,7 +137,8 @@ function timeline(json){
       .attr("y2", function(d,i) {return y2(i);})
       .attr("stroke", "lightgray");
 
-    mini.append("g").selectAll(".laneText")
+    var selectedGroups = d3.set();
+    var laneText = mini.append("g").selectAll(".laneText")
       .data(lanes)
       .enter().append("text")
       .text(function(d) {return d;})
@@ -139,7 +146,24 @@ function timeline(json){
       .attr("y", function(d, i) {return y2(i + .5);})
       .attr("dy", ".5ex")
       .attr("text-anchor", "end")
-      .attr("class", "laneText");
+      .attr("class", "laneText")
+      .on("click",function(group){
+        if(ctrlKey){
+          selectedGroups[selectedGroups.has(group)?"remove":"add"](group);
+        }else{
+          selectedGroups.clear();
+          selectedGroups.add(group);
+        }
+        laneText.each(function(g){
+          d3.select(this).style("font-weight",selectedGroups.has(g)?"bold":null);
+        })
+      })
+      .on("dblclick",function(group){
+        selectedGroups.add(group);
+        var filter = nodes.filter(function(d){ return selectedGroups.has(d[options.group]); })
+                       .map(function(d){ return d[options.name]; });
+        displayGraph(filter);
+      });
 
     //mini axis
     var xAxis = d3.axisBottom(x).tickFormat(formatter);
@@ -339,6 +363,10 @@ function timeline(json){
       yearGuide.style("height",guideHeight);
 
     }
+  }
+
+  function keyflip() {
+    ctrlKey = d3.event.ctrlKey | d3.event.metaKey;
   }
 
 function svgDownload(){

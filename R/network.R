@@ -157,13 +157,13 @@ imgWrapper <- function(net,dir){
       net$options[["imageItems"]] <- paste0(net$options[["imageItems"]],"_url")
       for(i in seq_along(net$options[["imageItems"]])){
         net$nodes[[net$options[["imageItems"]][i]]] <- net$nodes[[net$options[["imageNames"]][i]]]
-        net$nodes[[net$options[["imageNames"]][i]]] <- sub("\\.[a-zA-Z0-9]+$","",basename(net$nodes[[net$options[["imageNames"]][i]]]))
+        net$nodes[[net$options[["imageNames"]][i]]] <- sub("\\.[a-zA-Z0-9]+$","",basename(as.character(net$nodes[[net$options[["imageNames"]][i]]])))
       }
     }
     for(img in net$options[["imageItems"]]){
-      net$nodes[[img]] <- vapply(net$nodes[[img]],function(filepath){
+      net$nodes[[img]] <- vapply(as.character(net$nodes[[img]]),function(filepath){
         rawname <- getRawName(filepath)
-        file.copy(filepath, paste(imgDir,rawname,sep="/"))
+        file.copy(filepath, paste(imgDir,rawname,sep="/"), overwrite = FALSE)
         paste("images",rawname,sep="/")
       },character(1))
     }

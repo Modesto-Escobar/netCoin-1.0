@@ -34,9 +34,16 @@ createHTML <- function(directory, styles, dependencies, json){
     json <- json()
 
   html[html=="<!--json-->"] <- paste0('<script type="application/json" id="data">',json,'</script>')
+
   enc <- Encoding(json)
-  if(enc!="unknown")
+  if(enc=="unknown"){
+    enc <- "UTF-8"
+    if(!l10n_info()[["UTF-8"]])
+      enc <- "latin1"
+  }
+  if(enc!="UTF-8")
     html[html=='<meta charset="utf-8">'] <- paste0('<meta charset="',enc,'">')
+
   con <- file(paste(directory, "index.html", sep = "/"))
   writeLines(html,con)
   close(con)
