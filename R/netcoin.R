@@ -22,6 +22,7 @@ netCoin<-function (nodes, links = NULL, tree = NULL, name = NULL,
     nodes <- nodes$nodes
   }else{
     name <- nameByLanguage(name,language,nodes)
+    nodes[[name]] <- as.character(nodes[[name]])
     options <- list(nodeName=name)
   }
 
@@ -159,9 +160,9 @@ netCoin<-function (nodes, links = NULL, tree = NULL, name = NULL,
   }
   
   #community
+  community <- congloControl(community)
   if (!is.null(community)) {
-    commun <- congloControl(community)
-    net$nodes$community <- as.character(membership(conglos[[commun]](toIgraph(net))))
+    net$nodes$community <- as.character(membership(conglos[[community]](toIgraph(net))))
     net$options$nodeGroup <- "community"
   }    
   
@@ -1351,13 +1352,12 @@ congloControl<-function(conglo){
     conglos<-c("ed","fa","la","le","lo","op","sp","wa")
     conglo<-gsub("cluster_","",conglo)
     conglo<-(tolower(substr(conglo,1,2)))
-    if (conglo %in% conglos) return (conglo)
-    else {
-      text<-paste(conglo, "is not a valid layout")
-      warning(text)
-      return(NULL)
+    if (!(conglo %in% conglos)){
+      warning(paste(conglo, "is not a valid layout"))
+      conglo <- NULL
     }
   }
+  return(conglo)
 }
 
 dicho<-function(input,variables,value) {

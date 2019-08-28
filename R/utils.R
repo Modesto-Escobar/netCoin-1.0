@@ -33,18 +33,15 @@ createHTML <- function(directory, styles, dependencies, json){
   if(is.function(json))
     json <- json()
 
+  enc <- Encoding(json)
+  if(enc=="latin1" || (l10n_info()[["Latin-1"]] && enc=="unknown")){
+    Encoding(json) <- "latin1"
+    json <- enc2utf8(json)
+  }
+
   html[html=="<!--json-->"] <- paste0('<script type="application/json" id="data">',json,'</script>')
 
-  enc <- Encoding(json)
-  if(enc=="unknown"){
-    enc <- "UTF-8"
-    if(!l10n_info()[["UTF-8"]])
-      enc <- "latin1"
-  }
-  if(enc!="UTF-8")
-    html[html=='<meta charset="utf-8">'] <- paste0('<meta charset="',enc,'">')
-
-  con <- file(paste(directory, "index.html", sep = "/"))
+  con <- file(paste(directory, "index.html", sep = "/"), encoding = "UTF-8")
   writeLines(html,con)
   close(con)
 }
@@ -71,15 +68,20 @@ toJSON <- function(x){
   }
   sanitize_string <- function(x){
     x <- unname(x)
-    for(i in seq_len(nchar(x))){
-      raw <- charToRaw(substr(x,i,i))
-      if((length(raw)==1 && raw<0x20) || length(raw)>2)
-        substr(x,i,i) <- "_"
-    }
     n <- suppressWarnings(as.numeric(x))
-    if(is.na(n))
-      return(deparse(x))
-    else
+    if(is.na(n)){
+      x <- gsub("[[:cntrl:]]","",x)
+      x <- gsub("[\U00010000-\Uffffffff]","",x)
+      x <- deparse(x)
+      if(l10n_info()[["Latin-1"]]){
+        x <- gsub("([^\\])\\\\[0-7]{3}","\\1_",x)
+        x <- gsub("<U\\+([0-9a-fA-F]{4})>","\\\\u\\1",x)
+      }
+      if(l10n_info()[["UTF-8"]]){
+        x <- gsub("([^\\])\\\\x([0-9a-fA-F]{2})","\\1_",x)
+      }
+      return(x)
+    }else
       return(prepare_number(n))
   }
   json <- ""

@@ -6,11 +6,12 @@ function network(Graph){
       oldWidth = 0,
       oldHeight = 0,
       ctrlKey = false,
+      shiftKey = false,
       images = false,
       images64 = false,
       heatmap = false,
       heatmapTriangle = false,
-      shiftKey = false,
+      egoNet = false,
       transform = d3.zoomIdentity,
       backupNodes = false,
       frameControls = false,
@@ -318,43 +319,43 @@ function network(Graph){
 
 function displayArrows(){
 
-  var sidebarArrow = visArrow()
-    .item("showSidebar")
-    .top("10px")
-    .left("0px")
-    .title(texts.showhidesidebar)
-    .callback(displaySidebar)
-
-  panel.call(sidebarArrow);
-
   var buttonsArrow = visArrow()
     .item("showButtons")
-    .top((10+(20*options.cex))+"px")
+    .top("10px")
     .left("0px")
     .title(texts.showhidebuttons)
     .callback(function(){ plot.call(drawSVG); })
 
   panel.call(buttonsArrow);
 
-  var buttons2Arrow = visArrow()
-    .item("showButtons2")
-    .vertical(true)
-    .bottom("0px")
+  var sidebarArrow = visArrow()
+    .item("showSidebar")
+    .top((10+(20*options.cex))+"px")
     .left("0px")
-    .title(texts.showhidebuttons)
-    .callback(displayBottomPanel)
+    .title(texts.showhidesidebar)
+    .callback(displaySidebar)
 
-  panel.call(buttons2Arrow);
+  panel.call(sidebarArrow);
 
   var tablesArrow = visArrow()
     .item("showTables")
     .vertical(true)
     .bottom("0px")
-    .left("24px")
+    .left("0px")
     .title(texts.showhidetables)
     .callback(displayBottomPanel)
 
   panel.call(tablesArrow);
+
+  var buttons2Arrow = visArrow()
+    .item("showButtons2")
+    .vertical(true)
+    .bottom("0px")
+    .left("24px")
+    .title(texts.showhidebuttons)
+    .callback(displayBottomPanel)
+
+  panel.call(buttons2Arrow);
 }
 
 function displayBottomPanel(){
@@ -558,7 +559,7 @@ function displayBottomPanel(){
     selectButton(texts.tableselection,selectNodesFromTable);
     selectButton(texts.selectneighbors,selectNeighbors);
     selectButton(texts.isolateselection,isolateNodes);
-    selectButton(texts.egoNet,egoNet);
+    selectButton(texts.egoNet,displayEgoNet);
     if(Graph.tree)
       selectButton(texts.expandcollapse,treeAction);
     selectButton(texts.resetfilter,deleteNoShow);
@@ -663,7 +664,7 @@ function displaySidebar(){
   applyFuncObject[texts.select] = applySelection;
   applyFuncObject[texts.egoNet] = function(query,data){
         applySelection(query,data);
-        egoNet();
+        switchEgoNet();
     };
 
   divControl = sideNodes.append("div")
@@ -1048,7 +1049,8 @@ function applySelection(query,data){
     else
       delete d.selected;
   });
-  simulation.restart();
+  if(!heatmap)
+    simulation.restart();
   showTables();
 }
 
@@ -1212,13 +1214,12 @@ function drawSVG(sel){
       options.charge = chargeRange[1] * (options.repulsion/100);
   if(!options.hasOwnProperty("linkDistance"))
       options.linkDistance = linkDistanceRange[1] * (options.distance/100);
-  if(!options.hasOwnProperty("zoomScale")){
+  if(!options.hasOwnProperty("zoomScale"))
       resetZoom();
-  }
   net.attr("transform", transform);
 
   var zoomSlider = displaySlider()
-      .y(35*options.cex)
+      .y(44*options.cex)
       .domain(zoomRange)
       .text("Zoom")
       .prop('zoomScale')
@@ -1243,14 +1244,16 @@ function drawSVG(sel){
         .attr("transform",left ? "translate("+left+",0)":null)
 
     sliders.call(displaySlider()
-      .y(5*options.cex)
+      .y(8*options.cex)
       .domain(chargeRange)
+      .domain2([0,100])
       .text(texts.repulsion)
       .prop('charge')
       .callback(update_forces));
     sliders.call(displaySlider()
-      .y(20*options.cex)
+      .y(26*options.cex)
       .domain(linkDistanceRange)
+      .domain2([0,100])
       .text(texts.distance)
       .prop('linkDistance')
       .callback(update_forces));
@@ -1346,7 +1349,7 @@ function drawSVG(sel){
 
   gButton.exit().remove();
 
-  var count = 60;
+  var count = 70;
 
   gButton.enter().append("g")
     .attr("class","button")
@@ -1384,8 +1387,11 @@ function drawSVG(sel){
     var scale,
         brush,
         slider,
+        bubble,
         y = 0,
         domain = [1,0],
+        domain2 = false,
+        scale2 = false,
         text = "",
         prop = "",
         callback = null;
@@ -1395,6 +1401,12 @@ function drawSVG(sel){
         .clamp(true)
         .domain(domain)
         .range([0, sliderWidth])
+
+      if(domain2)
+        scale2 = d3.scaleLinear()
+          .clamp(true)
+          .domain(domain2)
+          .range([0, sliderWidth])
 
       brush = d3.brushX().extent([[-6,0], [sliderWidth + 6,12]]);
 
@@ -1419,8 +1431,6 @@ function drawSVG(sel){
           .attr("transform", "translate(0,-5)")
           .call(brush);
 
-      displaySlider.moveHandler();
-
       slider.selectAll('.handle').remove();
       slider.selectAll('.overlay').remove();
       slider.selectAll('rect.selection')
@@ -1431,12 +1441,23 @@ function drawSVG(sel){
       .attr("rx",6)
       .attr("ry",6)
 
-      brush.on("brush", brushed);
+      bubble = slider.append("text")
+        .attr("text-anchor","start");
+
+      displaySlider.moveHandler();
+
+      brush.on("brush", brushed)
+           .on("end", function(){
+             bubble.text("");
+           });
     }
 
     function brushed() {
-      var value = d3.mean(d3.event.selection.map(scale.invert, scale));
-      options[prop] = value;
+      var value = d3.mean(d3.event.selection);
+      options[prop] = scale.invert(value);
+      bubble
+        .attr("x",value+7)
+        .text(scale2 ? Math.round(scale2.invert(value)) : formatter(options[prop]));
       callback();
     }
 
@@ -1456,6 +1477,12 @@ function drawSVG(sel){
     displaySlider.domain = function(x) {
       if (!arguments.length) return domain;
       domain = x;
+      return displaySlider;
+    };
+
+    displaySlider.domain2 = function(x) {
+      if (!arguments.length) return domain2;
+      domain2 = x;
       return displaySlider;
     };
 
@@ -1555,12 +1582,35 @@ function drawNet(){
     });
   }
 
+  var nodeFilter = function(node){ return !node.noShow & !node._hideFrame; },
+      linkFilter = function(link){ return !link.noShow & !link.target.noShow & !link.source.noShow & !link._hideFrame; };
+
+  if(egoNet){
+    Graph.links.forEach(function(d){
+      if(!d.noShow & !d._hideFrame)
+        if(d.source.selected || d.target.selected)
+          d.target.neighbor = d.source.neighbor = true;
+    });
+    nodeFilter = function(node){
+      return !node.noShow & !node._hideFrame & (node.neighbor | node.selected);
+    }
+    linkFilter = function(link){
+      return !link.noShow & !link.target.noShow & !link.source.noShow & !link._hideFrame & ((link.source.select | link.source.neighbor) & (link.target.select | link.target.neighbor));
+    }
+  }
+
   var nodes = Graph.nodes.filter(function(node){
     node.degree = 0;
-    return !node.noShow & !node._hideFrame;
+    return nodeFilter(node);
   });
 
-  var links = Graph.links.filter(function(link){ return !link.noShow & !link.target.noShow & !link.source.noShow & !link._hideFrame; });
+  var links = Graph.links.filter(linkFilter);
+
+  if(egoNet){
+    Graph.nodes.forEach(function(node){
+      delete node.neighbor;
+    });
+  }
 
   for(var i=1; i<links.length; i++){
     for(var j = i-1; j>=0; j--){
@@ -2324,7 +2374,7 @@ function dblClickNet(){
       node.selected = true;
       treeAction();
     }else
-      egoNet();
+      switchEgoNet();
   }else{
     deleteNoShow();
     applyDegreeFilter();
@@ -2652,7 +2702,8 @@ function selectAllNodes(){
     Graph.nodes.forEach(function(d){
       delete d.selected;
     });
-  simulation.restart();
+  if(!heatmap)
+    simulation.restart();
   showTables();
 }
 
@@ -2669,8 +2720,8 @@ function isolateNodes(){
 }
 
 function deleteNoShow(){
+  egoNet = false;
   Graph.nodes.forEach(function(d){ delete d.noShow; });
-  Graph.links.forEach(function(d){ delete d.noShow; });
   drawNet();
 }
 
@@ -2687,26 +2738,22 @@ function selectNeighbors(){
       d.selected = !d.noShow && d.neighbor;
       delete d.neighbor;
     });
-    simulation.restart();
+    if(!heatmap)
+      simulation.restart();
     showTables();
   }
 }
 
-function egoNet(){
-  if(!Graph.nodes.filter(function(d){ return d.selected; }).length){
-    displayWindow(texts.alertnonodes);
-  }else{
-    Graph.links.forEach(function(d){
-      if(!d.noShow & !d._hideFrame)
-        if(d.source.selected || d.target.selected)
-          d.target.neighbor = d.source.neighbor = true;
-    });
-    Graph.nodes.forEach(function(d){
-      d.noShow = d.noShow || (!d.neighbor && !d.selected);
-      delete d.neighbor;
-    });
+function switchEgoNet(){
+    egoNet = true;
     drawNet();
-  }
+}
+
+function displayEgoNet(){
+  if(!Graph.nodes.filter(function(d){ return d.selected; }).length)
+    displayWindow(texts.alertnonodes);
+  else
+    switchEgoNet();
 }
 
 function treeAction(){
@@ -2742,6 +2789,12 @@ function stopResumeNet(){
         delete node.fx;
         delete node.fy;
     });
+    if(backupNodes){
+      backupNodes.forEach(function(node){
+        delete node.fx;
+        delete node.fy;
+      });
+    }
     d3.selectAll(".slider.charge, .slider.linkDistance")
       .style("opacity",1);
     update_forces();
@@ -2817,7 +2870,8 @@ function displayLegend(scale, key, color, shape, dat){
             return this.parentNode.selected? "bold" : null;
         });
         legendSelected();
-        simulation.restart();
+        if(!heatmap)
+          simulation.restart();
         showTables();
       })
       .on("dblclick", function(){
@@ -2827,7 +2881,7 @@ function displayLegend(scale, key, color, shape, dat){
           legendSelected();
           treeAction();
         }else
-          egoNet();
+          switchEgoNet();
       })
 
   function legendSelected(){
@@ -3161,7 +3215,8 @@ function selectNodesFromTable(){
           Graph.nodes.forEach(function(d){
             d.selected = names.indexOf(d[options.nodeName]) != -1;
           });
-          simulation.restart();
+          if(!heatmap)
+            simulation.restart();
           showTables();
         }
 }
