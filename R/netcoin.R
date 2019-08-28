@@ -347,6 +347,7 @@ surCoin<-function(data,variables=names(data), commonlabel=NULL,
     if(coin) return(C)
     O<-asNodes(C,frequency,percentages,arguments$language)
     names(O)[1]<-name
+    O$variable <- sub(":.*","",O[,name])
     if(!is.null(nodes)) {
       O<-merge(O,nodes[,setdiff(names(nodes),frequencyList),drop=FALSE],by.x=name,by.y=name,all.x=TRUE)
     }else {
@@ -1362,8 +1363,11 @@ congloControl<-function(conglo){
 
 dicho<-function(input,variables,value) {
   datum<-as.data.frame(ifelse(input[,variables]==value,1,0))
-  if (all(class(input)==c("tbl_df","tbl","data.frame"))) 
-    names(datum)<-sapply(input[,variables],attr,"label")
+  j=0
+  for (i in variables) {
+    j=j+1
+    names(datum)[j] <- ifelse(exists("label",attributes(input[[i]])),attr(input[[i]],"label"),i)
+  }
   return(datum)
 }
 
