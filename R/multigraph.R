@@ -87,21 +87,21 @@ frameGraph <- function(multi,dir){
 
   options <- multi[[1]]$options
   getAll <- function(opt,item){
-      items <- vapply(multi,function(x){
+      items <- sapply(multi,function(x){
         if(!is.null(x$options[[item]]))
           return(x$options[[item]])
         else
           return("")
-      },character(1))
+      })
       if(length(unique(items))!=1)
         opt[[item]] <- items
       return(opt)
   }
-  options <- getAll(options,"main")
-  options <- getAll(options,"note")
+  for(i in c("main","note","repulsion","distance","zoom"))
+    options <- getAll(options,i)
   options$frames <- frames
   net <- structure(list(links=links,nodes=nodes,options=options),class="netCoin")
-  netCoin(net,dir=dir)
+  netCreate(net,dir)
 }
 
 #create html wrapper for multigraph

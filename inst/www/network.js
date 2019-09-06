@@ -15,6 +15,9 @@ function network(Graph){
       transform = d3.zoomIdentity,
       backupNodes = false,
       frameControls = false,
+      repulsionSlider,
+      distanceSlider,
+      zoomSlider,
       options;
 
   var defaultColor = "#1f77b4", // nodes and areas default color
@@ -26,10 +29,12 @@ function network(Graph){
       linkWeightRange = [200,40], // link weight range (link distance)
       linkWidthRange = [1,5], // link width range
       zoomRange = [0.1, 10], // zoom range
+      chargeRange = [0,-1000], // charge range
+      linkDistanceRange = [0,500], // link distance range
       axisExtension = 50, // pixels to increase the axes size
       sliderWidth = 200, // width of the sliders
       infoPanelLeft = docSize.width * (2/3), // information panel left position
-      noShowFields = ["Source","Target","x","y","source","target","vx","vy","fx","fy","id","selected","nodeSize","noShow", "childNodes", "parentNode","_frame_"]; // not to show in sidebar controllers or tables
+      noShowFields = ["Source","Target","x","y","source","target","vx","vy","fx","fy","id","selected","nodeSize","noShow","childNodes","parentNode","_frame_"]; // not to show in sidebar controllers or tables
 
   var simulation = d3.forceSimulation()
       .force("link", d3.forceLink())
@@ -91,10 +96,18 @@ function network(Graph){
           "frame": -1,
           "frames": options.frames,
           "frameInterval": null,
-          "time": 5000
+          "time": 5000,
+          "loop": false
         };
       }
       delete options.frames;
+
+      ["zoom","repulsion","distance"].forEach(function(d){
+        if(options.hasOwnProperty(d) && Array.isArray(options[d])){
+          frameControls[d] = options[d];
+          options[d] = options[d][0];
+        }
+      });
     }
 
     var nodes = [],
@@ -222,6 +235,12 @@ function network(Graph){
     if(!options.hasOwnProperty("zoom"))
       options.zoom = 1;
 
+    if(!options.hasOwnProperty("repulsion"))
+      options.repulsion = 25;
+
+    if(!options.hasOwnProperty("distance"))
+      options.distance = 10;
+
     if(options.imageNames){
       if(!Array.isArray(options.imageNames))
         options.imageNames = [options.imageNames];
@@ -270,12 +289,6 @@ function network(Graph){
     if(options.mode && (options.mode=="h" || options.mode[0]=="h")){
       heatmap = true;
     }
-
-    if(!options.hasOwnProperty("repulsion"))
-      options.repulsion = 25;
-
-    if(!options.hasOwnProperty("distance"))
-      options.distance = 10;
 
     function splitMultiVariable(d){
       for (var p in d) {
@@ -444,7 +457,26 @@ function displayBottomPanel(){
     var divFrameCtrl = tables.append("div")
       .attr("class", "divFrameCtrl")
 
-    divFrameCtrl.append("button") // |<
+    divFrameCtrl.append("select")
+      .attr("class","selectFrame")
+      .on("change",function(){
+        frameControls.frame = +(this.value)-1;
+        frameControls.play = false;
+        clickThis();
+        handleFrames();
+      })
+      .selectAll("option")
+        .data(frameControls.frames)
+      .enter().append("option")
+        .property("value",function(d,i){ return i; })
+        .text(function(d,i){
+          if(Array.isArray(options.main))
+            return options.main[i];
+          else
+            return d;
+        })
+
+    divFrameCtrl.append("button") // prev
       .html(getSVG(['M0,0L2,0L2,8L0,8Z','M8,0L8,8L2,4Z']))
       .on("click",function(){
         frameControls.frame = frameControls.frame-2;
@@ -454,15 +486,55 @@ function displayBottomPanel(){
         clickThis();
         handleFrames();
       })
-    divFrameCtrl.append("button") // []
+    divFrameCtrl.append("button") // loop
+      .html(getSVG(['m5.8204 4.576c0 1.015-0.8054 1.8204-1.8204 1.8204s-1.8204-0.8054-1.8204-1.8204 0.8054-1.8204 1.8204-1.8204v-1.6036c-1.8815 0-3.424 1.5425-3.424 3.424s1.5425 3.424 3.424 3.424 3.424-1.5425 3.424-3.424z','m4 0v4l2.5-2z']))
+      .on("click",function(){
+        frameControls.loop = !frameControls.loop;
+        d3.select(this).style("background-color",frameControls.loop?"#ccc":null);
+      })
+    divFrameCtrl.append("button") // rec
+      .attr("class","rec")
+      .html(getSVG(['m8 4a4 4 0 0 1 -4 4 4 4 0 0 1 -4 -4 4 4 0 0 1 4 -4 4 4 0 0 1 4 4z']))
+      .on("click",function(){
+        if(frameControls.recorder){
+          frameControls.recorder.stop();
+          delete frameControls.recorder;
+          d3.select(this).select("path").style("fill",null);
+        }else{
+          var data = [],
+              stream = d3.select("div.plot > canvas").node().captureStream();
+
+          frameControls.recorder = new MediaRecorder(stream, { mimeType: "video/webm" });
+
+          frameControls.recorder.ondataavailable = function(event) {
+            if (event.data && event.data.size) {
+              data.push(event.data);
+            }
+          };
+
+          frameControls.recorder.onstop = function(){
+            var ts = Math.round((new Date()).getTime() / 1000);
+            fileDownload(new Blob(data, { type: "video/webm" }),ts+"_record.webm");
+          };
+
+          frameControls.recorder.start();
+          d3.select(this).select("path").style("fill","Firebrick");
+        }
+      })
+    divFrameCtrl.append("button") // stop
       .html(getSVG(['M0,0L8,0L8,8L0,8Z']))
       .on("click",function(){
         frameControls.frame = -1;
         frameControls.play = false;
         clickThis();
         handleFrames();
+        if(frameControls.recorder){
+          frameControls.recorder.stop();
+          delete frameControls.recorder;
+          divFrameCtrl.select("button.rec path").style("fill",null);
+        }
       })
-    divFrameCtrl.append("button") // ||
+    divFrameCtrl.append("button") // pause
       .attr("class","pause")
       .html(getSVG(['M1,0L3,0L3,8L1,8Z','M5,0L7,0L7,8L5,8Z']))
       .on("click",function(){
@@ -470,8 +542,9 @@ function displayBottomPanel(){
         clickThis(this);
         clearInterval(frameControls.frameInterval);
       })
-    divFrameCtrl.append("button") // >
+    divFrameCtrl.append("button") // play
       .style("background-color","#ccc")
+      .attr("class","play")
       .html(getSVG(['M1,0L1,8L7,4Z']))
       .on("click",function(){
         frameControls.time = 5000;
@@ -479,7 +552,8 @@ function displayBottomPanel(){
         clickThis(this);
         handleFrames();
       })
-    divFrameCtrl.append("button") // >>
+    divFrameCtrl.append("button") // play2
+      .attr("class","play2")
       .html(getSVG(['M0,0L4,4L0,8Z','M4,0L8,4L4,8Z']))
       .on("click",function(){
         frameControls.time = 3000;
@@ -487,7 +561,8 @@ function displayBottomPanel(){
         clickThis(this);
         handleFrames();
       })
-    divFrameCtrl.append("button") // >>>
+    divFrameCtrl.append("button") // play3
+      .attr("class","play3")
       .html(getSVG(['M0,0L3,4L0,8Z','M2.5,0L2.5,8L5.5,4Z','M5,0L8,4L5,8Z']))
       .on("click",function(){
         frameControls.time = 1000;
@@ -495,7 +570,7 @@ function displayBottomPanel(){
         clickThis(this);
         handleFrames();
       })
-    divFrameCtrl.append("button") // >|
+    divFrameCtrl.append("button") // next
       .html(getSVG(['M0,0L0,8L6,4Z','M8,0L6,0L6,8L8,8Z']))
       .on("click",function(){
         frameControls.play = false;
@@ -504,7 +579,7 @@ function displayBottomPanel(){
       })
 
     function clickThis(self){
-      divFrameCtrl.selectAll("button").style("background-color",null);
+      divFrameCtrl.selectAll("button.pause, button.play, button.play2, button.play3").style("background-color",null);
       if(self)
         d3.select(self).style("background-color","#ccc");
       else
@@ -1206,9 +1281,9 @@ function drawSVG(sel){
   svg.append("g").attr("class","scale")
     .attr("transform", "translate("+(width-320)+",20)");
 
-  var size = Math.min(width,height),
-      chargeRange = [0,-(size*2)],
-      linkDistanceRange = [0,size*3/4];
+  var size = Math.min(width,height);
+  chargeRange = [0,-(size*2)];
+  linkDistanceRange = [0,size*3/4];
 
   if(!options.hasOwnProperty("charge"))
       options.charge = chargeRange[1] * (options.repulsion/100);
@@ -1218,7 +1293,7 @@ function drawSVG(sel){
       resetZoom();
   net.attr("transform", transform);
 
-  var zoomSlider = displaySlider()
+  zoomSlider = displaySlider()
       .y(44*options.cex)
       .domain(zoomRange)
       .text("Zoom")
@@ -1243,20 +1318,23 @@ function drawSVG(sel){
         .attr("class","sliders")
         .attr("transform",left ? "translate("+left+",0)":null)
 
-    sliders.call(displaySlider()
+    repulsionSlider = displaySlider()
       .y(8*options.cex)
       .domain(chargeRange)
       .domain2([0,100])
       .text(texts.repulsion)
       .prop('charge')
-      .callback(update_forces));
-    sliders.call(displaySlider()
+      .callback(update_forces)
+    sliders.call(repulsionSlider);
+
+    distanceSlider = displaySlider()
       .y(26*options.cex)
       .domain(linkDistanceRange)
       .domain2([0,100])
       .text(texts.distance)
       .prop('linkDistance')
-      .callback(update_forces));
+      .callback(update_forces)
+    sliders.call(distanceSlider);
 
     sliders.call(zoomSlider);
 
@@ -1272,7 +1350,7 @@ function drawSVG(sel){
     if(!shiftKey){
       transform = d3.event.transform;
       options.zoomScale = transform.k;
-      zoomSlider.moveHandler();
+      zoomSlider.update();
     }
   }
 
@@ -1298,7 +1376,7 @@ function drawSVG(sel){
       datStopResume = {txt: texts.stopresume, callback: stopResumeNet},
       datScale = {txt: texts.resetzoom, callback: function(){
         resetZoom();
-        zoomSlider.moveHandler();
+        zoomSlider.update();
       }, gap: 5},
       datDirectional = {txt: texts.directional, callback: function(){
         options.showArrows = !options.showArrows;
@@ -1440,28 +1518,42 @@ function drawSVG(sel){
       .attr("shape-rendering",null)
       .attr("rx",6)
       .attr("ry",6)
+      .on("mouseover",function(){ bubble.style("visibility","visible"); })
+      .on("mouseleave",function(){ bubble.style("visibility","hidden"); })
 
+      var value = scale(options[prop]);
       bubble = slider.append("text")
-        .attr("text-anchor","start");
+        .attr("text-anchor","start")
+        .style("visibility","hidden");
+      updateBubble(value);
 
-      displaySlider.moveHandler();
+      displaySlider.update();
 
       brush.on("brush", brushed)
-           .on("end", function(){
-             bubble.text("");
-           });
+           .on("start",function(){
+             slider.selectAll('rect.selection').on("mouseleave",null);
+             bubble.style("visibility","visible");
+           })
+           .on("end",function(){
+             bubble.style("visibility","hidden");
+             slider.selectAll('rect.selection').on("mouseleave",function(){ bubble.style("visibility","hidden"); });
+           })
     }
 
     function brushed() {
       var value = d3.mean(d3.event.selection);
       options[prop] = scale.invert(value);
-      bubble
-        .attr("x",value+7)
-        .text(scale2 ? Math.round(scale2.invert(value)) : formatter(options[prop]));
+      updateBubble(value);
       callback();
     }
 
-    displaySlider.moveHandler = function(){
+    function updateBubble(value){
+      bubble
+        .attr("x",value+7)
+        .text(scale2 ? Math.round(scale2.invert(value)) : formatter(options[prop]));
+    }
+
+    displaySlider.update = function(){
       if(slider)
         slider.call(brush.move,[scale(options[prop])-6,scale(options[prop])+6]);
       else
@@ -1533,6 +1625,7 @@ function handleFrames(){
         if(frameControls.frame>=frameControls.frames.length)
           frameControls.frame=0;
 
+        d3.select(".divFrameCtrl .selectFrame").node().selectedIndex = frameControls.frame;
         loadFrameData(frameControls.frame);
 
         if(Array.isArray(options.main))
@@ -1554,6 +1647,25 @@ function handleFrames(){
         });
 
         drawNet();
+
+        if(frameControls.hasOwnProperty("zoom")){
+          options.zoom = frameControls.zoom[frameControls.frame];
+          resetZoom();
+          zoomSlider.update()
+        }
+        if(frameControls.hasOwnProperty("repulsion")){
+          options.repulsion = frameControls.repulsion[frameControls.frame];
+          options.charge = chargeRange[1] * (options.repulsion/100);
+          repulsionSlider.update()
+        }
+        if(frameControls.hasOwnProperty("distance")){
+          options.distance = frameControls.distance[frameControls.frame];
+          options.linkDistance = linkDistanceRange[1] * (options.distance/100);
+          distanceSlider.update()
+        }
+
+        if(frameControls.frame==frameControls.frames.length-1 & !frameControls.loop)
+          d3.select(".divFrameCtrl .pause").dispatch("click");
       }
 }
 
@@ -2019,7 +2131,8 @@ function drawNet(){
   //render network
   function tick() {
     ctx.save();
-    ctx.clearRect(0, 0, width, height);
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, width, height);
     ctx.translate(transform.x, transform.y);
     ctx.scale(transform.k, transform.k);
 
@@ -2044,6 +2157,8 @@ function drawNet(){
     ctx.globalAlpha = 0.6;
     links.forEach(function(link) {
       var points = getLinkCoords(link);
+      if(!points)
+        return;
       ctx.beginPath();
       ctx.lineWidth = getLinkWidth(link);
       ctx.strokeStyle = link._selected? "#F00" : (colorLinksScale ? colorLinks(link) : defaultLinkColor);
@@ -2180,8 +2295,12 @@ function drawNet(){
     links.forEach(function(link){
       var color = applyOpacity(d3.rgb(colorLinksScale ? colorLinks(link) : defaultLinkColor),0.6,{r:255,g:255,b:255}),
           w = getLinkWidth(link)*scale,
-          points = getLinkCoords(link),
-          x1 = (points[0][0]*scale)+translate[0],
+          points = getLinkCoords(link);
+
+      if(!points)
+        return;
+
+      var x1 = (points[0][0]*scale)+translate[0],
           y1 = (points[0][1]*scale)+translate[1],
           x2 = (points[1][0]*scale)+translate[0],
           y2 = (points[1][1]*scale)+translate[1];
@@ -2472,6 +2591,9 @@ function getLinkCoords(link){
           ty = link.target.y,
           offSetX,
           offSetY;
+
+      if(sx==tx & sy==ty)
+        return 0;
 
       if(options.showArrows || link.linkNum){
         var dx = tx - sx,
@@ -3036,9 +3158,11 @@ function showTables() {
         columns.forEach(function(d){
           var sort1 = function(a,b){
               var rv = [1,-1];
-              a = a[d]==null?Infinity:a[d][options.nodeName]?a[d][options.nodeName]:a[d];
-              b = b[d]==null?Infinity:b[d][options.nodeName]?b[d][options.nodeName]:b[d];
-              if(typeof a == "number" && typeof b == "number"){
+              if(a[d]==null) return rv[0];
+              if(b[d]==null) return rv[1];
+              a = a[d][options.nodeName]?a[d][options.nodeName]:a[d];
+              b = b[d][options.nodeName]?b[d][options.nodeName]:b[d];
+              if(typeof a == "number" & typeof b == "number"){
                 if(!desc)
                   rv = rv.reverse();
               }else{
@@ -3068,7 +3192,7 @@ function showTables() {
     table.html("");
     table.append("div")
       .attr("class","title")
-      .html("<span>"+texts[name+"attributes"] + "</span> ("+dat.length+" "+texts.outof+" "+Graph[name].length+")");
+      .html("<span>"+texts[name+"attributes"] + "</span> ("+dat.length+" "+texts.outof+" "+(frameControls ? Graph[name].filter(function(d){ return !d._hideFrame; }).length : Graph[name].length)+")");
     table = table.append("div");
     if(dat.length==0){
       table.style("cursor",null);
@@ -3278,6 +3402,7 @@ function adaptLayout(){
       .domain(ydim);
 
 
+    options.stopped = true;
     if(backupNodes){
       backupNodes.forEach(function(d){
         if(d.hasOwnProperty("fx"))

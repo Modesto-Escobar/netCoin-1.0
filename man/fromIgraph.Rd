@@ -10,17 +10,10 @@ If the 'dir' attribute is specified, the function creates a folder in the comput
 }
 
 \usage{
-fromIgraph(G, layout = NULL, language = c("en","es","ca"), dir = NULL, ...)
+fromIgraph(G, ...)
 }
 \arguments{
 \item{G}{an igraph object.}
-
-\item{layout}{a matrix with two columns.}
-
-\item{language}{a character vector (es=spanish; en=english; ca=catalan).}
-
-\item{dir}{a "character" string representing the directory where the graph will be saved.}
-
 \item{...}{Any \link{netCoin} argument.}
 }
 \description{

@@ -1,5 +1,5 @@
-\name{prop.coin}
-\alias{prop.coin}
+\name{propCoin}
+\alias{propCoin}
 \title{
 Express Coin Entries as Fraction of Marginal Table
 }
@@ -7,7 +7,7 @@ Express Coin Entries as Fraction of Marginal Table
 This is like 'prop.table' for 'coin' objects.
 }
 \usage{
-prop.coin(x, margin= 0, decimals=1)
+propCoin(x, margin= 0, decimals=1)
 }
 \arguments{
   \item{x}{'coin' object.}
@@ -26,5 +26,5 @@ I <- matrix(rbinom(100, 1, .5), nrow = 25, ncol = 4,
             dimnames = list(NULL, c("A", "B", "C", "D")))
 C <- coin(I, sort = TRUE)
 
-prop.coin(C, 1)
+propCoin(C, 1)
 }

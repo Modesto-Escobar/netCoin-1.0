@@ -40,21 +40,24 @@ netCoin<-function (nodes, links = NULL, tree = NULL, name = NULL,
       warning("tree: no row (Source and Target) matches the name column of the nodes")
     }
   }
-  
+
   # graph options
   options[["cex"]] <- 1
   if(is.numeric(cex))
     options[["cex"]] <- cex
   else
     warning("cex: must be numeric")
+  options[["repulsion"]] <- 25
   if(is.numeric(repulsion) && repulsion>=0 && repulsion<=100)
     options[["repulsion"]] <- repulsion
   else
     warning("repulsion: must be numeric between 0 and 100")
+  options[["distance"]] <- 10
   if(is.numeric(distance) && distance>=0 && distance<=100)
     options[["distance"]] <- distance
   else
     warning("distance: must be numeric between 0 and 100")
+  options[["zoom"]] <- 1
   if(is.numeric(zoom) && zoom>=0.1 && zoom<=10)
     options[["zoom"]] <- zoom
   else
@@ -76,7 +79,7 @@ netCoin<-function (nodes, links = NULL, tree = NULL, name = NULL,
   if (!is.null(help)) options[["help"]] <- help
   if (!is.null(background)) options[["background"]] <- background
   if (!is.null(language)) options[["language"]] <- language[1]
-  
+
   if(nodeBipolar) options[["nodeBipolar"]] <- TRUE
   if(linkBipolar) options[["linkBipolar"]] <- TRUE
   if(helpOn) options[["helpOn"]] <- TRUE
@@ -84,12 +87,12 @@ netCoin<-function (nodes, links = NULL, tree = NULL, name = NULL,
   if (!is.null(controls)) options[["controls"]] <- as.numeric(controls)
   if (!is.null(mode)) options[["mode"]] <- tolower(substr(as.character(mode),1,1))
   if (!is.null(axesLabels)) options[["axesLabels"]] <- as.character(axesLabels)
-  
+
   if(showCoordinates) options[["showCoordinates"]] <- TRUE
   if(showArrows) options[["showArrows"]] <- TRUE
   if(showLegend) options[["showLegend"]] <- TRUE
   if(showAxes) options[["showAxes"]] <- TRUE
-  
+
   # node options
   if(is.null(label))
       options[["nodeLabel"]] <- name
@@ -118,13 +121,13 @@ netCoin<-function (nodes, links = NULL, tree = NULL, name = NULL,
       }
     }
   }
-  
+
   # link options
   if (!is.null(lwidth)) options[["linkIntensity"]] <- options[["linkWidth"]] <- lwidth
   if (!is.null(lweight)) options[["linkWeight"]] <- lweight
   if (!is.null(lcolor)) options[["linkColor"]] <- lcolor
   if (!is.null(ltext)) options[["linkText"]] <- ltext
-  
+
   # filters
   rownames(nodes) <- nodes[,name]
   if (!is.null(nodeFilter)){
@@ -136,17 +139,17 @@ netCoin<-function (nodes, links = NULL, tree = NULL, name = NULL,
     if(!is.null(links))
       links[(as.character(links[,"Source"]) %in% noShowNodes)|(as.character(links[,"Target"]) %in% noShowNodes),"noShow"] <- TRUE
   }
-  
+
   if (!is.null(links) && !is.null(linkFilter)){
     if(!"noShow" %in% colnames(links))
       links$noShow <- FALSE
     links[,"noShow"] <- links[,"noShow"] | !with(links,eval(parse(text=linkFilter)))
   }
-  
+
   if (!is.null(degreeFilter)) options[["degreeFilter"]] <- as.numeric(degreeFilter)
-  
+
   net <- structure(list(links=links,nodes=nodes,tree=tree,options=options),class="netCoin")
-  
+
   #layout
   if (!is.null(layout)) {
     if(is.character(layout)){ 
@@ -158,14 +161,14 @@ netCoin<-function (nodes, links = NULL, tree = NULL, name = NULL,
       net <- netAddLayout(net,layout)
     else warning("layout is not a matrix")
   }
-  
+
   #community
   community <- congloControl(community)
   if (!is.null(community)) {
     net$nodes$community <- as.character(membership(conglos[[community]](toIgraph(net))))
     net$options$nodeGroup <- "community"
-  }    
-  
+  }
+
   if (!is.null(dir)) net <- netCreate(net,dir)
   return(net)
 }
@@ -1035,7 +1038,7 @@ summaryNet <- function(x){
        }
 }
 
-prop.coin<-function(x, margin= 0, decimals=1) {
+propCoin<-function(x, margin= 0, decimals=1) {
   if (class(x)!="coin") stop("Error: input must be a coin object (see coin function)")
   n<-attr(x,"n")
   x <- x[,]
@@ -1095,83 +1098,108 @@ toColorScale <- function(items){
   "#9edae5" # light cyan
      )
 	items <- as.numeric(as.factor(items))
-	if(max(items)>length(colors))
-	  return("black")
-	else
-	  return(colors[items])
+        items <- ((items-1) %% length(colors))+1
+	return(colors[items])
   }
 }
 
+# igraph -> netCoin
+fromIgraph <- function(G, ...){
+  if (class(G)=="igraph"){
+
+    #arguments
+    arguments <- list(...)
+
+    #main
+    if(is.null(arguments$main) && !is.null(G$name))
+      arguments$main <- G$name
+
+    #network direction
+    if(is.null(arguments$showArrows) && igraph::is_directed(G))
+      arguments$showArrows <- TRUE
+
+    #nodes
+    nodeNames <- V(G)$name
+    if(is.null(nodeNames))
+      nodeNames <- as.character(seq_along(V(G)))
+    nodes <- data.frame(name=nodeNames)
+    if(is.null(arguments$name))
+      arguments$name <- nameByLanguage(NULL,arguments$language,NULL)
+    names(nodes)[1] <- arguments$name
+
+    #links
+    links <- get.edgelist(G)
+    links <- data.frame(Source=links[,1],Target=links[,2])
+
+    #vertex attributes
+    nargs <- c(label="label", label.cex="labelSize", size="size", color="color", shape="shape")
+    for(i in igraph::list.vertex.attributes(G)){
+      nodes[[i]] <- igraph::get.vertex.attribute(G,i)
+      if(i %in% names(nargs) && !(nargs[i] %in% names(arguments)))
+        arguments[[nargs[i]]] <- i
+    }
+
+    #edges attributes
+    largs <- c(width="lwidth", weight="lweight", color="lcolor", label="ltext")
+    for(i in igraph::list.edge.attributes(G)){
+      links[[i]] <- igraph::get.edge.attribute(G,i)
+      if(i %in% names(largs) && !(largs[i] %in% names(arguments)))
+        arguments[[largs[i]]] <- i
+    }
+
+    #net elaborarion
+    arguments$nodes <- nodes
+    arguments$links <- links
+    return(do.call(netCoin,arguments))
+  }else
+    warning("is not an igraph object")
+}
+
+# netCoin -> igraph
 toIgraph <- function(net){
   if (class(net)=="netCoin"){
     nodes <- net$nodes
     links <- net$links
     options <- net$options
-    
-    if(exists("showArrows",net$options)) directed<-net$show$Arrows else directed=FALSE
-    g <- graph.empty(0, directed)
-    
-    if(!is.null(options[["nodeColor"]])){
-      nodes[,options[["nodeColor"]]] <- toColorScale(nodes[,options[["nodeColor"]]])
+
+    #network direction
+    if(exists("showArrows",net$options))
+      directed <- net$show$Arrows
+    else
+      directed <- FALSE
+
+    #nodes
+    nargs <- c(name="nodeName", label="nodeLabel", label.cex="nodeLabelSize", size="nodeSize", color="nodeColor", shape="nodeShape")
+    for(n in names(nargs)){
+      col <- options[[nargs[[n]]]]
+      if(!is.null(col) && col %in% colnames(nodes))
+        nodes[[n]] <- nodes[[col]]
     }
-    if(!is.null(options[["linkColor"]])){
-      links[,options[["linkColor"]]] <- toColorScale(links[,options[["linkColor"]]])
+    if("fx" %in% colnames(nodes))
+      colnames(nodes)[which(colnames(nodes)=="fx")] <- "x"
+    if("fy" %in% colnames(nodes))
+      colnames(nodes)[which(colnames(nodes)=="fy")] <- "y"
+
+    #links
+    links <- links[,union(c("Source","Target"),colnames(links))]
+    colnames(links)[1:2] <- c("from","to")
+    largs <- c(width="lwidth", weight="lweight", color="lcolor", label="ltext")
+    for(l in names(largs)){
+      col <- options[[largs[[l]]]]
+      if(!is.null(col) && col %in% colnames(links))
+        links[[l]] <- links[[col]]
     }
-    
-    for(i in seq_len(nrow(nodes))){
-      attr <- list()
-      if(!is.null(options[["nodeLabel"]]))
-        attr[['label']] <- as.character(nodes[i,options[["nodeLabel"]]])
-      else
-        attr[['label']] <- as.character(nodes[i,options[["nodeName"]]])
-      if(!is.null(options[["nodeColor"]]))
-        attr[['color']] <- as.character(nodes[i,options[["nodeColor"]]])
-      if(!is.null(options[["nodeSize"]]))
-        attr[['size']] <- nodes[i,options[["nodeSize"]]]
-      if(!is.null(options[["nodeShape"]]))
-        attr[['shape']] <- as.character(nodes[i,options[["nodeShape"]]])
-      
-      others<-setdiff(names(nodes),union(options[["nodeName"]],c(
-        options[["nodeColor"]],
-        options[["nodeSize"]],
-        options[["nodeShape"]],
-        "x","y")))
-      for(j in others){
-        attr[[j]]<-nodes[[i,j]]
-      }
-      if(exists("x",nodes) & exists("y",nodes)){
-        attr[['x']]<-nodes[i,"x"]
-        attr[['y']]<-nodes[i,"y"]
-      }
-      g <- add.vertices(g, 1, attr = attr)
-    }
-    
-    for(i in seq_len(nrow(links))){
-      edges <- c(which(as.character(links[i,'Source'])==as.character(nodes[,net$options$nodeName])),which(as.character(links[i,'Target'])==as.character(nodes[,net$options$nodeName])))
-      attr <- list()
-      if(!is.null(options[["linkWeight"]]))
-        attr[['weight']] <- links[i,options[["linkWeight"]]]
-      if(!is.null(options[["linkWidth"]]))
-        attr[['width']] <- links[i,options[["linkWidth"]]]
-      if(!is.null(options[["linkColor"]]))
-        attr[['color']] <- as.character(links[i,options[["linkColor"]]])
-      if(!is.null(options[["linkText"]]))
-        attr[['label']] <- as.character(links[i,options[["linkText"]]])
-      others<-setdiff(names(links),c(
-        "Source","Target",
-        options[["linkWeight"]],
-        options[["linkWidth"]],
-        options[["linkText"]]))
-      for(j in others){
-        attr[[j]]<-links[[i,j]]
-      }
-      
-      g <- add.edges(g, edges, attr = attr)
-    }
-    
-    return(g)
-  }
-  else warning("Is not a netCoin object")
+
+    #handle colors
+    if("color" %in% colnames(nodes))
+      nodes[,"color"] <- toColorScale(nodes[,"color"])
+    if("color" %in% colnames(links))
+      links[,"color"] <- toColorScale(links[,"color"])
+
+    #igraph network
+    return(igraph::graph_from_data_frame(links, directed=directed, vertices=nodes))
+  }else
+    warning("Is not a netCoin object")
 }
 
 savePajek<-function(net, file="file.net", arcs=NULL, edges=NULL, partitions= NULL, vectors=NULL){

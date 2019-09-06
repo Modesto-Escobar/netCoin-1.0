@@ -14,18 +14,18 @@ createHTML <- function(directory, styles, dependencies, json){
   name <- name[length(name)]
   html <- sub("titulo", name, html)
 
-  scripts <- "<!--scripts-->";
+  scripts <- "<!--scripts-->"
   if(length(styles))
     dir.create(paste(directory, "styles", sep = "/"),FALSE)
   for(i in styles){
-    scripts <- paste(scripts, paste0("<link rel=\"stylesheet\" type=\"text/css\" href=\"styles/",i,"\"></link>"), sep = "\n");
+    scripts <- paste(scripts, paste0("<link rel=\"stylesheet\" type=\"text/css\" href=\"styles/",i,"\"></link>"), sep = "\n")
     file.copy(paste(www, i, sep = "/"), paste(directory, "styles", sep = "/"))
   }
 
   if(length(dependencies))
     dir.create(paste(directory, "scripts", sep = "/"),FALSE)
   for(i in dependencies){
-    scripts <- paste(scripts, paste0("<script src=\"scripts/",i,"\"></script>"), sep = "\n");
+    scripts <- paste(scripts, paste0("<script src=\"scripts/",i,"\"></script>"), sep = "\n")
     file.copy(paste(www, i, sep = "/"), paste(directory, "scripts", sep = "/"))
   }
   html[html=="<!--scripts-->"] <- scripts
