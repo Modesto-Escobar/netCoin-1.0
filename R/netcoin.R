@@ -273,7 +273,7 @@ surCoin<-function(data,variables=names(data), commonlabel=NULL,
                   igraph=FALSE, coin=FALSE, dir=NULL, ...)
 {
   arguments <- list(...)
-  
+  varOrder  <- variables # To order variables later before coin
   #Check methods. No necessary because edgeList call these routines.
   #procedures<-i.method(c.method(procedures))
   #criteria<-i.method(c.method(criteria))
@@ -343,9 +343,10 @@ surCoin<-function(data,variables=names(data), commonlabel=NULL,
   }
   
   #Nodes elaboration
-  if(!exists("incidences")) stop("There are no qualitative variables. Try netCorr.") 
+  if(!exists("incidences")) stop("There are no qualitative variables. Try netCorr.")
   incidences<-na.omit(incidences)
   if (all(incidences==0 | incidences==1)) {
+    incidences <- incidences[,names(incidences)[order(match(sub(":.*","",names(incidences)),varOrder))]]
     C<-coin(incidences, minimum, maximum, sort, decreasing, weight=weight, subsample=subsample)
     if(coin) return(C)
     O<-asNodes(C,frequency,percentages,arguments$language)
