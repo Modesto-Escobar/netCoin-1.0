@@ -492,31 +492,20 @@ function displayBottomPanel(){
         frameControls.loop = !frameControls.loop;
         d3.select(this).style("background-color",frameControls.loop?"#ccc":null);
       })
+    var stopRecord = function(){
+          frameControls.recorder.stop();
+          frameControls.recorder.save(Math.round((new Date()).getTime() / 1000)+'record.webm');
+          delete frameControls.recorder;
+          divFrameCtrl.select("button.rec path").style("fill",null);
+    }
     divFrameCtrl.append("button") // rec
       .attr("class","rec")
       .html(getSVG(['m8 4a4 4 0 0 1 -4 4 4 4 0 0 1 -4 -4 4 4 0 0 1 4 -4 4 4 0 0 1 4 4z']))
       .on("click",function(){
         if(frameControls.recorder){
-          frameControls.recorder.stop();
-          delete frameControls.recorder;
-          d3.select(this).select("path").style("fill",null);
+          stopRecord();
         }else{
-          var data = [],
-              stream = d3.select("div.plot > canvas").node().captureStream();
-
-          frameControls.recorder = new MediaRecorder(stream, { mimeType: "video/webm" });
-
-          frameControls.recorder.ondataavailable = function(event) {
-            if (event.data && event.data.size) {
-              data.push(event.data);
-            }
-          };
-
-          frameControls.recorder.onstop = function(){
-            var ts = Math.round((new Date()).getTime() / 1000);
-            fileDownload(new Blob(data, { type: "video/webm" }),ts+"_record.webm");
-          };
-
+          frameControls.recorder = new CanvasRecorder(d3.select("div.plot > canvas").node());
           frameControls.recorder.start();
           d3.select(this).select("path").style("fill","Firebrick");
         }
@@ -529,9 +518,7 @@ function displayBottomPanel(){
         clickThis();
         handleFrames();
         if(frameControls.recorder){
-          frameControls.recorder.stop();
-          delete frameControls.recorder;
-          divFrameCtrl.select("button.rec path").style("fill",null);
+          stopRecord();
         }
       })
     divFrameCtrl.append("button") // pause
@@ -1341,7 +1328,7 @@ function drawSVG(sel){
     loadSVGbuttons();
   }
 
-  if(frameControls)
+  if(frameControls && frameControls.frame==-1)
     handleFrames();
   else
     drawNet();
@@ -1625,7 +1612,9 @@ function handleFrames(){
         if(frameControls.frame>=frameControls.frames.length)
           frameControls.frame=0;
 
-        d3.select(".divFrameCtrl .selectFrame").node().selectedIndex = frameControls.frame;
+        var selectFrame = d3.select(".divFrameCtrl .selectFrame");
+        if(!selectFrame.empty())
+          selectFrame.node().selectedIndex = frameControls.frame;
         loadFrameData(frameControls.frame);
 
         if(Array.isArray(options.main))
