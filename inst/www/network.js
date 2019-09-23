@@ -58,7 +58,7 @@ function network(Graph){
       .attr("class", "panel");
 
   if(options.main)
-    panel.style("top","38px")
+    panel.style("top",(body.select("div.main").node().offsetHeight+8) + "px")
 
   var plot = panel.append("div")
       .attr("class", "plot")
@@ -496,7 +496,8 @@ function displayBottomPanel(){
           frameControls.recorder.stop();
           frameControls.recorder.save(Math.round((new Date()).getTime() / 1000)+'record.webm');
           delete frameControls.recorder;
-          divFrameCtrl.select("button.rec path").style("fill",null);
+          divFrameCtrl.select("button.rec").style("background-color",null)
+            .select("path").style("fill",null);
     }
     divFrameCtrl.append("button") // rec
       .attr("class","rec")
@@ -507,7 +508,8 @@ function displayBottomPanel(){
         }else{
           frameControls.recorder = new CanvasRecorder(d3.select("div.plot > canvas").node());
           frameControls.recorder.start();
-          d3.select(this).select("path").style("fill","Firebrick");
+          d3.select(this).style("background-color","#ccc")
+            .select("path").style("fill","#d62728");
         }
       })
     divFrameCtrl.append("button") // stop
@@ -526,7 +528,7 @@ function displayBottomPanel(){
       .html(getSVG(['M1,0L3,0L3,8L1,8Z','M5,0L7,0L7,8L5,8Z']))
       .on("click",function(){
         frameControls.play = false;
-        clickThis(this);
+        clickThis();
         clearInterval(frameControls.frameInterval);
       })
     divFrameCtrl.append("button") // play
@@ -539,6 +541,7 @@ function displayBottomPanel(){
         clickThis(this);
         handleFrames();
       })
+      .select("path").style("fill","DarkGreen");
     divFrameCtrl.append("button") // play2
       .attr("class","play2")
       .html(getSVG(['M0,0L4,4L0,8Z','M4,0L8,4L4,8Z']))
@@ -566,11 +569,13 @@ function displayBottomPanel(){
       })
 
     function clickThis(self){
-      divFrameCtrl.selectAll("button.pause, button.play, button.play2, button.play3").style("background-color",null);
+      divFrameCtrl.selectAll("button.pause, button.play, button.play2, button.play3").style("background-color",null)
+        .selectAll("path").style("fill",null)
       if(self)
-        d3.select(self).style("background-color","#ccc");
+        d3.select(self).style("background-color","#ccc")
+          .selectAll("path").style("fill","DarkGreen");
       else
-        divFrameCtrl.select("button.pause").style("background-color","#ccc");
+        divFrameCtrl.select("button.pause").style("background-color","#ccc")
     }
 
     function getSVG(d){
@@ -1364,6 +1369,7 @@ function drawSVG(sel){
       datScale = {txt: texts.resetzoom, callback: function(){
         resetZoom();
         zoomSlider.update();
+        zoomSlider.brushedValue(false);
       }, gap: 5},
       datDirectional = {txt: texts.directional, callback: function(){
         options.showArrows = !options.showArrows;
@@ -1414,7 +1420,7 @@ function drawSVG(sel){
 
   gButton.exit().remove();
 
-  var count = 70;
+  var count = 70*options.cex;
 
   gButton.enter().append("g")
     .attr("class","button")
@@ -1459,7 +1465,8 @@ function drawSVG(sel){
         scale2 = false,
         text = "",
         prop = "",
-        callback = null;
+        callback = null,
+        brushedValue = false;
 
     function displaySlider(sliders){
       scale = d3.scaleLinear()
@@ -1528,9 +1535,9 @@ function drawSVG(sel){
     }
 
     function brushed() {
-      var value = d3.mean(d3.event.selection);
-      options[prop] = scale.invert(value);
-      updateBubble(value);
+      brushedValue = d3.mean(d3.event.selection);
+      options[prop] = scale.invert(brushedValue);
+      updateBubble(brushedValue);
       callback();
     }
 
@@ -1580,6 +1587,12 @@ function drawSVG(sel){
     displaySlider.callback = function(x) {
       if (!arguments.length) return callback;
       callback = x;
+      return displaySlider;
+    };
+
+    displaySlider.brushedValue = function(x) {
+      if (!arguments.length) return brushedValue;
+      brushedValue = x;
       return displaySlider;
     };
 
@@ -1639,18 +1652,27 @@ function handleFrames(){
 
         if(frameControls.hasOwnProperty("zoom")){
           options.zoom = frameControls.zoom[frameControls.frame];
-          resetZoom();
-          zoomSlider.update()
+          if(zoomSlider.brushedValue()===false){
+            resetZoom();
+            zoomSlider.update();
+            zoomSlider.brushedValue(false);
+          }
         }
         if(frameControls.hasOwnProperty("repulsion")){
           options.repulsion = frameControls.repulsion[frameControls.frame];
-          options.charge = chargeRange[1] * (options.repulsion/100);
-          repulsionSlider.update()
+          if(repulsionSlider.brushedValue()===false){
+            options.charge = chargeRange[1] * (options.repulsion/100);
+            repulsionSlider.update();
+            repulsionSlider.brushedValue(false);
+          }
         }
         if(frameControls.hasOwnProperty("distance")){
           options.distance = frameControls.distance[frameControls.frame];
-          options.linkDistance = linkDistanceRange[1] * (options.distance/100);
-          distanceSlider.update()
+          if(distanceSlider.brushedValue()===false){
+            options.linkDistance = linkDistanceRange[1] * (options.distance/100);
+            distanceSlider.update();
+            distanceSlider.brushedValue(false);
+          }
         }
 
         if(frameControls.frame==frameControls.frames.length-1 & !frameControls.loop)
@@ -2360,7 +2382,7 @@ function drawNet(){
       nodes.forEach(function(node){
         var x = ((node.x + node.nodeSize + 8)*scale)+translate[0],
             y = ((node.y + 4)*scale)+translate[1],
-            txt = node[options.nodeLabel];
+            txt = String(node[options.nodeLabel]);
         doc.text(x, y, txt);
       });
     }

@@ -84,6 +84,15 @@ function formatter(d){
   return d;
 }
 
+function escapeHtml(unsafe) {
+    return unsafe
+         .replace(/&/g, "&amp;")
+         .replace(/</g, "&lt;")
+         .replace(/>/g, "&gt;")
+         .replace(/"/g, "&quot;")
+         .replace(/'/g, "&#039;");
+}
+
 function downloadExcel(data,name){
   var sheets = ["void"],
       contentTypes = [],
@@ -97,7 +106,7 @@ function downloadExcel(data,name){
             if(typeof dd == 'number')
               xml.push('<c t="n"><v>'+dd+'</v></c>');
             else
-              xml.push('<c t="inlineStr"><is><t>'+dd+'</t></is></c>');
+              xml.push('<c t="inlineStr"><is><t>'+escapeHtml(dd)+'</t></is></c>');
           });
           xml.push('</row>');
         });
