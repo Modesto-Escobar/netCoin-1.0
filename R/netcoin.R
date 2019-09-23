@@ -818,8 +818,8 @@ sim<-function (input,procedures="Jaccard", level=.95, distance=FALSE, minimum=1,
   }
   if ("F" %in% method) s$coincidences <- a
   if ("X" %in% method) s$relative <- a/N*100
-  if ("I" %in% method) s$sConditional <-t(a/diag(a)*100)
-  if ("0" %in% method) s$tConditional <-a/diag(a)*100
+  if ("I" %in% method) s$sConditional <-a/diag(a)*100
+  if ("0" %in% method) s$tConditional <-t(a/diag(a)*100)
   if ("U" %in% method) {
     Z <- 1-pt(sqrt(N) * (a * d - b * c)/sqrt((a + b) * (a + c) * (b + d) *  (d + c)),N)
     s$c.conditional<-matrix(ifelse(b+c==0, 8,
@@ -1395,7 +1395,9 @@ dicho<-function(input,variables,value) {
   j=0
   for (i in variables) {
     j=j+1
-    names(datum)[j] <- ifelse(exists("label",attributes(input[[i]])),attr(input[[i]],"label"),i)
+    if (!is.null(attributes(input[[i]]))) {
+      names(datum)[j] <- ifelse(exists("label",attributes(input[[i]])),attr(input[[i]],"label"),i)
+    }
   }
   return(datum)
 }
