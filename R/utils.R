@@ -30,16 +30,18 @@ createHTML <- function(directory, styles, dependencies, json){
   }
   html[html=="<!--scripts-->"] <- scripts
 
-  if(is.function(json))
-    json <- json()
+  if(!is.null(json)){
+    if(is.function(json))
+      json <- json()
 
-  enc <- Encoding(json)
-  if(enc=="latin1" || (l10n_info()[["Latin-1"]] && enc=="unknown")){
-    Encoding(json) <- "latin1"
-    json <- enc2utf8(json)
+    enc <- Encoding(json)
+    if(enc=="latin1" || (l10n_info()[["Latin-1"]] && enc=="unknown")){
+      Encoding(json) <- "latin1"
+      json <- enc2utf8(json)
+    }
+
+    html[html=="<!--json-->"] <- paste0('<script type="application/json" id="data">',json,'</script>')
   }
-
-  html[html=="<!--json-->"] <- paste0('<script type="application/json" id="data">',json,'</script>')
 
   con <- file(paste(directory, "index.html", sep = "/"), encoding = "UTF-8")
   writeLines(html,con)

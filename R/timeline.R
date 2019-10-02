@@ -6,8 +6,6 @@ timelineJSON <- function(time){
 timeCreate <- function(time, dir = "timeCoin"){
   language <- getLanguageScript(time)
   createHTML(dir, c("reset.css","styles.css"), c("d3.min.js","jspdf.min.js","functions.js",language,"colorScales.js","timeline.js"), timelineJSON(time))
-  time$dir <- dir
-  invisible(time)
 }
 
 timeCoin <- function(nodes, name = "name", start = "start", end = "end", group = NULL, text = NULL, main = NULL, note = NULL, 
@@ -19,6 +17,6 @@ timeCoin <- function(nodes, name = "name", start = "start", end = "end", group =
   if (!is.null(note)) options[['note']] <- note
   if(!is.null(language)) options[['language']] <- language[1]
   time <- structure(list(nodes=nodes,options=options),class="timeCoin")
-  if (!is.null(dir)) time <- timeCreate(time, dir)
+  if (!is.null(dir)) timeCreate(time, dir)
   return(time)
 }

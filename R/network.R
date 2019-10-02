@@ -119,9 +119,6 @@ imgWrapper <- function(net,dir){
       dir.create(imgDir, showWarnings = FALSE)
       file.copy(filepath, paste(imgDir,rawname,sep="/"))
       net$options[["background"]] <- paste0('url("',paste("images",rawname,sep="/"),'")')
-    }else{
-      warning("background: No such file or directory")
-      net$options[["background"]] <- NULL
     }
   }
   return(networkJSON(net))
@@ -132,8 +129,5 @@ netCreate <- function(net, dir = "netCoin"){
   #get language
   language <- getLanguageScript(net)
 
-  createHTML(dir, c("reset.css","styles.css"), c("d3.min.js","jspdf.min.js","jszip.min.js","functions.js",language,"colorScales.js","network.js"),function(){    return(imgWrapper(net,dir))
-  })
-  net$dir <- dir
-  invisible(net)
+  createHTML(dir, c("reset.css","styles.css"), c("d3.min.js","jspdf.min.js","jszip.min.js","functions.js",language,"colorScales.js","network.js"),function(){ return(imgWrapper(net,dir)) })
 }

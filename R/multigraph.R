@@ -1,6 +1,8 @@
 # create json for multigraph
 multigraphJSON <- function(multi,dir){
 json <- character(0)
+types <- character(0)
+items <- character(0)
 for(item in names(multi)){
   graph <- multi[[item]]
   gClass <- class(graph)
@@ -21,28 +23,32 @@ for(item in names(multi)){
     warning(paste0('Not supported object "',item,'".'))
     next
   }
-  json <- c(json,paste0('"',item,'":["',gClass,'",',jsongraph,']'))
+  json <- c(json,jsongraph)
+  types <- c(types,toJSON(gClass))
+  items <- c(items,toJSON(item))
 }
-json <- paste0("{",paste0(json,collapse=","),"}")
-return(json)
+json <- paste0(json,collapse=',')
+types <- paste0(types,collapse=',')
+items <- paste0(items,collapse=',')
+return(paste0('{"items":[',items,'],"types":[',types,'],"data":[',json,']}'))
 }
 
 multiGraph <- function(multi,dir){
-  language <- unique(sapply(multi,getLanguageScript))
+  language <- unique(unlist(lapply(multi,getLanguageScript)))
   if(length(language)!=1)
     language <- "en.js"
   createHTML(dir, c("reset.css","styles.css"), c("d3.min.js","jspdf.min.js","jszip.min.js","functions.js",language,"colorScales.js","multigraph.js","network.js","barplot.js","timeline.js"), function(){ return(multigraphJSON(multi,dir)) })
 }
 
 polyGraph <- function(multi,dir){
-  createHTML(dir, NULL, "polygraph.js", toJSON(names(multi)))
+  createHTML(dir, NULL, "polygraph.js", NULL)
   multiGraph(multi,paste0(dir,"/multiGraph"))
 }
 
 frameGraph <- function(multi,dir){
   classes <- unique(vapply(multi,function(x){ class(x)[1] },character(1)))
   if(length(classes)!=1 || classes[1]!="netCoin")
-    stop("All graphs must have be 'netCoin' objects")
+    stop("All graphs must be 'netCoin' objects")
   name <- unique(vapply(multi,function(x){ return(x$options$nodeName) },character(1)))
   if(length(name)!=1)
     stop("name: all graphs must have the same name")
@@ -91,7 +97,7 @@ frameGraph <- function(multi,dir){
         if(!is.null(x$options[[item]]))
           return(x$options[[item]])
         else
-          return("")
+          return(NA)
       })
       if(length(unique(items))!=1)
         opt[[item]] <- items

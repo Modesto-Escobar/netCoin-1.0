@@ -1,27 +1,25 @@
 window.onload = function(){
-	var graphs = JSON.parse(document.getElementById("data").textContent);
-	
-	var body = document.querySelector('body'),
-	vp = viewport(),
-	width = vp.width/2,
-	height = vp.height;
+  var body = document.querySelector('body'),
+      vp = viewport(),
+      width = vp.width/2,
+      height = vp.height;
 
-	for(var i=0; i<2; i++){
-  var iframe = document.createElement("iframe");
+  for(var i=0; i<2; i++){
+    var iframe = document.createElement("iframe");
 
-  iframe.setAttribute("src","multiGraph/index.html?"+encodeURI(graphs[i]));
-  iframe.setAttribute("width",width);
-  iframe.setAttribute("height",height);
-  iframe.setAttribute("frameborder",0);
-  iframe.setAttribute("marginwidth",0);
-  iframe.setAttribute("marginheight",0);
-  iframe.style.display = "block";
-  iframe.style.position = "absolute";
-  iframe.style.top = "0px";
-  iframe.style.left = i*width+"px";
+    iframe.setAttribute("src","multiGraph/index.html?"+i);
+    iframe.setAttribute("width",width);
+    iframe.setAttribute("height",height);
+    iframe.setAttribute("frameborder",0);
+    iframe.setAttribute("marginwidth",0);
+    iframe.setAttribute("marginheight",0);
+    iframe.style.display = "block";
+    iframe.style.position = "absolute";
+    iframe.style.top = "0px";
+    iframe.style.left = i*width+"px";
 
-  body.appendChild(iframe);
-	}
+    body.appendChild(iframe);
+  }
 }
 
 function viewport(){

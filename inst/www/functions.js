@@ -494,15 +494,22 @@ function CanvasRecorder(canvas, video_bits_per_sec) {
     var supportedType = null;
     var mediaRecorder = null;
 
-    var stream = canvas.captureStream();
+    try {
+      var stream = canvas.captureStream();
+    } catch (e) {
+      alert("canvas.captureStream() is not supported by this browser.");
+    }
     if (typeof stream == undefined || !stream) {
-        return;
+      this.start = null;
+      return;
     }
 
-    var video = document.createElement('video');
-    video.style.display = 'none';
-
     function startRecording() {
+        if(typeof MediaRecorder == "undefined"){
+          alert('MediaRecorder is not supported by this browser.');
+          return false;
+        }
+
         var types = [
             "video/webm;codecs=vp9",
             "video/webm;codecs=vp8",
@@ -520,7 +527,8 @@ function CanvasRecorder(canvas, video_bits_per_sec) {
             }
         }
         if (supportedType == null) {
-            console.log("No supported type found for MediaRecorder");
+            alert("No supported type found for MediaRecorder");
+            return false;
         }
         var options = { 
             mimeType: supportedType,
@@ -533,14 +541,12 @@ function CanvasRecorder(canvas, video_bits_per_sec) {
         } catch (e) {
             alert('MediaRecorder is not supported by this browser.');
             console.error('Exception while creating MediaRecorder:', e);
-            return;
+            return false;
         }
 
-        console.log('Created MediaRecorder', mediaRecorder, 'with options', options);
-        mediaRecorder.onstop = handleStop;
         mediaRecorder.ondataavailable = handleDataAvailable;
         mediaRecorder.start(100); // collect 100ms of data blobs
-        console.log('MediaRecorder started', mediaRecorder);
+        return true;
     }
 
     function handleDataAvailable(event) {
@@ -549,16 +555,8 @@ function CanvasRecorder(canvas, video_bits_per_sec) {
         }
     }
 
-    function handleStop(event) {
-        console.log('Recorder stopped: ', event);
-        var superBuffer = new Blob(recordedBlobs, { type: supportedType });
-        video.src = window.URL.createObjectURL(superBuffer);
-    }
-
     function stopRecording() {
         mediaRecorder.stop();
-        console.log('Recorded Blobs: ', recordedBlobs);
-        video.controls = true;
     }
 
     function download(file_name) {

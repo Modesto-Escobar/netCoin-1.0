@@ -50,7 +50,7 @@ function network(Graph){
   if(options.main){
     body.append("div")
       .attr("class", "main")
-      .html(typeof options.main == "string" ? options.main : "");
+      .html(typeof options.main == "string" ? options.main : options.main[0]);
   }
 
   // panel
@@ -86,8 +86,19 @@ function network(Graph){
 
     simulation.force("link").id(function(d) { return d[options.nodeName]; });
 
-    if(options.background)
-      body.style("background",options.background);
+    if(options.background){
+      var s = new Option().style;
+      s.background = options.background;
+      if(s.background != ""){
+        body.style("background",s.background);
+        s.color = options.background;
+        if(s.color!="")
+          options.background = s.color;
+        else
+          delete options.background;
+      }else
+        delete options.background;
+    }
 
     if(options.frames){
       if(Graph.linknames.indexOf("_frame_")!=-1){
@@ -133,9 +144,9 @@ function network(Graph){
 
     if(frameControls){
       Graph.nodes.forEach(function(node){
-        if(node.hasOwnProperty("fx") & !Array.isArray(node.fx))
+        if(node.hasOwnProperty("fx") && !Array.isArray(node.fx))
           node.fx = frameControls.frames.map(function(){ return node.fx; });
-        if(node.hasOwnProperty("fy") & !Array.isArray(node.fy))
+        if(node.hasOwnProperty("fy") && !Array.isArray(node.fy))
           node.fy = frameControls.frames.map(function(){ return node.fy; });
       })
       backupNodes = JSON.parse(JSON.stringify(Graph.nodes));
@@ -507,9 +518,12 @@ function displayBottomPanel(){
           stopRecord();
         }else{
           frameControls.recorder = new CanvasRecorder(d3.select("div.plot > canvas").node());
-          frameControls.recorder.start();
-          d3.select(this).style("background-color","#ccc")
-            .select("path").style("fill","#d62728");
+          if(frameControls.recorder.start && frameControls.recorder.start()){
+            d3.select(this).style("background-color","#ccc")
+              .select("path").style("fill","#d62728");
+          }else{
+            delete frameControls.recorder;
+          }
         }
       })
     divFrameCtrl.append("button") // stop
@@ -1253,7 +1267,7 @@ function drawSVG(sel){
             extent[1][0] = transform.invertX(extent[1][0]);
             extent[1][1] = transform.invertY(extent[1][1]);
             Graph.nodes.forEach(function(node) {
-              node.selected = (!node.noShow & !node._hideFrame) & (node.selected ^ (extent[0][0] <= node.x && node.x < extent[1][0] && extent[0][1] <= node.y && node.y < extent[1][1]));
+              node.selected = (!node.noShow && !node._hideFrame) && (node.selected ^ (extent[0][0] <= node.x && node.x < extent[1][0] && extent[0][1] <= node.y && node.y < extent[1][1]));
             });
           }else
             Graph.nodes.forEach(function(node) { return node.selected = false; });
@@ -1347,7 +1361,7 @@ function drawSVG(sel){
   }
 
   function keyflip() {
-    ctrlKey = d3.event.ctrlKey | d3.event.metaKey;
+    ctrlKey = d3.event.ctrlKey || d3.event.metaKey;
     shiftKey = d3.event.shiftKey;
 
     if(shiftKey){
@@ -1675,7 +1689,7 @@ function handleFrames(){
           }
         }
 
-        if(frameControls.frame==frameControls.frames.length-1 & !frameControls.loop)
+        if(frameControls.frame==frameControls.frames.length-1 && !frameControls.loop)
           d3.select(".divFrameCtrl .pause").dispatch("click");
       }
 }
@@ -1705,20 +1719,20 @@ function drawNet(){
     });
   }
 
-  var nodeFilter = function(node){ return !node.noShow & !node._hideFrame; },
-      linkFilter = function(link){ return !link.noShow & !link.target.noShow & !link.source.noShow & !link._hideFrame; };
+  var nodeFilter = function(node){ return !node.noShow && !node._hideFrame; },
+      linkFilter = function(link){ return !link.noShow && !link.target.noShow && !link.source.noShow && !link._hideFrame; };
 
   if(egoNet){
     Graph.links.forEach(function(d){
-      if(!d.noShow & !d._hideFrame)
+      if(!d.noShow && !d._hideFrame)
         if(d.source.selected || d.target.selected)
           d.target.neighbor = d.source.neighbor = true;
     });
     nodeFilter = function(node){
-      return !node.noShow & !node._hideFrame & (node.neighbor | node.selected);
+      return !node.noShow && !node._hideFrame && (node.neighbor || node.selected);
     }
     linkFilter = function(link){
-      return !link.noShow & !link.target.noShow & !link.source.noShow & !link._hideFrame & ((link.source.select | link.source.neighbor) & (link.target.select | link.target.neighbor));
+      return !link.noShow && !link.target.noShow && !link.source.noShow && !link._hideFrame && ((link.source.select || link.source.neighbor) && (link.target.select || link.target.neighbor));
     }
   }
 
@@ -1788,7 +1802,7 @@ function drawNet(){
     getShape = function(d) { return d3["symbol"+symbolList(d[options.nodeShape])]; }
   }
 
-  svg.attr("clip-path", heatmap&&heatmapTriangle?"url(#heatmapClip)":null);
+  svg.attr("clip-path", heatmap && heatmapTriangle?"url(#heatmapClip)":null);
   if(heatmap){ // draw heatmap
 
     ctx.clearRect(0, 0, width, height);
@@ -1909,9 +1923,9 @@ function drawNet(){
     sel.append("text")
       .attr("class","label")
       .attr("x", row? (heatmapTriangle? side + 6 : -6) : ((heatmapTriangle?-1:1) * (options.nodeOrder?18:6)))
-      .attr("y", (!row & heatmapTriangle? -1 : 1) * (x.bandwidth() / 2))
+      .attr("y", (!row && heatmapTriangle? -1 : 1) * (x.bandwidth() / 2))
       .attr("text-anchor", row ^ heatmapTriangle? "end" : "start")
-      .attr("transform", !row & heatmapTriangle? "rotate(180)" : null)
+      .attr("transform", !row && heatmapTriangle? "rotate(180)" : null)
       .attr("dy", ".32em")
       .style("font-size",(x.bandwidth()-2)+"px")
       .style("fill",colorNodesScale? function(d, i) {
@@ -1932,15 +1946,15 @@ function drawNet(){
         });
         showTables();
       })
-      .on("dblclick", row | !options.linkIntensity ? function(){
+      .on("dblclick", row || !options.linkIntensity ? function(){
         d3.event.stopPropagation();
         Graph.links.forEach(function(d){
-          if(!d.noShow & !d._hideFrame & (((!options.showArrows | heatmapTriangle) & d.target.selected) | d.source.selected)){
+          if(!d.noShow && !d._hideFrame && (((!options.showArrows || heatmapTriangle) && d.target.selected) || d.source.selected)){
                 d.source.neighbor = d.target.neighbor = true;
           }
         });
         Graph.nodes.forEach(function(d){
-          d.noShow = d.noShow | (!d.neighbor & !d.selected);
+          d.noShow = d.noShow || (!d.neighbor && !d.selected);
           delete d.neighbor;
         });
         drawNet();
@@ -2038,7 +2052,7 @@ function drawNet(){
   function click(p){
     links.forEach(function(l){ checkNeighbors(l,p); });
     nodes.forEach(function(n){
-      n.selected = !n.noShow & n.neighbor;
+      n.selected = !n.noShow && n.neighbor;
       delete n.neighbor;
     });
     showTables();
@@ -2048,15 +2062,15 @@ function drawNet(){
     d3.event.stopPropagation();
     links.forEach(function(l){ checkNeighbors(l,p); });
     nodes.forEach(function(n){
-      n.selected = (!n.noShow & (n.index == p.x | n.index == p.y))? true : false;
-      n.noShow = n.noShow | !n.neighbor;
+      n.selected = (!n.noShow && (n.index == p.x || n.index == p.y))? true : false;
+      n.noShow = n.noShow || !n.neighbor;
       delete n.neighbor;
     });
     drawNet();
   }
 
     function checkNeighbors(l,p){
-      if(!l.noShow & !l._hideFrame & (((!options.showArrows | heatmapTriangle) & (l.target.index==p.x | l.target.index==p.y)) | (l.source.index==p.x | l.source.index==p.y))){
+      if(!l.noShow && !l._hideFrame && (((!options.showArrows || heatmapTriangle) && (l.target.index==p.x || l.target.index==p.y)) || (l.source.index==p.x || l.source.index==p.y))){
         l.source.neighbor = l.target.neighbor = true;
       }
     }
@@ -2142,7 +2156,7 @@ function drawNet(){
   //render network
   function tick() {
     ctx.save();
-    ctx.fillStyle = "#ffffff";
+    ctx.fillStyle = options.background ? options.background : "#ffffff";
     ctx.fillRect(0, 0, width, height);
     ctx.translate(transform.x, transform.y);
     ctx.scale(transform.k, transform.k);
@@ -2603,7 +2617,7 @@ function getLinkCoords(link){
           offSetX,
           offSetY;
 
-      if(sx==tx & sy==ty)
+      if(sx==tx && sy==ty)
         return 0;
 
       if(options.showArrows || link.linkNum){
@@ -2671,7 +2685,7 @@ function getLinkTextCoords(link){
 
 function forceEnd(){
   //update axes
-    var nodes = Graph.nodes.filter(function(d){ return !d.noShow & !d._hideFrame; });
+    var nodes = Graph.nodes.filter(function(d){ return !d.noShow && !d._hideFrame; });
 
     if(nodes.length>1){
       var extX = d3.extent(nodes, function(d){ return d.x; }),
@@ -2826,9 +2840,9 @@ function displayInfoPanel(d,i){
 }
 
 function selectAllNodes(){
-  if(Graph.nodes.filter(function(d){ return !d.selected & !d._hideFrame; }).length)
+  if(Graph.nodes.filter(function(d){ return !d.selected && !d._hideFrame; }).length)
     Graph.nodes.forEach(function(d){
-      if(!d.noShow & !d._hideFrame)
+      if(!d.noShow && !d._hideFrame)
         d.selected = true;
     });
   else
@@ -2863,7 +2877,7 @@ function selectNeighbors(){
     displayWindow(texts.alertnonodes);
   }else{
     Graph.links.forEach(function(d){
-      if(!d.noShow & !d._hideFrame)
+      if(!d.noShow && !d._hideFrame)
         if(d.source.selected || d.target.selected)
           d.source.neighbor = d.target.neighbor = true;
     });
@@ -2892,7 +2906,7 @@ function displayEgoNet(){
 function treeAction(){
   if(!Graph.nodes.filter(function(d){ return d.selected; }).length)
     Graph.nodes.forEach(function(d){
-      if(!d.noShow & !d._hideFrame)
+      if(!d.noShow && !d._hideFrame)
         d.selected = true;
     });
   Graph.nodes.forEach(function(d){
@@ -3021,7 +3035,7 @@ function displayLegend(scale, key, color, shape, dat){
         var selecteds = d3.selectAll(".legend > g").filter(function(){ return this.selected; })
         Graph.nodes.forEach(function(d){
            d.selected = false;
-           if(!d.noShow & !d._hideFrame){
+           if(!d.noShow && !d._hideFrame){
              selecteds.each(function(p){
                if((p=="null" && d[this.selected]===null) || (p=="0" && d[this.selected]===0) || (d[this.selected] && (d[this.selected]==p || (typeof d[this.selected] == 'object' && d[this.selected].indexOf(p)!=-1))))
                  d.selected = true;
@@ -3138,7 +3152,7 @@ function showTables() {
             var selected = d3.select(this).classed("selected");
             if(selecteds){
               if(ctrlKey)
-                selected = selected | selecteds.indexOf(i)!=-1;
+                selected = selected || selecteds.indexOf(i)!=-1;
               else
                 selected = selecteds.indexOf(i)!=-1;
             }else{
@@ -3173,7 +3187,7 @@ function showTables() {
               if(b[d]==null) return rv[1];
               a = a[d][options.nodeName]?a[d][options.nodeName]:a[d];
               b = b[d][options.nodeName]?b[d][options.nodeName]:b[d];
-              if(typeof a == "number" & typeof b == "number"){
+              if(typeof a == "number" && typeof b == "number"){
                 if(!desc)
                   rv = rv.reverse();
               }else{
@@ -3249,11 +3263,11 @@ function showTables() {
 
   var nodesData = Graph.nodes.filter(function(d){
         delete d._selected;
-        return !d.noShow & !d._hideFrame & d.selected;
+        return !d.noShow && !d._hideFrame && d.selected;
       }).map(cleanData),
       linksData = Graph.links.filter(function(d){
         delete d._selected;
-        return !d.noShow & !d._hideFrame & (d.source.selected && d.target.selected);
+        return !d.noShow && !d._hideFrame && (d.source.selected && d.target.selected);
       }).map(cleanData),
       nodeColumns = Graph.nodenames.filter(filterNoShow),
       linkColumns = Graph.linknames.filter(filterNoShow);
@@ -3361,7 +3375,7 @@ function adaptLayout(){
       nodes = backupNodes ? backupNodes : Graph.nodes;
 
   for(var i=0; i<nodes.length; i++){
-      if(nodes[i].hasOwnProperty("fx") | nodes[i].hasOwnProperty("fy")){
+      if(nodes[i].hasOwnProperty("fx") || nodes[i].hasOwnProperty("fy")){
         anyFixed = true;
         break;
       }
@@ -3501,7 +3515,7 @@ function resetZoom(){
 function computeHeight(){
   var h = docSize.height - 2;
   if(options.main)
-    h = h-38;
+      h = h-parseInt(body.select("div.panel").style("top"));
   if(options.showTables){
       h = h - 170;
   }else if(options.showButtons2){

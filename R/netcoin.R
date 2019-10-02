@@ -169,7 +169,7 @@ netCoin<-function (nodes, links = NULL, tree = NULL, name = NULL,
     net$options$nodeGroup <- "community"
   }
 
-  if (!is.null(dir)) net <- netCreate(net,dir)
+  if (!is.null(dir)) netCreate(net,dir)
   return(net)
 }
 
@@ -976,26 +976,20 @@ plot.coin <- function(x, dir=tempdir(), language=c("en","es","ca"), ...){
     browseURL(normalizePath(paste(dir, "index.html", sep = "/")))
 }
 
-plot.netCoin <- function(x, dir = NULL, ...){
+plot.netCoin <- function(x, dir = tempdir(), ...){
   plotCoin(x, dir, netCreate)
 }
 
-plot.barCoin <- function(x, dir = NULL, ...){
+plot.barCoin <- function(x, dir = tempdir(), ...){
   plotCoin(x, dir, barCreate)
 }
 
-plot.timeCoin <- function(x, dir = NULL, ...){
+plot.timeCoin <- function(x, dir = tempdir(), ...){
   plotCoin(x, dir, timeCreate)
 }
 
 plotCoin <- function(x,dir,callback){
-     if(is.null(dir) && !is.null(x$dir) && file.exists(x$dir)){
-       dir <- x$dir
-     }else{
-       if(is.null(dir))
-         dir <- tempdir()
-       callback(x,dir)
-     }
+     callback(x,dir)
      browseURL(normalizePath(paste(dir, "index.html", sep = "/")))
 }
 
