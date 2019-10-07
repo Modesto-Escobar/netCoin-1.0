@@ -112,19 +112,28 @@ frameGraph <- function(multi,dir){
 
 #create html wrapper for multigraph
 multigraphCreate <- function(...,  mode = c("default","parallel","frame"), dir = "MultiGraph", show = TRUE){
-multi <- list(...)
-if(is.null(names(multi)) || !all(!duplicated(names(multi)))){
-  warning("Graph names will be generated automatically")
-  names(multi) <- paste0("graph",seq_along(multi))
-}
-mode <- substr(mode[1],1,1)
-if(mode=="p"){
-  polyGraph(multi,dir)
-}else if(mode=="f"){
-  frameGraph(multi,dir)
-}else{
-  multiGraph(multi,dir)
-}
-if(identical(show,TRUE))
-  browseURL(normalizePath(paste(dir, "index.html", sep = "/")))
+  graphs <- list(...)
+  if(!length(graphs))
+    stop("Cannot make a multigraph without graphs!")
+
+  if(is.null(names(graphs)) || !all(!duplicated(names(graphs)))){
+    warning("Graph names will be generated automatically")
+    names(graphs) <- paste0("graph",seq_along(graphs))
+  }
+
+  mode <- substr(mode[1],1,1)
+  if(mode=="f" && length(graphs)==1){
+    mode <- "d"
+    warning("Cannot make a dynamic graph with only one graph")
+  }
+  if(mode=="p"){
+    polyGraph(graphs,dir)
+  }else if(mode=="f"){
+    frameGraph(graphs,dir)
+  }else{
+    multiGraph(graphs,dir)
+  }
+
+  if(identical(show,TRUE))
+    browseURL(normalizePath(paste(dir, "index.html", sep = "/")))
 }

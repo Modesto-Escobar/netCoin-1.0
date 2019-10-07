@@ -5,7 +5,7 @@ function MultiGraph(input){
   this.current = 0;
   if(input!=""){
     this.current = parseInt(input.substring(1));
-    if(isNaN(this.current))
+    if(isNaN(this.current) || this.current>=this.items.length)
       this.current = 0;
   }
   this.json = this.json.data[this.current];
@@ -37,7 +37,7 @@ MultiGraph.prototype = {
   }
 }
 
-var multiGraph = false;
+var multiGraph = true;
 
 window.onload = function(){
   multiGraph = new MultiGraph(window.location.search);

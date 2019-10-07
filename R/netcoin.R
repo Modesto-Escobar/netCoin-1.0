@@ -951,7 +951,7 @@ printNet <- function(x){
     cat("Title:",x$options$main,"\n")
     cat("\nNodes(",nrow(x$nodes),"):\n",sep="")
   row.names(x$nodes)<-NULL
-  print(as.data.frame(head(x$nodes[,setdiff(names(x$nodes),c("noShow","fixed","chaine","x","y")),drop=FALSE])),row.names=F)
+  print(as.data.frame(head(x$nodes[,setdiff(names(x$nodes),c("noShow","fixed","chaine","fx","fy")),drop=FALSE])),row.names=F)
   if (nrow(x$nodes)>6) cat("...\n")
   if(!is.null(x$links)){
     cat("\nLinks(",nrow(x$links),"):\n",sep="")

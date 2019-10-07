@@ -77,5 +77,6 @@ var texts = {
     outof: "out of",
     scenarios: "Number of scenarios",
     resetzoom: "Reset zoom",
-    removefilter: "Remove filter"
+    removefilter: "Remove filter",
+    alertrecordheatmap: "Heatmap cannot be recorded."
   };
