@@ -78,5 +78,6 @@ var texts = {
     scenarios: "nombre d'escenaris",
     resetzoom: "Restaurar zoom",
     removefilter: "Treure filtre",
-    alertrecordheatmap: "el mapa de calor no es pot gravar."
+    alertrecordheatmap: "el mapa de calor no es pot gravar.",
+    speed: "Velocitat"
   };

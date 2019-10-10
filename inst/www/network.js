@@ -33,6 +33,7 @@ function network(Graph){
       zoomRange = [0.1, 10], // zoom range
       chargeRange = [0,-1000], // charge range
       linkDistanceRange = [0,500], // link distance range
+      timeRange = [5000,500], // speed range for dynamic net
       axisExtension = 50, // pixels to increase the axes size
       sliderWidth = 200, // width of the sliders
       infoPanelLeft = docSize.width * (2/3), // information panel left position
@@ -104,12 +105,22 @@ function network(Graph){
 
     if(options.frames){
       if(options.frames.length>1 && Graph.linknames.indexOf("_frame_")!=-1){
+
+        var speed = 50;
+        if(options.hasOwnProperty("speed"))
+          speed = options.speed;
+        speed = speed/100 * (timeRange[1]-timeRange[0]) + timeRange[0];
+
+        var frame = 0;
+        if(options.frame && options.frame<options.frames.length)
+          frame = options.frame;
+
         frameControls = {
           "play": true,
-          "frame": -1,
+          "frame": frame,
           "frames": options.frames,
           "frameInterval": null,
-          "time": 3000,
+          "time": speed,
           "loop": false
         };
 
@@ -134,10 +145,6 @@ function network(Graph){
       })
       node.degree = 0;
       splitMultiVariable(node);
-      if(Graph.tree){
-        node.childNodes = [];
-        node.parentNode = false;
-      }
       nodes.push(node);
     }
     Graph.nodenames.push("degree");
@@ -177,16 +184,7 @@ function network(Graph){
       Graph.linknames = [];
     }
 
-    if(Graph.tree){
-      len = Graph.tree[0].length;
-      for(var i = 0; i<len; i++){
-        var source = Graph.tree[0][i],
-            target = Graph.tree[1][i];
-        Graph.nodes[source].childNodes.push(Graph.nodes[target]);
-        Graph.nodes[target].parentNode = Graph.nodes[source];
-      }
-      Graph.tree = true;
-    }
+    loadTree();
 
     ["nodeText","nodeInfo"].forEach(function(d){
       if(options[d])
@@ -341,6 +339,28 @@ function network(Graph){
           Graph.nodes[i][col] = backupNodes[i][col][frame];
       })
     }
+    loadTree(frameControls.frame);
+  }
+
+  function loadTree(frame){
+      if(!Graph.tree)
+        return;
+      if(frameControls && frame===undefined)
+        return;
+
+      Graph.nodes.forEach(function(node){
+        node.childNodes = [];
+        node.parentNode = false;
+      })
+      var len = Graph.tree[0].length;
+      for(var i = 0; i<len; i++){
+        if(frame===undefined || frame==Graph.tree[2][i]){
+          var source = Graph.tree[0][i],
+              target = Graph.tree[1][i];
+          Graph.nodes[source].childNodes.push(Graph.nodes[target]);
+          Graph.nodes[target].parentNode = Graph.nodes[source];
+        }
+      }
   }
 
 function displayArrows(){
@@ -1304,15 +1324,16 @@ function drawSVG(sel){
   if(frameControls){
       frameSlider = displaySlider()
       .domain([0,frameControls.frames.length-1])
+      .domain2([1,frameControls.frames.length])
       .rounded(true)
-      .text("Frames")
+      .text("Frame")
       .prop('frames')
       .callback(frameStep);
 
       timeSlider = displaySlider()
-      .domain([5000,500])
+      .domain(timeRange)
       .domain2([0,100])
-      .text("Speed")
+      .text(texts.speed)
       .prop('time')
       .callback(function(value){
         frameControls.time = value;
@@ -1392,9 +1413,9 @@ function drawSVG(sel){
 
   zoomSlider.update(options.zoomScale);
 
-  if(frameControls && frameControls.frame==-1){
-    handleFrames(0);
-  }else
+  if(frameControls)
+    handleFrames(frameControls.frame);
+  else
     drawNet();
 
   function zoomed() {
@@ -1720,7 +1741,7 @@ function frameStep(value){
         });
 
         Graph.links.forEach(function(link){
-          link._hideFrame = link['_frame_']!=frameControls.frames[frameControls.frame];
+          link._hideFrame = link['_frame_']!=frameControls.frame;
           if(!link._hideFrame){
             delete link.source._hideFrame;
             delete link.target._hideFrame;

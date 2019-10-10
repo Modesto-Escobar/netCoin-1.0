@@ -158,13 +158,13 @@ With the following commands two networks are generated that represent on the bus
 
 ```{r, message=FALSE, warning=FALSE, eval=FALSE}
 G <- allNet(incidence=links[links$link=="Marriage",-17],
-     nodes=families, layout="md", percentages= FALSE,
-     criteria="f",minL=1, size="f.Marriages",color="seat",
+     nodes=families, layout="mds", percentages= FALSE,
+     criteria="f", minL=1, size="f.Marriages", color="seat",
      main="Marriage Links beetween Italian families",
      note="Data source: Padgett & Ansell (1983)")
 H <- allNet(incidence=links[links$link=="Business",-17],
-     nodes=families, layout="md", percentages= FALSE,
-     criteria="f",minL=1, size="f.Business",color="seat",
+     nodes=families, layout="mds", percentages= FALSE,
+     criteria="f", minL=1, size="f.Business", color="seat",
      main="Marriage Links beetween Italian families",
      note="Data source: Padgett & Ansell (1983)")
 
@@ -196,10 +196,10 @@ Here we add a few extra features to our graph:
 ```{r , echo=TRUE, message=FALSE, warning=FALSE, eval=FALSE}
 data("Galapagos")
 data("finches")
-finches$species<-paste(system.file("doc/sanderson",package="netCoin"),
-        "/images/",finches$species,sep="") # copy path to the species field
-Net<-allNet(Galapagos,nodes=finches, criteria="hyp", maxL=.05,
-        lwidth ="Haberman",lweight="Haberman",
+finches$species <- system.file("extdata", finches$species,
+        package="netCoin") # copy path to the species field
+Net <- allNet(Galapagos, nodes=finches, criteria="hyp", maxL=.05,
+        lwidth ="Haberman", lweight="Haberman",
         size="frequency", image="species", layout="mds",
         main="Species coincidences in Galapagos Islands",
         note="Data source: Sanderson (2000)")

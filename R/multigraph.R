@@ -45,7 +45,8 @@ polyGraph <- function(multi,dir){
   multiGraph(multi,paste0(dir,"/multiGraph"))
 }
 
-frameGraph <- function(multi,dir){
+frameGraph <- function(multi,frame,speed,dir){
+
   classes <- unique(vapply(multi,function(x){ class(x)[1] },character(1)))
   if(length(classes)!=1 || classes[1]!="netCoin")
     stop("All graphs must be 'netCoin' objects")
@@ -65,7 +66,7 @@ frameGraph <- function(multi,dir){
 
   links <- lapply(multi,function(x){ return(x$links) })
   for(i in seq_along(frames)){
-      links[[i]][["_frame_"]] <- frames[[i]]
+      links[[i]][["_frame_"]] <- i-1
   }
   links <- do.call(rbind,links)
   rownames(links) <- NULL
@@ -106,18 +107,34 @@ frameGraph <- function(multi,dir){
   for(i in c("main","note","repulsion","distance","zoom"))
     options <- getAll(options,i)
   options$frames <- frames
+  options$frame <- frame
+  options$speed <- speed
   net <- structure(list(links=links,nodes=nodes,options=options),class="netCoin")
+
+  tree <- list()
+  for(i in seq_along(frames)){
+    if(!is.null(multi[[i]]$tree)){
+      tree[[i]] <- multi[[i]]$tree
+      tree[[i]][["_frame_"]] <- i-1
+    }
+  }
+  if(length(tree)){
+    tree <- do.call(rbind,tree)
+    rownames(tree) <- NULL
+    net$tree <- tree
+  }
+
   netCreate(net,dir)
 }
 
 #create html wrapper for multigraph
-multigraphCreate <- function(...,  mode = c("default","parallel","frame"), dir = "MultiGraph", show = TRUE){
+multigraphCreate <- function(...,  mode = c("default","parallel","frame"), frame = 0, speed = 50, dir = "MultiGraph", show = TRUE){
   graphs <- list(...)
   if(!length(graphs))
     stop("Cannot make a multigraph without graphs!")
 
   if(is.null(names(graphs)) || !all(!duplicated(names(graphs)))){
-    warning("Graph names will be generated automatically")
+    message("Graph names will be generated automatically")
     names(graphs) <- paste0("graph",seq_along(graphs))
   }
 
@@ -129,7 +146,15 @@ multigraphCreate <- function(...,  mode = c("default","parallel","frame"), dir =
   if(mode=="p"){
     polyGraph(graphs,dir)
   }else if(mode=="f"){
-    frameGraph(graphs,dir)
+    if(!(is.numeric(frame) && frame>=0)){
+      frame <- formals(multigraphCreate)[["frame"]]
+      warning("frame: must be integer greater than 0")
+    }
+    if(!(is.numeric(speed) && speed>=0 && speed<=100)){
+      speed <- formals(multigraphCreate)[["speed"]]
+      warning("speed: must be numeric between 0 and 100")
+    }
+    frameGraph(graphs,frame,speed,dir)
   }else{
     multiGraph(graphs,dir)
   }

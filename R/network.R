@@ -36,7 +36,11 @@ networkJSON<-function(net){
       sourcenames <- as.character(tree$Source)
       targetnames <- as.character(tree$Target)
 
-      if(all(!duplicated(targetnames))){
+      checkdup <- targetnames
+      if("_frame_" %in% names(tree))
+        checkdup <- paste0(targetnames,tree[["_frame_"]])
+
+      if(all(!duplicated(checkdup))){
         nlinks <- nrow(net$tree)
         source <- numeric(nlinks)
         target <- numeric(nlinks)

@@ -2,17 +2,17 @@
 # Image is a files vector with length and order equal to nrow(nodes). Place as nodes field
 # Batch
 
-netCoin<-function (nodes, links = NULL, tree = NULL, name = NULL,
-                      label = NULL, labelSize = NULL, size = NULL, color = NULL,
-                      shape = NULL, legend = NULL, ntext = NULL, info = NULL,
-                      orderA = NULL, orderD = NULL, group = NULL, community = NULL,
-                      lwidth = NULL, lweight = NULL, lcolor = NULL, ltext = NULL,
-                      nodeFilter = NULL, linkFilter = NULL, degreeFilter = NULL, nodeBipolar = FALSE, linkBipolar = FALSE,
-                      defaultColor = "#1f77b4", repulsion = 25, distance = 10, zoom = 1, scenarios = NULL,
-                      main = NULL, note = NULL, help = NULL, helpOn = FALSE,
-                      cex = 1, background = NULL, layout = NULL, limits = NULL, controls = 1:5, mode = c("network","heatmap"),
-                      showCoordinates = FALSE, showArrows = FALSE, showLegend = TRUE, showAxes = FALSE, axesLabels = NULL,
-                      language = c("en", "es", "ca"), image = NULL, imageNames = NULL, dir = NULL)
+netCoin <- function(nodes, links = NULL, tree = NULL, name = NULL,
+    label = NULL, labelSize = NULL, size = NULL, color = NULL,
+    shape = NULL, legend = NULL, ntext = NULL, info = NULL,
+    orderA = NULL, orderD = NULL, group = NULL, community = NULL,
+    lwidth = NULL, lweight = NULL, lcolor = NULL, ltext = NULL,
+    nodeFilter = NULL, linkFilter = NULL, degreeFilter = NULL, nodeBipolar = FALSE, linkBipolar = FALSE,
+    defaultColor = "#1f77b4", distance = 10, repulsion = 25, zoom = 1,
+    scenarios = NULL, main = NULL, note = NULL, help = NULL, helpOn = FALSE,
+    cex = 1, background = NULL, layout = NULL, limits = NULL, controls = 1:5, mode = c("network","heatmap"),
+    showCoordinates = FALSE, showArrows = FALSE, showLegend = TRUE, showAxes = FALSE, axesLabels = NULL,
+    language = c("en", "es", "ca"), image = NULL, imageNames = NULL, dir = NULL)
 {
   if(class(nodes)=="netCoin"){
     links <- nodes$links
@@ -33,35 +33,32 @@ netCoin<-function (nodes, links = NULL, tree = NULL, name = NULL,
       warning("links: no row (Source and Target) matches the name column of the nodes")
     }
   }
-  if(!is.null(tree)){
-    tree <- tree[tree$Source%in%nodes[[name]]&tree$Target%in%nodes[[name]],]
-    if(nrow(tree)==0){
-      tree <- NULL
-      warning("tree: no row (Source and Target) matches the name column of the nodes")
-    }
-  }
 
   # graph options
-  options[["cex"]] <- 1
-  if(is.numeric(cex))
-    options[["cex"]] <- cex
-  else
+  if(!is.numeric(cex)){
+    cex <- formals(netCoin)[["cex"]]
     warning("cex: must be numeric")
-  options[["repulsion"]] <- 25
-  if(is.numeric(repulsion) && repulsion>=0 && repulsion<=100)
-    options[["repulsion"]] <- repulsion
-  else
-    warning("repulsion: must be numeric between 0 and 100")
-  options[["distance"]] <- 10
-  if(is.numeric(distance) && distance>=0 && distance<=100)
-    options[["distance"]] <- distance
-  else
+  }
+  options[["cex"]] <- cex
+
+  if(!(is.numeric(distance) && distance>=0 && distance<=100)){
+    distance <- formals(netCoin)[["distance"]]
     warning("distance: must be numeric between 0 and 100")
-  options[["zoom"]] <- 1
-  if(is.numeric(zoom) && zoom>=0.1 && zoom<=10)
-    options[["zoom"]] <- zoom
-  else
+  }
+  options[["distance"]] <- distance
+
+  if(!(is.numeric(repulsion) && repulsion>=0 && repulsion<=100)){
+    repulsion <- formals(netCoin)[["repulsion"]]
+    warning("repulsion: must be numeric between 0 and 100")
+  }
+  options[["repulsion"]] <- repulsion
+
+  if(!(is.numeric(zoom) && zoom>=0.1 && zoom<=10)){
+    zoom <- formals(netCoin)[["zoom"]]
     warning("zoom: must be numeric between 0.1 and 10")
+  }
+  options[["zoom"]] <- zoom
+
   if (!is.null(scenarios)){
     if(is.numeric(scenarios))
       options[["scenarios"]] <- scenarios
@@ -78,7 +75,12 @@ netCoin<-function (nodes, links = NULL, tree = NULL, name = NULL,
   if (!is.null(note)) options[["note"]] <- note
   if (!is.null(help)) options[["help"]] <- help
   if (!is.null(background)) options[["background"]] <- background
-  if (!is.null(language)) options[["language"]] <- language[1]
+  language <- language[1]
+  if(!(language %in% languages)){
+      warning(paste0("language: '",language,"' is not supported"))
+      language <- "en"
+  }
+  options[["language"]] <- language
 
   if(nodeBipolar) options[["nodeBipolar"]] <- TRUE
   if(linkBipolar) options[["linkBipolar"]] <- TRUE
@@ -148,7 +150,15 @@ netCoin<-function (nodes, links = NULL, tree = NULL, name = NULL,
 
   if (!is.null(degreeFilter)) options[["degreeFilter"]] <- as.numeric(degreeFilter)
 
-  net <- structure(list(links=links,nodes=nodes,tree=tree,options=options),class="netCoin")
+  net <- structure(list(links=links,nodes=nodes,options=options),class="netCoin")
+
+  if(!is.null(tree)){
+    tree <- tree[tree$Source%in%nodes[[name]]&tree$Target%in%nodes[[name]],]
+    if(nrow(tree)==0)
+      warning("tree: no row (Source and Target) matches the name column of the nodes")
+    else
+      net$tree <- tree
+  }
 
   #layout
   if (!is.null(layout)) {
@@ -1016,21 +1026,20 @@ summary.timeCoin <- function(object, ...){
 
 summaryNet <- function(x){
   cat(dim(x$nodes)[1], "nodes and", dim(x$links)[1], "links.\n")
-  if(any(frequencyList %in% names(x$nodes))) {
-    for(i in frequencyList)
-      if(i %in% names(x$nodes))
-        freq <- i
+  freq <- frequencyList[frequencyList %in% names(x$nodes)]
+  if(length(freq)==1) {
     cat(freq," distribution of nodes:","\n", sep="")
     print(summary(x$nodes[[freq]]))
   }
-  if(!is.null(x$options$linkWidth)){
-    cat(x$options$linkWidth, "'s distribution:","\n",sep="")
-    print(summary(x$links[[x$options$linkWidth]]))
+  lwidth <- NULL
+  if(!is.null(x$options$linkWidth))
+    lwidth <- x$options$linkWidth
+  else if(length(x$links)>2)
+    lwidth <- names(x$links)[3]
+  if(length(lwidth)==1){
+    cat(lwidth, "'s distribution:","\n",sep="")
+    print(summary(x$links[[lwidth]]))
   }
-  else {
-    cat(names(x$links)[3], "'s distribution of links:","\n",sep="")
-    print(summary(x$links[[3]]))
-       }
 }
 
 propCoin<-function(x, margin= 0, decimals=1) {

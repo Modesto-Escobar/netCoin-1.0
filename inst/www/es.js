@@ -78,5 +78,6 @@ var texts = {
     scenarios: "Número de escenarios",
     resetzoom: "Reiniciar zoom",
     removefilter: "Quitar filtro",
-    alertrecordheatmap: "El mapa de color no puede ser grabado."
+    alertrecordheatmap: "El mapa de color no puede ser grabado.",
+    speed: "Velocidad"
   };
