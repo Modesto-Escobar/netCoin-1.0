@@ -55,8 +55,6 @@ netCoin(nodes, links = NULL, tree = NULL, name = NULL, label = NULL,
 \item{repulsion}{a percentage for repulsion between nodes.}
 \item{distance}{a percentage for distance of links.}
 \item{zoom}{a number between 0.1 and 10 to start displaying zoom.}
-\item{frame}{number of frame to start a dynamic network.}
-\item{speed}{a percentage for frame speed in dynamic networks.}
 \item{scenarios}{a note showing number of scenarios.}
 \item{main}{upper title of the graph.}
 \item{note}{lower title of the graph.}
