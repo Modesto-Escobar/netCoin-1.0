@@ -7,9 +7,10 @@ Edge list.
 Convert a coincidence/similarity/distance matrix into an edge list form.
 }
 \usage{
-edgeList(data, procedures="Haberman", criteria="Z", level=.95, Bonferroni=FALSE, 
-         min=-Inf, max=Inf, support=-Inf,
-         directed=FALSE, diagonal= FALSE, sort=NULL, decreasing=TRUE)
+edgeList(data, procedures="Haberman", 
+         criteria="Z", level=.95, Bonferroni=FALSE, 
+         min=-Inf, max=Inf, support=-Inf, directed=FALSE, 
+         diagonal=FALSE, sort=NULL, decreasing=TRUE, pairwise=FALSE)
 }
 \arguments{
   \item{data}{a coin object, let's say an R matrix with frequencies and an attribute (\code{n}) giving the number of scenarios. In case of change of shape, \code{data} should be a matrix.}
@@ -24,6 +25,7 @@ edgeList(data, procedures="Haberman", criteria="Z", level=.95, Bonferroni=FALSE,
   \item{diagonal}{includes auto-links}
   \item{sort}{sort the list according to the values of a statistic. See below}
   \item{decreasing}{order in a decreasing way.}
+  \item{pairwise}{Pairwise mode of handling missing values if TRUE. Listwise by default.}
 }
 \details{
 Possible measures in procedures are 

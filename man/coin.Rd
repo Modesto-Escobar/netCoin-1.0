@@ -9,8 +9,8 @@ A coincidence object consists of a list with two elements: 1) the number of scen
 \usage{
 coin(incidences, minimum = 1, maximum = nrow(incidences),
      sort = FALSE, decreasing = TRUE, 
-     total=FALSE, subsample=FALSE,
-     weight=NULL)
+     total = FALSE, subsample = FALSE,
+     weight = NULL, pairwise = FALSE)
 }
 \arguments{
   \item{incidences}{an incidence matrix or data frame with only 0/1 variables}
@@ -21,6 +21,7 @@ coin(incidences, minimum = 1, maximum = nrow(incidences),
   \item{total}{add one first row and column with total}
   \item{subsample}{retrict the analysis to scenarios with at least one event}
   \item{weight}{a vector of weights. Optimal for data.framed tables}
+  \item{pairwise}{Pairwise mode of handling missing values if TRUE. Listwise by default.}
 }
 \details{
 Produce a matrix of coincidences from a matrix of incidences.

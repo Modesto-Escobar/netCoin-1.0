@@ -11,7 +11,7 @@ This function creates a netCoin object (or igraph) and, if stated, a folder in t
 \usage{
 surCoin(data,variables=names(data), commonlabel=NULL,
         dichotomies=NULL, valueDicho=1, metric=NULL, exogenous=NULL,
-        weight=NULL, subsample=FALSE,
+        weight=NULL, subsample=FALSE, pairwise=FALSE,
         minimum=1, maximum=nrow(data), sort=FALSE, decreasing=TRUE,
         frequency=FALSE, percentages=TRUE,
         procedures="Haberman", criteria="Z", Bonferroni=FALSE,
@@ -29,6 +29,7 @@ surCoin(data,variables=names(data), commonlabel=NULL,
   \item{exogenous}{a vector of variables whose relations amongst them are of no interest. None by default}
   \item{weight}{a vector of weights. Optimal for data.framed tables}
   \item{subsample}{retrict the analysis to scenarios with at least one event}
+  \item{pairwise}{Pairwise mode of handling missing values if TRUE. Listwise by default.}
   \item{minimum}{minimum frequency to be considered}
   \item{maximum}{maximum frequency to be considered}
   \item{sort}{sort the coincidence matrix according to frequency of events}

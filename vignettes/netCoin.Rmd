@@ -79,7 +79,7 @@ even | large | 4.766506 | 3.18645e-06
 
 In order to make a graph, two data frames are needed: a nodes data frames with names and other nodes attributes (see `as.nodes` and an edge data frame (see `edgeList`). For more information go to [netCoin](https://cran.r-project.org/package=netCoin).
 
-## <a id="examples">Introduction and examples</a>
+## <a id="examples">Examples</a>
 ###<a id="inst">Package installation and loading</a>
 
 To install and load the updated version of the netCoin package simply run the following commands:
@@ -124,7 +124,7 @@ Net <- netCoin(N,E,dir="dice")
 ```
 
 
-```{r echo=FALSE, out.width='100%'}
+```{r echo=FALSE, out.width='98%'}
 knitr::include_graphics("Dice.png")
 ```
 
@@ -158,14 +158,14 @@ With the following commands two networks are generated that represent on the bus
 
 ```{r, message=FALSE, warning=FALSE, eval=FALSE}
 G <- allNet(incidence=links[links$link=="Marriage",-17],
-     nodes=families, layout="mds", percentages= FALSE,
-     criteria="f", minL=1, size="f.Marriages", color="seat",
-     main="Marriage Links beetween Italian families",
+     nodes=families, layout="md", percentages= FALSE,
+     criteria="f",minL=1, size="f.Marriages",shape="seat",
+     main="Marriage links beetween Italian families",
      note="Data source: Padgett & Ansell (1983)")
 H <- allNet(incidence=links[links$link=="Business",-17],
-     nodes=families, layout="mds", percentages= FALSE,
-     criteria="f", minL=1, size="f.Business", color="seat",
-     main="Marriage Links beetween Italian families",
+     nodes=families, layout="md", percentages= FALSE,
+     criteria="f",minL=1, size="f.Business",shape="seat",
+     main="Marriage links beetween Italian families",
      note="Data source: Padgett & Ansell (1983)")
 
 ```
@@ -176,7 +176,7 @@ Once the two networks are ready, the function `multigraphCreate` generates both 
 multigraphCreate(Marriage=G,Business=H,dir="italian")
 ```
 
-```{r echo=FALSE, out.width='100%'}
+```{r echo=FALSE, out.width='98%'}
 knitr::include_graphics("Padgett.png")
 ```
 
@@ -196,16 +196,16 @@ Here we add a few extra features to our graph:
 ```{r , echo=TRUE, message=FALSE, warning=FALSE, eval=FALSE}
 data("Galapagos")
 data("finches")
-finches$species <- system.file("extdata", finches$species,
+finches$species<-system.file("extdata", finches$species,
         package="netCoin") # copy path to the species field
-Net <- allNet(Galapagos, nodes=finches, criteria="hyp", maxL=.05,
-        lwidth ="Haberman", lweight="Haberman",
+Net<-allNet(Galapagos,nodes=finches, criteria="hyp", maxL=.05,
+        lwidth ="Haberman",lweight="Haberman",
         size="frequency", image="species", layout="mds",
         main="Species coincidences in Galapagos Islands",
         note="Data source: Sanderson (2000)")
 plot(Net)
 ```
 
-```{r echo=FALSE, out.width='100%'}
+```{r echo=FALSE, out.width='98%'}
 knitr::include_graphics("Finches.png")
 ```

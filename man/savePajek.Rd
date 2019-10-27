@@ -8,7 +8,8 @@
 The function creates a file with vertices and arcs or edges of a netCoin objetct. Vectors and partitions can be also included. .
 }
 \usage{
-savePajek(net, file="file.net", arcs=NULL, edges=NULL, partitions=NULL, vectors=NULL)
+savePajek(net, file="file.net", arcs=NULL, edges=NULL, 
+          partitions=NULL, vectors=NULL)
 }
 \arguments{
 \item{net}{a netCoin object.}

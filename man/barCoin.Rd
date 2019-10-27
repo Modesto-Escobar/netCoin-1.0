@@ -12,11 +12,12 @@ Object of class \code{barCoin}.
 barCoin(data, variables = colnames(data), commonlabel = NULL,
         dichotomies = c("_all","_none"), valueDicho = 1, weight = NULL,
         subsample = FALSE, sort = NULL, decreasing = TRUE, nodes = NULL,
-        name = NULL, select = NULL, scalebar = FALSE, note = NULL, label = NULL,
-        text = NULL, color = NULL, defaultColor = "#1f77b4", expected = FALSE,
-        confidence = FALSE, level = .95, significance = FALSE, minimum = 1 ,
-        maximum = nrow(data), percentages = FALSE, criteria = c("Z","hyp"),
-        Bonferroni = FALSE, support = 1, minL = -Inf, maxL = 1,
+        name = NULL, select = NULL, scalebar = FALSE, note = NULL, 
+        label = NULL, text = NULL, color = NULL, defaultColor = "#1f77b4", 
+        expected = FALSE, confidence = FALSE, level = .95, significance = FALSE, 
+        minimum = 1 , maximum = nrow(data), percentages = FALSE, 
+        criteria = c("Z","hyp"), Bonferroni = FALSE, 
+        support = 1, minL = -Inf, maxL = 1,
         language = c("en","es","ca"), cex = 1.0, dir = NULL)
 }
 \arguments{

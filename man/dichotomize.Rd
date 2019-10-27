@@ -47,7 +47,8 @@ frame3 <- data.frame(A = c("Man; Women", "Women; Women",
                          "London; New York", "<NA>")))
 dichotomize(frame3, c("A", "C"), sep = "; ")
 
-# A set of simple character or factor (same levels) variables. You must use "C" separator.
+# A set of simple character or factor (same levels) variables. 
+# In this case, you must use "C" separator.
 frame4 <- data.frame(A = c("Man", "Women","Man", "Undet",NA),
                      B = c("Women","Women","Man","Women",NA),
 					 C = c(NA,NA,NA,"Man",NA))
