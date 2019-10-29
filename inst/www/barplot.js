@@ -13,6 +13,17 @@ function barplot(json){
   else
     options.cex = 1;
 
+  // split multivariables
+  nodes.forEach(function(d){
+      for(var p in d) {
+        if(p!=options.name){
+          if(typeof d[p] == "string" && d[p].indexOf("|")!=-1){
+            d[p] = d[p].split("|").map(function(d){ return isNaN(parseInt(d)) ? d : +d; });
+          }
+        }
+      }
+  });
+
   if(!options.defaultColor)
     options.defaultColor = categoryColors[0];
 

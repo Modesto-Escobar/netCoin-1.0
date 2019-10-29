@@ -326,8 +326,7 @@ function topFilter(){
     var changeAttrSel = function(val){
       if(d3.select("body>div>div.window").empty()){
 
-        var dat = d3.set(data.map(function(d){ return d[val]; })).values(),
-            panel = displayWindow(),
+        var panel = displayWindow(),
             vp = viewport();
 
         panel.append("h3").text(val).style("margin-bottom","10px")
@@ -338,12 +337,17 @@ function topFilter(){
               tempValues;
           brushSlider(panel.append("div"),extent,selectedValues[val],function(s){ tempValues = s; },vp.width/3);
         }else{
+          var dat = data.map(function(d){ return d[val]; });
+          if(type != 'string')
+            dat = dat.reduce(function(a,b) { return b ? a.concat(b) : a; }, []);
+          dat = d3.set(dat).values().sort();
+
           var valSelector = panel.append("select")
             .attr("multiple","multiple")
             .attr("size",dat.length)
             .style("width",vp.width/3+"px");
 
-          valSelector.selectAll("option").data(dat.sort())
+          valSelector.selectAll("option").data(dat)
             .enter().append("option")
               .property("value",String)
               .property("selected",function(d){ return (selectedValues[val] && selectedValues[val].indexOf(d)!=-1); })

@@ -83,10 +83,10 @@ In order to make a graph, two data frames are needed: a nodes data frames with n
 ###<a id="inst">Package installation and loading</a>
 
 To install and load the updated version of the netCoin package simply run the following commands:
-```{r, eval=FALSE}
+```{r eval=FALSE}
 install.packages("netCoin")
 ```
-```{r, echo=TRUE, message=FALSE, warning=FALSE}
+```{r echo=TRUE, message=FALSE, warning=FALSE}
 library(netCoin)
 ```
 ###<a id="basic"> Basic coincidence analysis with dice roll data</a>
@@ -149,14 +149,14 @@ The previous `coin`, `edgeList`, `asNodes` and `netCoin`  functions can be execu
 * title - upper title of the graph.
 * subtitle - lower title of the graph.
 
-```{r, message=FALSE, warning=FALSE, include=FALSE}
+```{r message=FALSE, warning=FALSE, include=FALSE}
 
 library(igraph)
 ```
 
 With the following commands two networks are generated that represent on the business and marriages links between the two families.
 
-```{r, message=FALSE, warning=FALSE, eval=FALSE}
+```{r message=FALSE, warning=FALSE, eval=FALSE}
 G <- allNet(incidence=links[links$link=="Marriage",-17],
      nodes=families, layout="md", percentages= FALSE,
      criteria="f",minL=1, size="f.Marriages",shape="seat",
@@ -172,7 +172,7 @@ H <- allNet(incidence=links[links$link=="Business",-17],
 
 Once the two networks are ready, the function `multigraphCreate` generates both graphs in the specified file.
 
-```{r, echo=TRUE, message=FALSE, warning=FALSE, eval=FALSE}
+```{r echo=TRUE, message=FALSE, warning=FALSE, eval=FALSE}
 multigraphCreate(Marriage=G,Business=H,dir="italian")
 ```
 
@@ -193,7 +193,7 @@ Here we add a few extra features to our graph:
 * layout="mds" - the algorithm selected for the network topology.
 
 
-```{r , echo=TRUE, message=FALSE, warning=FALSE, eval=FALSE}
+```{r echo=TRUE, message=FALSE, warning=FALSE, eval=FALSE}
 data("Galapagos")
 data("finches")
 finches$species<-system.file("extdata", finches$species,

@@ -16,6 +16,17 @@ function timeline(json){
   else
     options.cex = 1;
 
+  // split multivariables
+  nodes.forEach(function(d){
+      for(var p in d) {
+        if(p!=options.name){
+          if(typeof d[p] == "string" && d[p].indexOf("|")!=-1){
+            d[p] = d[p].split("|").map(function(d){ return isNaN(parseInt(d)) ? d : +d; });
+          }
+        }
+      }
+  });
+
   // top bar
   var topBar = body.append("div")
         .attr("class","topbar")
@@ -33,7 +44,7 @@ function timeline(json){
   // node filter
   var topFilterInst = topFilter()
     .data(nodes)
-    .attr("name")
+    .attr(options.name)
     .displayGraph(displayGraph);
   topBar.call(topFilterInst);
 

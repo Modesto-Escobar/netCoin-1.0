@@ -302,12 +302,12 @@ function network(Graph){
     }
 
     function splitMultiVariable(d){
-      for (var p in d) {
+      for(var p in d) {
         if(p!=options.nodeName){
           if(typeof d[p] == "string" && d[p].indexOf("|")!=-1){
             var aux = d[p].split("|");
             if(!frameControls || aux.length==frameControls.frames.length)
-              d[p] = aux.map(function(d){ return isNaN(d) ? d : +d; });
+              d[p] = aux.map(function(d){ return isNaN(parseInt(d)) ? d : +d; });
           }
         }
       }
@@ -625,7 +625,7 @@ embedImages(svg2pdf); });
           txt = new RegExp(txt,'i');
           Graph.nodes.forEach(function(node){
             node.selected = false;
-            if(!node.noShow){
+            if(checkSelectable(node)){
               var i = 0;
               while(!node.selected && i<Graph.nodenames.length){
                 if(String(node[Graph.nodenames[i++]]).match(txt))
@@ -1277,7 +1277,7 @@ function drawSVG(sel){
             extent[1][0] = transform.invertX(extent[1][0]);
             extent[1][1] = transform.invertY(extent[1][1]);
             Graph.nodes.forEach(function(node) {
-              node.selected = (!node.noShow && !node._hideFrame) && (node.selected ^ (extent[0][0] <= node.x && node.x < extent[1][0] && extent[0][1] <= node.y && node.y < extent[1][1]));
+              node.selected = checkSelectable(node) && (node.selected ^ (extent[0][0] <= node.x && node.x < extent[1][0] && extent[0][1] <= node.y && node.y < extent[1][1]));
             });
           }else
             Graph.nodes.forEach(function(node) { return node.selected = false; });
@@ -1800,40 +1800,17 @@ function drawNet(){
       });
     }
     Graph.nodes.forEach(function(d){
-      if(!d.noShow && d.childNodes.length)
+      if(checkSelectable(d) && d.childNodes.length)
         hideChildren(d);
     });
   }
 
-  var nodeFilter = function(node){ return !node.noShow && !node._hideFrame; },
-      linkFilter = function(link){ return !link.noShow && !link.target.noShow && !link.source.noShow && !link._hideFrame; };
-
-  if(egoNet){
-    Graph.links.forEach(function(d){
-      if(!d.noShow && !d._hideFrame)
-        if(d.source.selected || d.target.selected)
-          d.target.neighbor = d.source.neighbor = true;
-    });
-    nodeFilter = function(node){
-      return !node.noShow && !node._hideFrame && (node.neighbor || node.selected);
-    }
-    linkFilter = function(link){
-      return !link.noShow && !link.target.noShow && !link.source.noShow && !link._hideFrame && ((link.source.select || link.source.neighbor) && (link.target.select || link.target.neighbor));
-    }
-  }
-
   var nodes = Graph.nodes.filter(function(node){
     node.degree = 0;
-    return nodeFilter(node);
+    return checkSelectable(node);
   });
 
-  var links = Graph.links.filter(linkFilter);
-
-  if(egoNet){
-    Graph.nodes.forEach(function(node){
-      delete node.neighbor;
-    });
-  }
+  var links = Graph.links.filter(checkSelectableLink);
 
   for(var i=1; i<links.length; i++){
     for(var j = i-1; j>=0; j--){
@@ -2034,16 +2011,7 @@ function drawNet(){
       })
       .on("dblclick", row || !options.linkIntensity ? function(){
         d3.event.stopPropagation();
-        Graph.links.forEach(function(d){
-          if(!d.noShow && !d._hideFrame && (((!options.showArrows || heatmapTriangle) && d.target.selected) || d.source.selected)){
-                d.source.neighbor = d.target.neighbor = true;
-          }
-        });
-        Graph.nodes.forEach(function(d){
-          d.noShow = d.noShow || (!d.neighbor && !d.selected);
-          delete d.neighbor;
-        });
-        drawNet();
+        switchEgoNet();
       } : function(d,i){
         d3.event.stopPropagation();
         var order = d3.transpose(matrix)[i].sort(function(a,b){
@@ -2138,8 +2106,8 @@ function drawNet(){
   function click(p){
     links.forEach(function(l){ checkNeighbors(l,p); });
     nodes.forEach(function(n){
-      n.selected = !n.noShow && n.neighbor;
-      delete n.neighbor;
+      n.selected = !n.noShow && n.__neighbor;
+      delete n.__neighbor;
     });
     showTables();
   }
@@ -2148,16 +2116,16 @@ function drawNet(){
     d3.event.stopPropagation();
     links.forEach(function(l){ checkNeighbors(l,p); });
     nodes.forEach(function(n){
-      n.selected = (!n.noShow && (n.index == p.x || n.index == p.y))? true : false;
-      n.noShow = n.noShow || !n.neighbor;
-      delete n.neighbor;
+      n.selected = (checkSelectable(n) && (n.index == p.x || n.index == p.y))? true : false;
+      delete n.__neighbor;
     });
+    switchEgoNet();
     drawNet();
   }
 
     function checkNeighbors(l,p){
       if(!l.noShow && !l._hideFrame && (((!options.showArrows || heatmapTriangle) && (l.target.index==p.x || l.target.index==p.y)) || (l.source.index==p.x || l.source.index==p.y))){
-        l.source.neighbor = l.target.neighbor = true;
+        l.source.__neighbor = l.target.__neighbor = true;
       }
     }
 
@@ -2831,7 +2799,7 @@ function getLinkTextCoords(link){
 
 function forceEnd(){
   //update axes
-    var nodes = Graph.nodes.filter(function(d){ return !d.noShow && !d._hideFrame; });
+    var nodes = Graph.nodes.filter(checkSelectable);
 
     if(nodes.length>1){
       var extX = d3.extent(nodes, function(d){ return d.x; }),
@@ -2986,9 +2954,9 @@ function displayInfoPanel(d,i){
 }
 
 function selectAllNodes(){
-  if(Graph.nodes.filter(function(d){ return !d.selected && !d._hideFrame; }).length)
+  if(Graph.nodes.filter(function(d){ return !d.selected && checkSelectable(d); }).length)
     Graph.nodes.forEach(function(d){
-      if(!d.noShow && !d._hideFrame)
+      if(checkSelectable(d))
         d.selected = true;
     });
   else
@@ -3014,7 +2982,10 @@ function isolateNodes(){
 
 function deleteNoShow(){
   egoNet = false;
-  Graph.nodes.forEach(function(d){ delete d.noShow; });
+  Graph.nodes.forEach(function(d){
+    delete d.noShow;
+    delete d._neighbor;
+  });
   drawNet();
 }
 
@@ -3023,13 +2994,13 @@ function selectNeighbors(){
     displayWindow(texts.alertnonodes);
   }else{
     Graph.links.forEach(function(d){
-      if(!d.noShow && !d._hideFrame)
+      if(checkSelectableLink(d))
         if(d.source.selected || d.target.selected)
-          d.source.neighbor = d.target.neighbor = true;
+          d.source.__neighbor = d.target.__neighbor = true;
     });
     Graph.nodes.forEach(function(d){
-      d.selected = !d.noShow && d.neighbor;
-      delete d.neighbor;
+      d.selected = checkSelectable(d) && d.__neighbor;
+      delete d.__neighbor;
     });
     if(!heatmap)
       simulation.restart();
@@ -3039,6 +3010,14 @@ function selectNeighbors(){
 
 function switchEgoNet(){
     egoNet = true;
+    Graph.nodes.forEach(function(d){
+      delete d._neighbor;
+    });
+    Graph.links.forEach(function(d){
+      if(!d.noShow && !d._hideFrame)
+        if(d.source.selected || d.target.selected)
+          d.target._neighbor = d.source._neighbor = true;
+    });
     drawNet();
 }
 
@@ -3049,10 +3028,24 @@ function displayEgoNet(){
     switchEgoNet();
 }
 
+function checkSelectable(node){
+  var selectable = !node.noShow && !node._hideFrame;
+  if(egoNet)
+    selectable = selectable && node._neighbor;
+  return selectable;
+}
+
+function checkSelectableLink(link){
+  var selectable = !link.noShow && !link.target.noShow && !link.source.noShow && !link._hideFrame;
+  if(egoNet)
+    selectable = selectable && ((link.source.select || link.source._neighbor) && (link.target.select || link.target._neighbor));
+  return selectable;
+}
+
 function treeAction(){
   if(!Graph.nodes.filter(function(d){ return d.selected; }).length)
     Graph.nodes.forEach(function(d){
-      if(!d.noShow && !d._hideFrame)
+      if(checkSelectable(d))
         d.selected = true;
     });
   Graph.nodes.forEach(function(d){
@@ -3181,7 +3174,7 @@ function displayLegend(scale, key, color, shape, dat){
         var selecteds = d3.selectAll(".legend > g").filter(function(){ return this.selected; })
         Graph.nodes.forEach(function(d){
            d.selected = false;
-           if(!d.noShow && !d._hideFrame){
+           if(checkSelectable(d)){
              selecteds.each(function(p){
                if((p=="null" && d[this.selected]===null) || (p=="0" && d[this.selected]===0) || (d[this.selected] && (d[this.selected]==p || (typeof d[this.selected] == 'object' && d[this.selected].indexOf(p)!=-1))))
                  d.selected = true;
@@ -3325,35 +3318,37 @@ function showTables() {
     drawHeader = function() {
         var thead = table.append("thead"),
             tbody = table.append("tbody"),
-            desc = false;
-        columns.forEach(function(d){
+            desc = columns.map(function(){ return false; });
+        columns.forEach(function(d,i){
           var sort1 = function(a,b){
-              var rv = [1,-1];
-              if(a[d]==null) return rv[0];
-              if(b[d]==null) return rv[1];
-              a = a[d][options.nodeName]?a[d][options.nodeName]:a[d];
-              b = b[d][options.nodeName]?b[d][options.nodeName]:b[d];
-              if(typeof a == "number" && typeof b == "number"){
-                if(!desc)
-                  rv = rv.reverse();
-              }else{
-                if(desc)
-                  rv = rv.reverse();
-              }
-              if (a > b) {
-                return rv[0];
-              }
-              if (a < b) {
-                return rv[1];
-              }
-              return 0;
-            };
+                var rv = [1,-1];
+                if(a[d]==null) return rv[0];
+                if(b[d]==null) return rv[1];
+                a = a[d][options.nodeName]?a[d][options.nodeName]:a[d];
+                b = b[d][options.nodeName]?b[d][options.nodeName]:b[d];
+                if(typeof a == "number" && typeof b == "number"){
+                  if(!desc[i])
+                    rv = rv.reverse();
+                }else{
+                  if(desc[i])
+                    rv = rv.reverse();
+                }
+                if (a > b) {
+                  return rv[0];
+                }
+                if (a < b) {
+                  return rv[1];
+                }
+                return 0;
+              };
           thead.append("th")
             .text(d)
             .on("click",function(){
               tbody.html("");
               dat.sort(sort1);
-              desc = !desc;
+              var desci = desc[i];
+              desc = columns.map(function(){ return false; });
+              desc[i] = !desci;
               dat.forEach(drawTable);
             });
         });
@@ -3409,11 +3404,11 @@ function showTables() {
 
   var nodesData = Graph.nodes.filter(function(d){
         delete d._selected;
-        return !d.noShow && !d._hideFrame && d.selected;
+        return checkSelectable(d) && d.selected;
       }).map(cleanData),
       linksData = Graph.links.filter(function(d){
         delete d._selected;
-        return !d.noShow && !d._hideFrame && (d.source.selected && d.target.selected);
+        return checkSelectableLink(d) && (d.source.selected && d.target.selected);
       }).map(cleanData),
       nodeColumns = Graph.nodenames.filter(filterNoShow),
       linkColumns = Graph.linknames.filter(filterNoShow);

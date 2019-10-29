@@ -3,7 +3,7 @@ barplotJSON <- function(bar){
 }
 
 barStart <- function(nodes, links, options){
-  lNames <- unique(links$Source,links$Target)
+  lNames <- union(links$Source,links$Target)
   notListed <- length(setdiff(lNames,nodes[[options$name]]))
   if(notListed!=0)
     stop(paste(notListed," node link(s) not defined in nodes data frame."))

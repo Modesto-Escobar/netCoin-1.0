@@ -6,17 +6,19 @@ networkJSON<-function(net){
   nodes <- net$nodes
   options <- net$options
 
-  #get link intensity
-  count <- 3
-  while(count <= ncol(links) && is.null(options$linkIntensity)){
-      if(is.numeric(links[,count]))
-        options$linkIntensity <- colnames(links)[count]
-      count <- count + 1
-  }
-
   name <- nodes[[options$nodeName]] <- as.character(nodes[[options$nodeName]])
 
+  #prepare links
   if(length(links)){
+
+    #get link intensity
+    count <- 3
+    while(count <= ncol(links) && is.null(options$linkIntensity)){
+        cname <- colnames(links)[count]
+        if(cname!="_frame_" && is.numeric(links[,cname]))
+          options$linkIntensity <- cname
+        count <- count + 1
+    }
 
     sourcenames <- as.character(links$Source)
     targetnames <- as.character(links$Target)
@@ -32,6 +34,8 @@ networkJSON<-function(net){
     links$Source <- source
     links$Target <- target
   }
+
+  #prepare tree
   if(length(tree)){
       sourcenames <- as.character(tree$Source)
       targetnames <- as.character(tree$Target)
