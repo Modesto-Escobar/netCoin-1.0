@@ -303,8 +303,8 @@ surCoin<-function(data,variables=names(data), commonlabel=NULL,
   #Metrics 
   if(!is.null(metric)) {
     variables<-setdiff(variables,metric)
-    procedures<-intersect(procedures,c("Pearson","Haberman","Z")) #Check in case of NULL result
-    criteria<-intersect(criteria,c("Pearson","Haberman","Z")) # Check in case of NULL result
+    procedures<-intersect(union(procedures,"Z"),c("Pearson","Haberman","Z"))
+    criteria<-intersect(union(criteria,"Z"),c("Pearson","Haberman","Z"))[1]
   }
   
   #Names  
@@ -434,7 +434,7 @@ surCoin<-function(data,variables=names(data), commonlabel=NULL,
         nonAmong<-setdiff(metricT,metric)
         if(length(nonAmong)>0)
           warning(paste0(toString(nonAmong)," is/are not present among metrics"))
-        O2<-nodes[nodes$name %in% metric,]
+        O2<-nodes[nodes[[name]] %in% metric,]
       }else{
         if(percentages) xNx$nodes$mean<-xNx$nodes$`%`/100
         xNx$nodes$min<-0
@@ -443,7 +443,7 @@ surCoin<-function(data,variables=names(data), commonlabel=NULL,
         mins<-sapply(na.omit(data[,metric, drop=F]),min)
         maxs<-sapply(na.omit(data[,metric, drop=F]),max)
         P<-(means-mins)/(maxs-mins)*100
-        O2<-data.frame(name=names(means),mean=means,min=mins,max=maxs,P=P)
+        O2<-data.frame(name=names(means),mean=means,min=mins,max=maxs,P=P,variable=names(means))
         colnames(O2)<-sub("^P$","%",colnames(O2))
       }
       xNx$nodes<-rbind.all.columns(xNx$nodes,O2)
