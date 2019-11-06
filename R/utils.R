@@ -63,10 +63,14 @@ getLanguageScript <- function(obj){
 
 toJSON <- function(x){
   prepare_number <- function(x){
-    if(!suppressWarnings(x%%1))
-      return(x)
-    else
-      return(signif(x,4))
+    mod <- suppressWarnings(x%%1)
+    if(is.nan(mod)){
+      warning("Non-finite values not supported")
+      return("null")
+    }
+    if(mod!=0)
+      x <- signif(x,4)
+    return(toString(x))
   }
   sanitize_string <- function(x){
     x <- unname(x)
@@ -134,15 +138,26 @@ toJSON <- function(x){
     }
   } else {
     if(is.data.frame(x)){      
-      aux <- lapply(seq_len(dim(x)[1]), function(x,z) paste0("{", paste0(lapply(seq_along(z[x,]), function(x,y,n) paste0('"',n[[x]],'":',toJSON(y[[x]])), y=z[x,], n=names(z)), collapse = ","), "}", collapse = ""), z=x)
+      aux <- lapply(seq_len(dim(x)[1]), function(x,z)
+        paste0("{", paste0(lapply(seq_along(z[x,]), function(x,y,n)
+          paste0('"',n[[x]],'":',toJSON(y[[x]])),
+        y=z[x,], n=names(z)), collapse = ","), "}", collapse = ""),
+      z=x)
       aux <- paste0(aux , collapse = ",")
       json <- paste0("[", aux, "]", collapse = "")
     }else if(is.list(x)){
       if(is.null(names(x))){
-        aux <- paste0(lapply(x, function(x){ if(is.vector(x)||is.factor(x)) toJSON(array(x)) else toJSON(x) }), collapse = ",")
+        aux <- vapply(x, function(x){
+          if(is.vector(x)||is.factor(x))
+            toJSON(array(x))
+          else
+            toJSON(x)
+        }, character(1))
+        aux <- paste0(aux, collapse = ",")
         json <- paste0("[", aux, "]", collapse = "")
       }else{
-        aux <- lapply(seq_along(x), function(x,y,n) paste0('"',n[[x]],'":',toJSON(y[[x]])),y=x,n=names(x))
+        aux <- vapply(x, toJSON, character(1))
+        aux <- paste0('"',names(x),'":',aux)
         aux <- paste0(aux , collapse = ",")
         json <- paste0("{", aux, "}", collapse = "")
       }      
@@ -151,7 +166,7 @@ toJSON <- function(x){
       aux <- paste0(aux, collapse = ",")
       json <- paste0("[", aux, "]", collapse = "")
     }else if(is.vector(x)||is.factor(x)){
-      aux <- paste0(lapply(x, toJSON), collapse = ",")
+      aux <- paste0(vapply(x, toJSON, character(1)), collapse = ",")
       json <- paste0("[", aux, "]", collapse = "")
     }
   }

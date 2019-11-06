@@ -320,7 +320,7 @@ surCoin<-function(data,variables=names(data), commonlabel=NULL,
   
   if (!pairwise) {
     if (!is.null(weight)) weight <- data[rowSums(is.na(data))<1,weight]
-    data<-na.omit(data)
+    data <- data[complete.cases(data[,allvar]),]
   }
   
   if(!is.null(weight)) {
@@ -340,9 +340,7 @@ surCoin<-function(data,variables=names(data), commonlabel=NULL,
   
   data[,variables]<-as_factor(data[,variables])
   nn <- sum(rowSums(!is.na(data))>0) # Number of scenarios
-  if(!is.null(nodes)) allvar<-intersect(unlist(nodes[name]),allvar)
-  
-  
+
   #Size 
   if(!("size" %in% names(arguments)))
     if(percentages)
@@ -369,6 +367,7 @@ surCoin<-function(data,variables=names(data), commonlabel=NULL,
     nonAmong<-setdiff(nonAmong,metric)
     if(length(nonAmong)>0)
       warning(paste0(toString(nonAmong)," is/are not present among incidences."))
+    nodes <- nodes[as.character(nodes[[name]]) %in% union(names(incidences),metric),]
   }
   
   #Nodes elaboration
@@ -426,33 +425,30 @@ surCoin<-function(data,variables=names(data), commonlabel=NULL,
   
   if(exists("xNx")){
     if(!is.null(metric)) {
-      #Nodes filter
+      #Metric nodes elaboration
+      if(percentages) xNx$nodes$mean<-xNx$nodes$`%`/100
+      xNx$nodes$min<-0
+      xNx$nodes$max<-1
+      means<-sapply(na.omit(data[,metric, drop=F]),mean)
+      mins<-sapply(na.omit(data[,metric, drop=F]),min)
+      maxs<-sapply(na.omit(data[,metric, drop=F]),max)
+      P<-(means-mins)/(maxs-mins)*100
+      O2<-data.frame(name=names(means),mean=means,min=mins,max=maxs,P=P,variable=names(means))
+      colnames(O2)[1] <- name
+      colnames(O2)[5] <- "%"
       if(!is.null(nodes)){
-        metricT<-metric
-        nonAmong<-setdiff(as.character(nodes[[name]]),metric)
-        metric<-setdiff(as.character(nodes[[name]]),nonAmong)
-        nonAmong<-setdiff(metricT,metric)
-        if(length(nonAmong)>0)
-          warning(paste0(toString(nonAmong)," is/are not present among metrics"))
-        O2<-nodes[nodes[[name]] %in% metric,]
-      }else{
-        if(percentages) xNx$nodes$mean<-xNx$nodes$`%`/100
-        xNx$nodes$min<-0
-        xNx$nodes$max<-1
-        means<-sapply(na.omit(data[,metric, drop=F]),mean)
-        mins<-sapply(na.omit(data[,metric, drop=F]),min)
-        maxs<-sapply(na.omit(data[,metric, drop=F]),max)
-        P<-(means-mins)/(maxs-mins)*100
-        O2<-data.frame(name=names(means),mean=means,min=mins,max=maxs,P=P,variable=names(means))
-        colnames(O2)<-sub("^P$","%",colnames(O2))
+        O2 <- O2[as.character(O2[[name]]) %in% as.character(nodes[[name]]),] #nodes filter 
+        for(col in as.character(O2[[name]]))
+          O2[as.character(O2[[name]])==col,colnames(nodes)] <- nodes[as.character(nodes[[name]])==col,]
       }
       xNx$nodes<-rbind.all.columns(xNx$nodes,O2)
-      
+
+      #Metric links elaboration
       methods<-union(procedures,criteria)
       if (pairwise) R <- corrp(data[,metric, drop=F], cbind(incidences, data[,metric, drop=F]), weight=weight)
       else R <- corr(data[,metric, drop=F], cbind(incidences,data[,metric, drop=F]), weight=weight)      
       if (nrow(R)==1) row.names(R)<-metric
-      allvar<-union(unlist(nodes[name]),c(names(incidences),metric))
+      allvar<-union(as.character(nodes[[name]]),c(names(incidences),metric))
       order1<-intersect(allvar,rownames(R))
       order2<-intersect(allvar,colnames(R))
       R<-R[order1,order2, drop=F]
@@ -474,6 +470,7 @@ surCoin<-function(data,variables=names(data), commonlabel=NULL,
       colnames(D)<-sub("^Z$","p(Z)",colnames(D))
       if(is.null(xNx$links))xNx$links<-D
       else xNx$links<-rbind.all.columns(arguments$links,D)
+
       #Layout
       if (class(layout)=="matrix"){
         if (!is.null(nodes)){
