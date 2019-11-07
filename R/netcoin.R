@@ -367,7 +367,7 @@ surCoin<-function(data,variables=names(data), commonlabel=NULL,
     nonAmong<-setdiff(nonAmong,metric)
     if(length(nonAmong)>0)
       warning(paste0(toString(nonAmong)," is/are not present among incidences."))
-    nodes <- nodes[as.character(nodes[[name]]) %in% union(names(incidences),metric),]
+    # nodes <- nodes[as.character(nodes[[name]]) %in% union(names(incidences),metric),]
   }
   
   #Nodes elaboration
@@ -497,6 +497,7 @@ surCoin<-function(data,variables=names(data), commonlabel=NULL,
     }
     if ("showArrows" %in% names(xNx$options) & exists("nodes")) xNx$links<-orderEdges(xNx$links,nodes[[name]])
     
+    xNx$options$scenarios <- nn
     if(!is.null(dir)) netCreate(xNx,dir)
     if (igraph) return(toIgraph(xNx))
     else return(xNx)
@@ -765,6 +766,7 @@ sim<-function (input, procedures="Jaccard", level=.95, distance=FALSE, minimum=1
   
   if (pairwise) {
     N <- attr(C, "m")
+   NN <- max(C)
     X <- attr(C, "x")
   }
   else {
@@ -840,7 +842,7 @@ sim<-function (input, procedures="Jaccard", level=.95, distance=FALSE, minimum=1
   }
   if ("H" %in% method) {
     s$Haberman <- sqrt(N) * (a * d - b * c)/sqrt((a + b) * (a + c) * (b + d) *  (d + c))
-    if (pairwise) s$Haberman[is.na(s$Haberman)]<-sqrt(N)
+    if (pairwise) s$Haberman[is.na(s$Haberman)]<-sqrt(NN)
     else s$Haberman[is.na(s$Haberman)]<-sqrt(N)[is.na(s$Haberman)]
     if (distance) s$Haberman<-(N+s$Haberman)/(2*N)
   }
