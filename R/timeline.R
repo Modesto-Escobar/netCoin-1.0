@@ -8,8 +8,9 @@ timeCreate <- function(time, dir = "timeCoin"){
   createHTML(dir, c("reset.css","styles.css"), c("d3.min.js","jspdf.min.js","functions.js",language,"colorScales.js","timeline.js"), timelineJSON(time))
 }
 
-timeCoin <- function(nodes, name = "name", start = "start", end = "end", group = NULL, text = NULL, main = NULL, note = NULL, 
-                     cex = 1, language = c("en","es","ca"), dir = NULL, show = TRUE){
+timeCoin <- function(nodes, name = "name", start = "start", end = "end",
+                     group = NULL, text = NULL, main = NULL, note = NULL, 
+                     cex = 1, language = c("en","es","ca"), dir = NULL){
   options <- list(name = name, start = start, end = end, cex = as.numeric(cex))
   if (!is.null(group)) options[['group']] <- group
   if (!is.null(text)) options[['text']] <- text

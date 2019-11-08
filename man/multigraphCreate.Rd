@@ -24,6 +24,7 @@ multigraphCreate(..., mode = c("default","parallel","frame"),
 \code{multigraphCreate} produce an interactive multi graph.
 }
 \examples{
+\dontrun{
 # A character column (with separator)
 frame <- data.frame(A = c("Man; Women", "Women; Women",
                         "Man; Man", "Undet.; Women; Man"))
@@ -37,5 +38,6 @@ nC<- netCoin(N,E) # netCoin object
 multigraphCreate("Bar graph" = bC,
                   "Conditional bar graph" = cC, 
                   "Net graph"=nC, 
-                  dir="./example", show = FALSE) # See ./example/index.html file
+                  dir="./example") # See ./example/index.html file
+}
 }

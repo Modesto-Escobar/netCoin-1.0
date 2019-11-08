@@ -12,6 +12,7 @@ shinyCoin(x)
 Modesto Escobar, Department of Sociology and Communication, University of Salamanca. See \url{https://sociocav.usal.es/blog/modesto-escobar/}
 }
 \examples{
+\dontrun{
 # A character column (with separator)
 frame <- data.frame(A = c("Man; Women", "Women; Women",
                         "Man; Man", "Undet.; Women; Man"))
@@ -21,4 +22,5 @@ N <- asNodes(C) # node data frame
 E <- edgeList(C) # edge data frame
 net <- netCoin(N, E) # netCoin object
 shinyCoin(net)
+}
 }

@@ -339,7 +339,7 @@ surCoin<-function(data,variables=names(data), commonlabel=NULL,
   else data<-data[,allvar]
   
   data[,variables]<-as_factor(data[,variables])
-  nn <- sum(rowSums(!is.na(data))>0) # Number of scenarios
+  arguments$scenarios <- sum(rowSums(!is.na(data))>0) # Number of scenarios
 
   #Size 
   if(!("size" %in% names(arguments)))
@@ -496,8 +496,7 @@ surCoin<-function(data,variables=names(data), commonlabel=NULL,
       xNx$links[,"noShow"]<-with(xNx$links,!eval(parse(text=arguments$linkFilter)))
     }
     if ("showArrows" %in% names(xNx$options) & exists("nodes")) xNx$links<-orderEdges(xNx$links,nodes[[name]])
-    
-    xNx$options$scenarios <- nn
+
     if(!is.null(dir)) netCreate(xNx,dir)
     if (igraph) return(toIgraph(xNx))
     else return(xNx)
