@@ -180,8 +180,11 @@ netCoin <- function(nodes, links = NULL, tree = NULL, name = NULL,
   #community
   community <- congloControl(community)
   if (!is.null(community)) {
-    net$nodes$community <- as.character(membership(conglos[[community]](toIgraph(net))))
-    net$options$nodeGroup <- "community"
+    net$nodes$community <- membership(conglos[[community]](toIgraph(net)))
+    net$nodes$community <- paste0("G.",sprintf(paste0("%0",nchar(max(net$nodes$community)),"d"),net$nodes$community))
+    if (!"community" %in%   c(ifelse("nodeColor" %in% names(net$options), net$options$nodeColor,""),
+                            c(ifelse("nodeShape" %in% names(net$options), net$options$nodeShape,""))))
+       net$options$nodeGroup <- "community"
   }
 
   if (!is.null(dir)) netCreate(net,dir)
@@ -642,7 +645,7 @@ edgeList <- function(data, procedures="Haberman", criteria="Z", level = .95, Bon
     if(!is.null(sort)) funcs<-union(c.method(sort),funcs)
     criteria<-c.method(criteria)
     todas<-union(funcs,criteria)
-    matrices<-sim(data,todas,level=level, minimum=min, pairwise=pairwise)
+    matrices<-sim(data,todas,level=level, pairwise=pairwise)
     funcs<-i.method(funcs)
     criteria<-i.method(criteria)
     if (length(union(funcs,criteria))==1) {
@@ -949,6 +952,9 @@ coin<-function(incidences,minimum=1, maximum=nrow(incidences), sort=FALSE, decre
     if (length(S)>0) {
       if (!pairwise) structure(f[S,S], n=n, class=c("coin"))
       else {
+        colnames(nomiss) <- colnames(incidences)
+        nomiss <- nomiss[,S]
+        incidences <- incidences[,S]
         if (is.null(weight)) {
           m<-crossprod(as.matrix(nomiss))
           x<-crossprod(1-as.matrix(nomiss),as.matrix(incidences))
