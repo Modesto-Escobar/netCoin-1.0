@@ -322,7 +322,7 @@ surCoin<-function(data,variables=names(data), commonlabel=NULL,
   allvar<-union(union(metric,dichotomies),variables)
   
   if (!pairwise) {
-    if (!is.null(weight)) weight <- data[rowSums(is.na(data))<1,weight]
+    if (!is.null(weight)) weight <- data[rowSums(is.na(data[,allvar]))<1,weight]
     data <- data[complete.cases(data[,allvar]),]
   }
   
@@ -364,19 +364,21 @@ surCoin<-function(data,variables=names(data), commonlabel=NULL,
   
   #Nodes filter  
   if (!is.null(nodes)) {
-    nonAmong<-setdiff(as.character(nodes[[name]]),names(incidences))
-    nodeList<-setdiff(as.character(nodes[[name]]),nonAmong)
-    incidences<-incidences[,nodeList]
-    nonAmong<-setdiff(nonAmong,metric)
-    if(length(nonAmong)>0)
-      warning(paste0(toString(nonAmong)," is/are not present among incidences."))
+    nonAmong  <-setdiff(as.character(nodes[[name]]),names(incidences))
+    nodeList  <-setdiff(as.character(nodes[[name]]),nonAmong)
+    incidences<-incidences[,nodeList, drop=FALSE]
+    nonAmongM <- setdiff(metric, as.character(nodes[[name]]))
+    metric    <- setdiff(metric,nonAmongM)
+    if (length(metric)==0) metric <-NULL
+    if (length(nonAmong)>0)
+      warning(paste0(toString(nonAmong)," is/are not present in the data frame."))
     # nodes <- nodes[as.character(nodes[[name]]) %in% union(names(incidences),metric),]
   }
   
   #Nodes elaboration
-  if (!exists("incidences")) stop("There are no qualitative variables. Try netCorr.")
+  if (!exists("incidences") | ncol(incidences)<2) stop("There are no more than 1 qualitative category. Try netCorr.")
   if (all(is.na(incidences) | incidences==0 | incidences==1)) {
-    incidences <- incidences[,names(incidences)[order(match(sub(":.*","",names(incidences)),varOrder))]]
+    incidences <- incidences[,names(incidences)[order(match(sub(":.*","",names(incidences)),varOrder))], drop=FALSE]
     C<-coin(incidences, minimum, maximum, sort, decreasing, weight=weight, subsample=subsample, pairwise = pairwise)
     if(coin) return(C)
     O<-asNodes(C,frequency,percentages,arguments$language)
