@@ -4,8 +4,14 @@ wwwDirectory = function(){
 }
 
 createHTML <- function(directory, styles, dependencies, json){
-  if(file.exists(directory))
-    unlink(directory, recursive = TRUE)
+  indexfile <- paste(directory, "index.html", sep = "/")
+  if(file.exists(directory)){
+    if(length(dir(directory))==0 || file.exists(indexfile)){
+      unlink(directory, recursive = TRUE)
+    }else{
+      stop(paste0("directory: '",directory,"' already exists"))
+    }
+  }
   dir.create(directory)
 
   www <- wwwDirectory()
@@ -43,7 +49,7 @@ createHTML <- function(directory, styles, dependencies, json){
     html[html=="<!--json-->"] <- paste0('<script type="application/json" id="data">',json,'</script>')
   }
 
-  con <- file(paste(directory, "index.html", sep = "/"), encoding = "UTF-8")
+  con <- file(indexfile, encoding = "UTF-8")
   writeLines(html,con)
   close(con)
 }
