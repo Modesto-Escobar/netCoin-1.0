@@ -13,6 +13,7 @@ timeCreate <- function(time, dir = "timeCoin"){
 
 timeCoin <- function(nodes, name = "name", start = "start", end = "end", group = NULL,
                      text = NULL, main = NULL, note = NULL, events = NULL,
+                     eventSource = "Source", eventTarget = "Target", eventTime = "Time",
                      cex = 1, language = c("en","es","ca"), dir = NULL){
   if(length(setdiff(c(name,start,end),names(nodes))))
     stop("name, start and end: must be present in nodes data frame as columns.")
@@ -24,10 +25,11 @@ timeCoin <- function(nodes, name = "name", start = "start", end = "end", group =
   if(!is.null(language)) options[['language']] <- language[1]
   time <- structure(list(nodes=nodes,options=options),class="timeCoin")
   if(!is.null(events)){
-    events <- events[,1:3]
-    names(events) <- c('Source','Target','Time')
-    events <- events[order(events$Time),]
+    events <- events[order(events[[eventTime]]),]
     time[['events']] <- events
+    time[['options']][['eventSource']] <- eventSource
+    time[['options']][['eventTarget']] <- eventTarget
+    time[['options']][['eventTime']] <- eventTime
   }
   if (!is.null(dir)) timeCreate(time, dir)
   return(time)

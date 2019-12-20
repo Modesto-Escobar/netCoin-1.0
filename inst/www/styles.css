@@ -165,8 +165,10 @@ div.main {
   text-align: center;
   margin-top: 8px;
 }
-div.note {
+.note {
   padding: 30px;
+}
+div.note {
   position: absolute;
   left: 0;
   bottom: 0;

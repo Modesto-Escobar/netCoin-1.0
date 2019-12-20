@@ -44,7 +44,7 @@ function barplot(json){
     maxWord = 160;
 
   var vp = viewport(),
-      margin = {top: 80, right: 40, bottom: 80, left: maxWord};
+      margin = {top: 80, right: 40, bottom: 40, left: maxWord};
 
   var width = vp.width - 40 - margin.left - margin.right,
       height = vp.height - 40 - margin.top - margin.bottom;
@@ -191,11 +191,12 @@ function barplot(json){
 
   height = height - topBarHeight;
 
+  body.append("svg")
+    .attr("class","plot")
+
   if(options.note){
     var pnote = body.append("p")
         .attr("class","note")
-        .style("position","absolute")
-        .style("left",margin.left+"px")
         .html(options.note)
   }
 
@@ -356,14 +357,14 @@ function barplot(json){
       });
     }
 
-    if(!options.scalebar)
+    if(!options.scalebar){
       height = data.length*20;
+    }else if(options.note){
+      height = height - pnote.node().getBoundingClientRect().height + 10;
+    }
 
     if(height/data.length < 13)
       height = data.length*13;
-
-    if(options.note)
-      pnote.style("top",(topBarHeight+margin.top+height+margin.bottom)+"px")
 
     if(subject && options.expected)
       x.domain([0,maxExpected]).nice()
@@ -406,20 +407,19 @@ function barplot(json){
       }
     }
 
-    body.select("svg.plot").remove();
+    var svg = body.select("svg.plot");
+    svg.selectAll("*").remove();
 
-    var svg = body.append("svg")
-      .attr("class","plot")
+    svg
       .attr("xmlns","http://www.w3.org/2000/svg")
       .attr("width", width + margin.left + margin.right)
       .attr("height", height + margin.top + margin.bottom)
-
-    svg.on("dblclick",function(){
-      sigFilter = 0;
-      sigButton();
-      sigSlider();
-      topFilterInst.removeFilter();
-    })
+      .on("dblclick",function(){
+        sigFilter = 0;
+        sigButton();
+        sigSlider();
+        topFilterInst.removeFilter();
+      })
 
     svg.append("style").text("text { font-family: sans-serif; font-size: "+body.style("font-size")+"; } "+
       ".main { font-size: 200%; }"+

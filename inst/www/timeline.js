@@ -20,14 +20,14 @@ function timeline(json){
   // prepare events
   if(json.events){
     var events = {};
-    json.events.forEach(function(d){
-      if(typeof events[d.Target] == "undefined")
-        events[d.Target] = [];
-      events[d.Target].push({event: d.Source, time: d.Time, tooltip: d.Source+" ("+d.Time+")"});
+    json.events.forEach(function(d,i){
+      if(typeof events[d[options.eventTarget]] == "undefined")
+        events[d[options.eventTarget]] = [];
+      events[d[options.eventTarget]].push(i);
     })
     nodes.forEach(function(node){
       if(events.hasOwnProperty(node[options.name]))
-        node['_events_'] = events[node[options.name]];
+        node['_events_'] = events[node[options.name]].map(function(i){ return json.events[i]; });
     });
   }
 
@@ -87,7 +87,7 @@ function timeline(json){
         .attr("class","main")
         .html(options.main)
 
-  //styles
+  // styles
   d3.select("head")
       .append("style")
       .text("text { font-family: sans-serif; font-size: "+body.style("font-size")+"; } "+
@@ -102,7 +102,7 @@ function timeline(json){
   displayGraph();
 
   if(options.note)
-    body.append("div")
+    body.append("p")
         .attr("class","note")
         .html(options.note)
 
@@ -110,11 +110,12 @@ function timeline(json){
 
     var plot = body.select("div.plot")
 
-    if(plot.empty())
+    if(plot.empty()){
       plot = body.append("div")
                .attr("class","plot")
-    else
+    }else{
       plot.selectAll("*").remove();
+    }
 
     plot.on("dblclick",function(){
       displayGraph();
@@ -125,16 +126,12 @@ function timeline(json){
           return y === null ? currentYear : y;
         };
 
-    var data = (filter ? nodes.filter(function(d){ return filter.indexOf(d[options.name])!=-1; }) : nodes).filter(function(d){ return d[options.group]!==null; });
+    var items = (filter ? nodes.filter(function(d){ return filter.indexOf(d[options.name])!=-1; }) : nodes).filter(function(d){ return d[options.group]!==null; });
 
-    var lanes = options.group?d3.set(data.map(function(d){ return String(d[options.group]); })).values().sort():[""],
-      laneLength = lanes.length,
-      items = data.map(function(d){
-        d.lane = options.group?lanes.indexOf(String(d[options.group])):0;
-        return d;
-      }),
-      timeBegin = d3.min(items,function(d){ return d[options.start]; }),
-      timeEnd = d3.max(items,function(d){ return getEnd(d[options.end]); });
+    var lanes = options.group?d3.set(items.map(function(d){ return String(d[options.group]); })).values().sort():[""],
+        laneLength = lanes.length,
+        timeBegin = d3.min(items,function(d){ return d[options.start]; }),
+        timeEnd = d3.max(items,function(d){ return getEnd(d[options.end]); });
 
     if(!options.text){
       items.forEach(function(d){
@@ -145,16 +142,26 @@ function timeline(json){
 
     //sizes
     var vp = viewport(),
-      m = [20, 15, 20*options.cex, 120*options.cex], //top right bottom left
-      w = vp.width - 30 - m[1] - m[3],
+      margin = [20, 15, 20*options.cex, 120*options.cex], //top right bottom left
+      w = vp.width - 30 - margin[1] - margin[3],
       miniHeight = laneLength * (12*options.cex) + 50,
       mainHeight = 10;
 
     //scales
-    var color = d3.scaleOrdinal().range(categoryColors.slice(0,10));
-    if(laneLength>10)
-      color = d3.scaleOrdinal().range(categoryColors);
-    color.domain(d3.range(0,laneLength));
+    var color,
+        getMiniY;
+    if(options.group){
+       color = d3.scaleOrdinal().range(categoryColors.slice(0,10));
+      if(laneLength>10)
+        color = d3.scaleOrdinal().range(categoryColors);
+      color.domain(nodes.map(function(n){ return n[options.group]; }));
+
+      getMiniY = function(d){ return y2((lanes.indexOf(String(d[options.group]))) + 0.5) - 5; }
+    }else{
+      color = function(){ return categoryColors[0]; }
+
+      getMiniY = function(d){ return y2(0.5) - 5; }
+    }
 
     var x = d3.scaleLinear()
       .domain([timeBegin, timeEnd])
@@ -166,13 +173,13 @@ function timeline(json){
       .range([0, miniHeight]);
 
     //mini
-    var mini = plot
+    var topSVG = plot
       .append("svg")
-      .attr("width", w + m[1] + m[3])
-      .attr("height", miniHeight + m[0] + m[2]*2);
+      .attr("width", w + margin[1] + margin[3])
+      .attr("height", miniHeight + margin[0] + margin[2]*2);
 
-    mini = mini.append("g")
-      .attr("transform", "translate(" + m[3] + "," + m[0] + ")")
+    var mini = topSVG.append("g")
+      .attr("transform", "translate(" + margin[3] + "," + margin[0] + ")")
       .attr("class", "mini");
 
     //mini lanes and texts
@@ -191,7 +198,7 @@ function timeline(json){
       .data(lanes)
       .enter().append("text")
       .text(function(d) {return d;})
-      .attr("x", -m[1])
+      .attr("x", -margin[1])
       .attr("y", function(d, i) {return y2(i + .5);})
       .attr("dy", ".5ex")
       .attr("text-anchor", "end")
@@ -225,16 +232,16 @@ function timeline(json){
 
     var mainAxis = mini.append("g")
       .attr("class", "x1 axis")
-      .attr("transform", "translate(0," + (miniHeight + m[0] + m[2] - 1) + ")");
+      .attr("transform", "translate(0," + (miniHeight + margin[0] + margin[2] - 1) + ")");
 
     //mini item rects
     mini.append("g").selectAll(".item")
       .data(items)
       .enter().append("rect")
       .attr("class", function(d){ return "item"; })
-      .attr("fill", function(d) { return color(d.lane); })
+      .attr("fill", function(d) { return color(d[options.group]); })
       .attr("x", function(d){ return x(d[options.start]); })
-      .attr("y", function(d){ return y2(d.lane + .5) - 5; })
+      .attr("y", getMiniY)
       .attr("width", function(d){ return x(timeBegin + getEnd(d[options.end]) - d[options.start]); })
       .attr("height", 10);
     
@@ -243,8 +250,8 @@ function timeline(json){
       .data(lanes)
       .enter().append("svg")
       .attr("class","lane")
-      .attr("width", w + m[1] + m[3])
-      .attr("height", mainHeight + m[0] + m[2]);
+      .attr("width", w + margin[1] + margin[3])
+      .attr("height", mainHeight + margin[0] + margin[2]);
     
     svgLanes.append("defs").append("clipPath")
       .attr("id", function(d,i){ return "clip"+i; })
@@ -253,7 +260,7 @@ function timeline(json){
       .attr("height", mainHeight);
 
     var main = svgLanes.append("g")
-      .attr("transform", "translate(" + m[3] + "," + m[0] + ")")
+      .attr("transform", "translate(" + margin[3] + "," + margin[0] + ")")
       .attr("width", w)
       .attr("height", mainHeight)
       .attr("class", "main");
@@ -285,12 +292,58 @@ function timeline(json){
       .attr("class", "x brush")
       .call(brush)
 
+    // zoom
+
+    var zoom = d3.zoom()
+        .scaleExtent([1, 10])
+        .translateExtent([[0, 0], [w, 1]])
+        .extent([[0, 0], [w, 1]])
+        .filter(function(){
+          return !d3.event.button && (d3.event.ctrlKey || d3.event.metaKey);
+        })
+        .on("zoom", function() {
+          if (d3.event.sourceEvent && d3.event.sourceEvent.type === "brush") return;
+          var t = d3.event.transform;
+          mini.select(".brush").call(brush.move,x.range().map(t.invertX, t));
+        })
+
+    var zoomArea = body.append("div")
+      .style("display","none")
+      .style("position","fixed")
+      .style("top",0)
+      .style("left",margin[3]+"px")
+      .style("width",w+"px")
+      .style("bottom",0)
+      .call(zoom)
+      .on("wheel",function(){
+        d3.event.preventDefault();
+      })
+
+    // sticky time header
+    var timeHeader = body.append("svg")
+      .style("display","none")
+      .style("position","fixed")
+      .style("top",0)
+      .attr("width", w + margin[1] + margin[3])
+      .attr("height", margin[2]);
+
+    timeHeader.append("rect")
+      .style("fill","#fff")
+      .attr("x",margin[3])
+      .attr("width", w)
+      .attr("height", margin[2]);
+
+    timeHeader.append("g")
+      .attr("class", "x1 axis")
+      .attr("transform", "translate(" + margin[3] + "," + (margin[2]-1) + ")")
+
+    // dotted vertical guide
     var yearGuideTop = 53 + (options.main ? parseInt(body.select("div.main").style("height")) : 0) + parseInt(body.select("div.plot>svg:first-child").style("height")),
         yearGuide = plot.append("div")
       .attr("class","year-guide")
       .style("position","absolute")
       .style("top",yearGuideTop+"px")
-      .style("left",((w/2)+m[3])+"px")
+      .style("left",((w/2)+margin[3])+"px")
       .style("width",0)
       .style("height",0)
       .style("border-left","dashed 1px #000")
@@ -299,47 +352,76 @@ function timeline(json){
     var pYear = body.append("p")
       .attr("class","year")
       .style("background-color","#fff")
-      .style("position","fixed")
-      .style("top",0)
+      .style("position","absolute")
+      .style("top",yearGuideTop+"px")
       .style("margin-left","-16px")
       .style("padding","2px 0")
       .style("border-radius","0 0 5px 5px")
       .style("width","32px")
-      .style("text-align","center")
-      .style("display","none");
+      .style("text-align","center");
 
     body.on("mousemove",function(){
       var coords = d3.mouse(body.node());
-      if(coords[1]>yearGuideTop && coords[0]>m[3] && coords[0]<(m[3]+w)){
+      if(coords[1]>yearGuideTop && coords[0]>margin[3] && coords[0]<(margin[3]+w)){
         yearGuide.style("left",coords[0]+"px");
         pYear.style("left",coords[0]+"px");
-        var year = parseInt(x1.invert(coords[0]-m[3]));
+        var year = parseInt(x1.invert(coords[0]-margin[3]));
         pYear.text(year);
       }
     })
 
     window.onscroll = function(){
-      if(window.pageYOffset>yearGuideTop)
-        pYear.style("display",null)
-      else
-        pYear.style("display","none")
+      if(window.pageYOffset>yearGuideTop){
+        timeHeader.style("display","block");
+        pYear.style("position","fixed")
+          .style("top",margin[2]+"px")
+      }else{
+        timeHeader.style("display","none");
+        pYear.style("position","absolute")
+          .style("top",yearGuideTop+"px")
+      }
     }
+
+    
+    body
+      .on("keydown.viewzoom", keyflip)
+      .on("keyup.viewzoom", keyflip)
 
     mini.select(".brush").call(brush.move,x.range());
 
+    function keyflip(){
+      if(!d3.event.button && (d3.event.ctrlKey || d3.event.metaKey)){
+        if(window.pageYOffset>yearGuideTop){
+          zoomArea.style("top",margin[2]+"px");
+        }else{
+          zoomArea.style("top",(yearGuideTop-window.pageYOffset)+"px");
+        }
+        zoomArea.style("display","block");
+      }else{
+        zoomArea.style("display","none");
+      }
+    }
+
     function display() {
-      var extent = d3.event.selection.map(x.invert, x),
+      var s = d3.event.selection || x.range(),
+          extent = s.map(x.invert, x),
           minExtent = extent[0],
           maxExtent = extent[1],
           visItems = items.filter(function(d) {return d[options.start] < maxExtent && getEnd(d[options.end]) > minExtent;});
+
+      zoomArea.call(zoom.transform, d3.zoomIdentity
+        .scale(w / (s[1] - s[0]))
+        .translate(-s[0], 0));
 
       x1.domain([minExtent, maxExtent]);
 
       if(minExtent < maxExtent){
         var x1Axis = d3.axisTop(x1).tickFormat(formatter);
         mainAxis.call(x1Axis);
+        timeHeader.select("g").call(x1Axis);
       }else{
         mainAxis.selectAll("*").remove();
+        timeHeader.select("g").selectAll("*").remove();
       }
 
       //update main item rects
@@ -359,7 +441,7 @@ function timeline(json){
           var rectsEnter = rects.enter()
               .append("g")
             .attr("class", "item")
-            .attr("fill", color(i))
+            .attr("fill", color(d))
           rectsEnter.append("rect")
             .attr("height", 10)
           rectsEnter.append("text")
@@ -393,23 +475,36 @@ function timeline(json){
             if(!d['_events_'])
               return;
 
-            var points = d3.select(this).selectAll(".event").data(d['_events_'],function(dd){ return dd.event; });
+            var points = d3.select(this).selectAll(".event").data(d['_events_'],function(dd){ return dd[options.eventSource]; });
 
             var pointsEnter = points.enter()
                   .append("circle")
                   .attr("class","event")
-                  .attr("fill","black")
                   .attr("cx",0)
                   .attr("cy",0)
                   .attr("r",4)
 
-            tooltip(pointsEnter,'tooltip');
+            tooltip(pointsEnter,function(d){
+              var html = "";
+              for(var s in d){
+                if(d.hasOwnProperty(s)){
+                  if(s==options.eventTarget){
+                    continue;
+                  }else if(s==options.eventSource){
+                    html = d[s]+"<br>"+html;
+                  }else{
+                    html += s+": "+d[s]+"<br>";
+                  }
+                }
+              }
+              return html;
+            });
 
             points.exit().remove();
 
             var pointsUpdate = pointsEnter.merge(points);
 
-            pointsUpdate.attr("cx",function(dd){ return x1(dd.time); })
+            pointsUpdate.attr("cx",function(dd){ return x1(dd[options.eventTime]); })
 
             var lines = [-Infinity];
             pointsUpdate.attr("cy",function(){
@@ -421,7 +516,7 @@ function timeline(json){
                   lines.push(-Infinity);
               }
               lines[i] = selfCoords.x+selfCoords.width;
-              return (18+i*10)*options.cex;
+              return 18+(i*10*options.cex);
             });
           });
 
@@ -452,7 +547,7 @@ function timeline(json){
           });
 
           var height =  Math.ceil(this.getBBox().height);
-          self.attr("height", height + m[0] + m[2]);
+          self.attr("height", height + margin[0] + margin[2]);
           self.select("defs #clip"+i+" rect").attr("height", height);
         }
       });
@@ -560,7 +655,7 @@ function svg2pdf(){
       doc.setTextColor(0);
       doc.text(x, y+3, txt);
     })
-    if(!i){
+    if(!i){ // draw first svg
       var drawAxis = function(name){
         if(!svg.select("."+name+".axis>.domain").empty()){
           var axisY = getTranslation(svg.select("."+name+".axis").attr("transform"))[1],
@@ -601,7 +696,7 @@ function svg2pdf(){
         if(w!=0)
           doc.rect(x, y, w, h, 'D');
       })
-    }else{
+    }else{ // draw lanes
       svg.selectAll(".item").each(function(){
         var self = d3.select(this),
             y = getTranslation(self.attr("transform"))[1] + margin[1] + svgY,
@@ -617,12 +712,21 @@ function svg2pdf(){
         if(x<margin[0])
           x = margin[0];
         doc.rect(x, y, w, h, 'F');
+
         if(self.select("text").attr("text-anchor")=="end"){
           var fontsize = parseInt(selfText.style("font-size")),
           txtWidth = doc.getStringUnitWidth(txt) * fontsize;
           x = margin[0] + width - txtWidth;
         }
-        doc.text(x, y+22, txt);
+        doc.text(x, y-4, txt);
+
+        self.selectAll(".event").each(function(){
+          var self = d3.select(this)
+              x = +self.attr("cx") + margin[0],
+              selfY = +self.attr("cy") + y;
+
+          doc.circle(x,selfY,4,'F');
+        })
       })
     }
   })

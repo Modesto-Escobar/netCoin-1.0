@@ -463,8 +463,15 @@ function tooltip(sel,text){
 
     sel
       .on("mouseenter", function(d){
-        if(d[text])
-          tip.style("display","block").html(d[text]);
+        var html = false;
+        if(typeof text == 'string'){
+          if(d[text])
+            html = d[text];
+        }else if(typeof text == 'function'){
+          html = text(d);
+        }
+        if(html)
+          tip.style("display","block").html(html);
       })
       .on("mousemove", function(){
         var coor = [0, 0];

@@ -10,8 +10,9 @@ Object of class \code{timeCoin}.
 
 \usage{
 timeCoin(nodes, name = "name", start = "start", end = "end", group = NULL,
-         text = NULL, main = NULL, note = NULL, events = NULL, cex = 1,
-         language = c("en","es","ca"), dir = NULL)
+         text = NULL, main = NULL, note = NULL, events = NULL,
+         eventSource = "Source", eventTarget = "Target", eventTime = "Time",
+         cex = 1, language = c("en","es","ca"), dir = NULL)
 }
 \arguments{
 \item{nodes}{a data frame with at least three vectors of names, start and end.}
@@ -23,6 +24,9 @@ timeCoin(nodes, name = "name", start = "start", end = "end", group = NULL,
 \item{main}{upper title of the graph.}
 \item{note}{lower title of the graph.}
 \item{events}{a data frame of events realted to nodes with three columns: node name, event name and event date}
+\item{eventSource}{name of the vector with sources in the events data frame.}
+\item{eventTarget}{name of the vector with targets in the events data frame.}
+\item{eventTime}{name of the vector with time points in the events data frame.}
 \item{cex}{number indicating the amount by which plotting text should be scaled relative to the default. Default = 1.}
 \item{language}{a character vector (es=spanish; en=english; ca=catalan).}
 \item{dir}{a "character" string representing the directory where the web files will be saved.}

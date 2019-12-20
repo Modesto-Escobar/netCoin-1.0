@@ -1437,6 +1437,74 @@ function drawSVG(sel){
     loadSVGbuttons(countY);
   }
 
+
+  // zoom in
+  var zoomin = svg.append("g")
+      .attr("class","zoombutton")
+      .attr("transform","translate("+(width-25)+","+(height-50)+")")
+      .on("click",function(){
+        transform.k = transform.k + 0.1;
+        if(transform.k>zoomRange[1]){
+          transform.k = zoomRange[1];
+          return;
+        }
+        options.zoomScale = transform.k
+        zoomSlider.update(options.zoomScale);
+        zoomSlider.brushedValue(true);
+      })
+
+  zoomin.append("rect")
+      .attr("x",0)
+      .attr("y",0)
+      .attr("rx",2)
+      .attr("ry",2)
+      .attr("width",20)
+      .attr("height",20)
+  zoomin.append("rect")
+      .attr("x",5)
+      .attr("y",8)
+      .attr("width",10)
+      .attr("height",4)
+      .style("stroke","none")
+      .style("fill","#666")
+  zoomin.append("rect")
+      .attr("x",8)
+      .attr("y",5)
+      .attr("width",4)
+      .attr("height",10)
+      .style("stroke","none")
+      .style("fill","#666")
+
+  // zoom out
+  var zoomout = svg.append("g")
+      .attr("class","zoombutton")
+      .attr("transform","translate("+(width-25)+","+(height-25)+")")
+      .on("click",function(){
+        transform.k = transform.k - 0.1;
+        if(transform.k<zoomRange[0]){
+          transform.k = zoomRange[0];
+          return;
+        }
+        options.zoomScale = transform.k
+        zoomSlider.update(options.zoomScale);
+        zoomSlider.brushedValue(true);
+      })
+
+  zoomout.append("rect")
+      .attr("x",0)
+      .attr("y",0)
+      .attr("rx",2)
+      .attr("ry",2)
+      .attr("width",20)
+      .attr("height",20)
+  zoomout.append("rect")
+      .attr("x",5)
+      .attr("y",8)
+      .attr("width",10)
+      .attr("height",4)
+      .style("stroke","none")
+      .style("fill","#666")
+
   zoomSlider.update(options.zoomScale);
 
   if(frameControls)
@@ -1547,73 +1615,6 @@ function drawSVG(sel){
       count += 15;
       return val;
     })
-
-    // zoom in
-    var zoomin = buttons.append("g")
-      .attr("class","zoombutton")
-      .attr("transform","translate("+(width-55)+","+(height-70)+")")
-      .on("click",function(){
-        transform.k = transform.k + 0.1;
-        if(transform.k>zoomRange[1]){
-          transform.k = zoomRange[1];
-          return;
-        }
-        options.zoomScale = transform.k
-        zoomSlider.update(options.zoomScale);
-        zoomSlider.brushedValue(true);
-      })
-
-    zoomin.append("rect")
-      .attr("x",0)
-      .attr("y",0)
-      .attr("rx",2)
-      .attr("ry",2)
-      .attr("width",20)
-      .attr("height",20)
-    zoomin.append("rect")
-      .attr("x",5)
-      .attr("y",8)
-      .attr("width",10)
-      .attr("height",4)
-      .style("stroke","none")
-      .style("fill","#666")
-    zoomin.append("rect")
-      .attr("x",8)
-      .attr("y",5)
-      .attr("width",4)
-      .attr("height",10)
-      .style("stroke","none")
-      .style("fill","#666")
-
-    // zoom out
-    var zoomout = buttons.append("g")
-      .attr("class","zoombutton")
-      .attr("transform","translate("+(width-55)+","+(height-45)+")")
-      .on("click",function(){
-        transform.k = transform.k - 0.1;
-        if(transform.k<zoomRange[0]){
-          transform.k = zoomRange[0];
-          return;
-        }
-        options.zoomScale = transform.k
-        zoomSlider.update(options.zoomScale);
-        zoomSlider.brushedValue(true);
-      })
-
-    zoomout.append("rect")
-      .attr("x",0)
-      .attr("y",0)
-      .attr("rx",2)
-      .attr("ry",2)
-      .attr("width",20)
-      .attr("height",20)
-    zoomout.append("rect")
-      .attr("x",5)
-      .attr("y",8)
-      .attr("width",10)
-      .attr("height",4)
-      .style("stroke","none")
-      .style("fill","#666")
   }
 
   function displaySlider(){
