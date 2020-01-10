@@ -7,9 +7,6 @@ function network(Graph){
       oldHeight = 0,
       images = false,
       images64 = false,
-      heatmap = false,
-      heatmapTriangle = false,
-      tooltipFixed = false,
       egoNet = false,
       transform = d3.zoomIdentity,
       backupNodes = false,
@@ -21,7 +18,7 @@ function network(Graph){
       zoomSlider,
       options;
 
-  var defaultColor = "#1f77b4", // nodes and areas default color
+  var defaultColor = categoryColors[0], // nodes and areas default color
       defaultLinkColor = "#999", // links default color
       defaultShape = "Circle", // node shape by default
       symbolTypes = ["Circle","Square","Diamond","Triangle","Cross","Star","Wye"], // list of available shapes
@@ -145,6 +142,7 @@ function network(Graph){
       })
       node.degree = 0;
       splitMultiVariable(node);
+      node[options.nodeName] = String(node[options.nodeName]);
       nodes.push(node);
     }
     Graph.nodenames.push("degree");
@@ -230,10 +228,10 @@ function network(Graph){
           break;
         default:
           var custom = d3.scaleLinear()
-            .domain([1,3])
+            .domain([0,2])
             .range(["#ffffff",defaultColor])
-          colorScales['custom1'] = [defaultColor,custom(2),"#ffffff"];
-          colorScales['custom2'] = ["#ffffff",custom(2),defaultColor];
+          colorScales['custom1'] = [defaultColor,custom(1),"#ffffff"];
+          colorScales['custom2'] = ["#ffffff",custom(1),defaultColor];
           options.colorScalenodeColor = "custom2";
       }
     }
@@ -297,8 +295,10 @@ function network(Graph){
         options.degreeFilter = [options.degreeFilter,Infinity];
     }
 
+    options.heatmap = false;
+    options.heatmapTriangle = false;
     if(options.mode && (options.mode=="h" || options.mode[0]=="h")){
-      heatmap = true;
+      options.heatmap = true;
     }
 
     function splitMultiVariable(d){
@@ -330,7 +330,7 @@ function network(Graph){
       }
       return null;
     }
-  }
+  } // end of checkGraphData
 
   function loadFrameData(frame){
     for(var i=0; i<Graph.nodes.length; i++){
@@ -386,7 +386,7 @@ function displayArrows(){
   var tablesArrow = visArrow()
     .item("showTables")
     .vertical(true)
-    .bottom("0px")
+    .bottom("5px")
     .left("0px")
     .title(texts.showhidetables)
     .callback(displayBottomPanel)
@@ -396,7 +396,7 @@ function displayArrows(){
   var buttons2Arrow = visArrow()
     .item("showButtons2")
     .vertical(true)
-    .bottom("0px")
+    .bottom("5px")
     .left("24px")
     .title(texts.showhidebuttons)
     .callback(displayBottomPanel)
@@ -420,9 +420,6 @@ function displayBottomPanel(){
     // panel dragbar
     var dragbar = panel.append("div")
       .attr("class","panel-dragbar")
-      .style("cursor","row-resize")
-      .style("height","5px")
-      .style("width","100%");
 
     var dragOffset;
 
@@ -491,6 +488,12 @@ function displayBottomPanel(){
 
     iconButton(tables,"pdf",pdfIcon_b64,texts.pdfexport,function(){
 embedImages(svg2pdf); });
+
+    iconButton(tables,"png",pngIcon_b64,texts.pngexport,function(){
+      plot.select("canvas").node().toBlob(function(blob){
+        fileDownload(blob, d3.select("head>title").text()+'.png');
+      })
+    });
   }
 
   if(frameControls){
@@ -518,7 +521,7 @@ embedImages(svg2pdf); });
         })
 
     divFrameCtrl.append("button") // prev
-      .html(getSVG(['M0,0L2,0L2,8L0,8Z','M8,0L8,8L2,4Z']))
+      .html(getSVG([d4paths.prev1,d4paths.prev2]))
       .on("click",function(){
         var val = frameControls.frame-1;
         if(val < 0)
@@ -528,7 +531,7 @@ embedImages(svg2pdf); });
         handleFrames(val);
       })
     divFrameCtrl.append("button") // loop
-      .html(getSVG(['m5.8204 4.576c0 1.015-0.8054 1.8204-1.8204 1.8204s-1.8204-0.8054-1.8204-1.8204 0.8054-1.8204 1.8204-1.8204v-1.6036c-1.8815 0-3.424 1.5425-3.424 3.424s1.5425 3.424 3.424 3.424 3.424-1.5425 3.424-3.424z','m4 0v4l2.5-2z']))
+      .html(getSVG([d4paths.loop]))
       .on("click",function(){
         frameControls.loop = !frameControls.loop;
         d3.select(this).style("background-color",frameControls.loop?buttonBackColor:null)
@@ -543,9 +546,9 @@ embedImages(svg2pdf); });
     }
     divFrameCtrl.append("button") // rec
       .attr("class","rec")
-      .html(getSVG(['m8 4a4 4 0 0 1 -4 4 4 4 0 0 1 -4 -4 4 4 0 0 1 4 -4 4 4 0 0 1 4 4z']))
+      .html(getSVG([d4paths.rec]))
       .on("click",function(){
-        if(heatmap){
+        if(options.heatmap){
           displayWindow(texts.alertrecordheatmap);
         }else{
           if(frameControls.recorder){
@@ -564,7 +567,7 @@ embedImages(svg2pdf); });
       }).style("background-color", frameControls.recorder ? buttonBackColor : null)
       .select("path").style("fill", frameControls.recorder ? "#d62728" : null);
     divFrameCtrl.append("button") // stop
-      .html(getSVG(['M0,0L8,0L8,8L0,8Z']))
+      .html(getSVG([d4paths.stop]))
       .on("click",function(){
         frameControls.play = false;
         clickThis();
@@ -575,7 +578,7 @@ embedImages(svg2pdf); });
       })
     divFrameCtrl.append("button") // pause
       .attr("class","pause")
-      .html(getSVG(['M1,0L3,0L3,8L1,8Z','M5,0L7,0L7,8L5,8Z']))
+      .html(getSVG([d4paths.pause1,d4paths.pause2]))
       .on("click",function(){
         frameControls.play = false;
         clickThis();
@@ -583,14 +586,14 @@ embedImages(svg2pdf); });
       })
     divFrameCtrl.append("button") // play
       .attr("class","play")
-      .html(getSVG(['M1,0L1,8L7,4Z']))
+      .html(getSVG([d4paths.play]))
       .on("click",function(){
         frameControls.play = true;
         clickThis(true);
         handleFrames(frameControls.frame+1);
       })
     divFrameCtrl.append("button") // next
-      .html(getSVG(['M0,0L0,8L6,4Z','M8,0L6,0L6,8L8,8Z']))
+      .html(getSVG([d4paths.next1,d4paths.next2]))
       .on("click",function(){
         frameControls.play = false;
         clickThis();
@@ -644,27 +647,29 @@ embedImages(svg2pdf); });
               }
             }
           });
-          if(!heatmap)
+          if(!options.heatmap)
             simulation.restart();
           showTables();
         }
       })
     buttonsSelect.append("span").text(" ");
 
-    var selectButton = function(txt,clk){
-          buttonsSelect.append("div")
-            .text(txt)
+    var selectButton = function(id,clk,enable){
+          buttonsSelect.append("button")
+            .attr("id",id)
+            .attr("class",enable?"":"disabled")
+            .text(texts[id])
             .on("click",clk)
         }
 
-    selectButton(texts.selectall,selectAllNodes);
-    selectButton(texts.tableselection,selectNodesFromTable);
-    selectButton(texts.selectneighbors,addNeighbors);
-    selectButton(texts.isolateselection,filterSelection);
-    selectButton(texts.egoNet,displayEgoNet);
+    selectButton("selectall",selectAllNodes,true);
+    selectButton("tableselection",selectNodesFromTable);
+    selectButton("selectneighbors",addNeighbors);
+    selectButton("isolateselection",filterSelection);
+    selectButton("egonet",switchEgoNet);
     if(Graph.tree)
-      selectButton(texts.expandcollapse,treeAction);
-    selectButton(texts.resetfilter,deleteNoShow);
+      selectButton("expandcollapse",treeAction,true);
+    selectButton("resetfilter",deleteNoShow,true);
   }
 
     if(options.showTables){
@@ -754,7 +759,7 @@ function displaySidebar(){
 
   sideNodes.append("h3").text(texts.nodes);
 
-  var visData = heatmap?["Label","Color","Shape","Legend","OrderA","OrderD"]:["Label","Size","LabelSize","Color","Shape","Legend","Group"];
+  var visData = options.heatmap?["Label","Color","Shape","Legend","OrderA","OrderD"]:["Label","Size","LabelSize","Color","Shape","Legend","Group"];
   divControl = sideNodes.append("div")
       .attr("class", "nodeAuto")
   addController(divControl, Graph.nodes, false, visData);
@@ -764,7 +769,7 @@ function displaySidebar(){
   applyFuncObject = {};
   applyFuncObject[texts.filter] = applyFilter;
   applyFuncObject[texts.select] = applySelection;
-  applyFuncObject[texts.egoNet] = function(query,data){
+  applyFuncObject[texts.egonet] = function(query,data){
         applySelection(query,data);
         switchEgoNet();
     };
@@ -779,7 +784,7 @@ function displaySidebar(){
 
   sideLinks.append("h3").text(texts.links);
 
-  visData = heatmap?["Intensity","Color","Text"]:["Width","Weight","Color","Text"];
+  visData = options.heatmap?["Intensity","Color","Text"]:["Width","Weight","Color","Text"];
   divControl = sideLinks.append("div")
       .attr("class", "linkAuto");
   addController(divControl, Graph.links, false,visData);
@@ -1124,7 +1129,7 @@ if(visData){
   }
 }
 } // end of addController
-  
+
 function applyDegreeFilter(){
   if(options.degreeFilter){
     var query = "d.degree >= " + options.degreeFilter[0] + " && d.degree <= " + options.degreeFilter[1];
@@ -1151,7 +1156,7 @@ function applySelection(query,data){
     else
       delete d.selected;
   });
-  if(!heatmap)
+  if(!options.heatmap)
     simulation.restart();
   showTables();
 }
@@ -1230,11 +1235,6 @@ function drawSVG(sel){
     .attr("width", width)
     .attr("height", height)
 
-    if(options.nodeText){
-      body.append("div")
-          .attr("class","tooltip")
-    }
-
     svg.append("style")
      .text("text { font-family: sans-serif; font-size: "+body.style("font-size")+"; } "+
 ".scale text { font-size: 120%; fill: #444; } "+
@@ -1253,7 +1253,7 @@ function drawSVG(sel){
     .attr("id","heatmapClip")
     .append("rect")
       .attr("x",-height)
-      .attr("y",-height/2)
+      .attr("y",-height/2 - 10)
       .attr("width",height*2)
       .attr("height",height)
 
@@ -1343,7 +1343,7 @@ function drawSVG(sel){
           options.zoomScale = value;
           transform.k = options.zoomScale;
           net.attr("transform", transform);
-          if(!heatmap)
+          if(!options.heatmap)
             simulation.restart();
       });
 
@@ -1437,12 +1437,25 @@ function drawSVG(sel){
     loadSVGbuttons(countY);
   }
 
+  var makeZoomButton = function(y){
+    var zoombutton = svg.append("g")
+      .attr("class","zoombutton")
+      .attr("transform","translate("+(width-35)+","+(height-y)+")")
+
+    zoombutton.append("rect")
+      .attr("x",0)
+      .attr("y",0)
+      .attr("rx",3)
+      .attr("ry",3)
+      .attr("width",30)
+      .attr("height",30)
+
+    return zoombutton;
+  }
 
   // zoom in
-  var zoomin = svg.append("g")
-      .attr("class","zoombutton")
-      .attr("transform","translate("+(width-25)+","+(height-50)+")")
-      .on("click",function(){
+  var zoomin = makeZoomButton(110);
+  zoomin.on("click",function(){
         transform.k = transform.k + 0.1;
         if(transform.k>zoomRange[1]){
           transform.k = zoomRange[1];
@@ -1452,34 +1465,41 @@ function drawSVG(sel){
         zoomSlider.update(options.zoomScale);
         zoomSlider.brushedValue(true);
       })
+  zoomin.append("rect")
+      .attr("x",7)
+      .attr("y",12)
+      .attr("width",16)
+      .attr("height",6)
+      .style("stroke","none")
+      .style("fill","#666")
+  zoomin.append("rect")
+      .attr("x",12)
+      .attr("y",7)
+      .attr("width",6)
+      .attr("height",16)
+      .style("stroke","none")
+      .style("fill","#666")
+  zoomin.append("title").text(texts.zoomin)
 
-  zoomin.append("rect")
-      .attr("x",0)
-      .attr("y",0)
-      .attr("rx",2)
-      .attr("ry",2)
-      .attr("width",20)
-      .attr("height",20)
-  zoomin.append("rect")
-      .attr("x",5)
-      .attr("y",8)
-      .attr("width",10)
-      .attr("height",4)
+  // reset zoom
+  var zoomreset = makeZoomButton(75);
+  zoomreset.on("click",function(){
+        resetZoom();
+        zoomSlider.update(options.zoomScale);
+        zoomSlider.brushedValue(false);
+      })
+  zoomreset.append("title").text(texts.resetzoom)
+  zoomreset.select("rect")
+      .style("fill",UIcolor)
+  zoomreset.append("path")
+      .attr("transform","translate(7,6)")
       .style("stroke","none")
-      .style("fill","#666")
-  zoomin.append("rect")
-      .attr("x",8)
-      .attr("y",5)
-      .attr("width",4)
-      .attr("height",10)
-      .style("stroke","none")
-      .style("fill","#666")
+      .style("fill","#fff")
+      .attr("d",d4paths.resetzoom)
 
   // zoom out
-  var zoomout = svg.append("g")
-      .attr("class","zoombutton")
-      .attr("transform","translate("+(width-25)+","+(height-25)+")")
-      .on("click",function(){
+  var zoomout = makeZoomButton(40);
+  zoomout.on("click",function(){
         transform.k = transform.k - 0.1;
         if(transform.k<zoomRange[0]){
           transform.k = zoomRange[0];
@@ -1489,21 +1509,15 @@ function drawSVG(sel){
         zoomSlider.update(options.zoomScale);
         zoomSlider.brushedValue(true);
       })
-
   zoomout.append("rect")
-      .attr("x",0)
-      .attr("y",0)
-      .attr("rx",2)
-      .attr("ry",2)
-      .attr("width",20)
-      .attr("height",20)
-  zoomout.append("rect")
-      .attr("x",5)
-      .attr("y",8)
-      .attr("width",10)
-      .attr("height",4)
+      .attr("x",7)
+      .attr("y",12)
+      .attr("width",16)
+      .attr("height",6)
       .style("stroke","none")
       .style("fill","#666")
+  zoomout.append("title").text(texts.zoomout)
+
 
   zoomSlider.update(options.zoomScale);
 
@@ -1521,7 +1535,7 @@ function drawSVG(sel){
 
   function keyflip() {
     if(d3.event.shiftKey){
-      if(!heatmap){
+      if(!options.heatmap){
         brushg.style("display",null);
       }
     }else{
@@ -1530,81 +1544,94 @@ function drawSVG(sel){
   }
 
   function loadSVGbuttons(count){
-  var dat = [],
-      datStopResume = {txt: texts.stopresume, callback: stopResumeNet},
-      datScale = {txt: texts.resetzoom, callback: function(){
-        resetZoom();
-        zoomSlider.update(options.zoomScale);
-        zoomSlider.brushedValue(false);
-      }, gap: 5},
-      datDirectional = {txt: texts.directional, callback: function(){
-        options.showArrows = !options.showArrows;
-        if(heatmap)
-          drawNet();
-        else
-          simulation.restart();
-      }},
-      datLegend = {txt: texts.showhidelegend, callback: function(){
-        options.showLegend = !options.showLegend;
-        clickHide(d3.selectAll(".scale"), options.showLegend);
-      }},
-      datAxes = {txt: texts.showhideaxes, callback: function(){
-        options.showAxes = !options.showAxes;
-        clickHide(d3.selectAll(".net .axis"), options.showAxes);
-        clickHide(d3.selectAll(".net .axisLabel"), options.showAxes);
-      }},
-      datMode = {txt: texts.netheatmap, callback: function(){
-        heatmap = !heatmap;
-        resetZoom();
-        displaySidebar();
-      }, gap: 5},
-      datReset = {txt: texts.reset, callback: function(){ location.reload(); }},
-      datPyramid = {txt : texts.trianglesquare, callback: function(){
-        heatmapTriangle = !heatmapTriangle;
-        drawNet();
-      }};
+    var dat = [],
+        datStopResume = {txt: texts.stopresume, key: "stopped", callback: stopResumeNet},
+        datDirectional = {txt: texts.directional, key: "showArrows", callback: function(){
+          if(options.heatmap)
+            drawNet();
+          else
+            simulation.restart();
+        }, gap: 5},
+        datLegend = {txt: texts.showhidelegend, key: "showLegend", callback: function(){
+          clickHide(d3.selectAll(".scale"), options.showLegend);
+        }},
+        datAxes = {txt: texts.showhideaxes, key: "showAxes", callback: function(){
+          clickHide(d3.selectAll(".net .axis"), options.showAxes);
+          clickHide(d3.selectAll(".net .axisLabel"), options.showAxes);
+        }},
+        datMode = {txt: texts.netheatmap, key: "heatmap", callback: function(){
+          resetZoom();
+          displaySidebar();
+        }, gap: 5},
+        datPyramid = {txt : texts.trianglesquare, key: "heatmapTriangle", callback: drawNet};
 
-  if(heatmap)
-    dat = [datPyramid];
-  else
-    dat = [datStopResume];
+    if(options.heatmap)
+      dat = [datPyramid];
+    else
+      dat = [datStopResume];
 
-  dat.push(datScale);
-  dat.push(datDirectional);
-  dat.push(datLegend);
-  if(!heatmap) dat.push(datAxes);
+    dat.push(datDirectional);
+    dat.push(datLegend);
+    if(!options.heatmap)
+      dat.push(datAxes);
 
-  if(Array.isArray(options.mode))
-    dat.push(datMode);
-  else
-    datReset.gap = 5;
-
-  dat.push(datReset);
+    if(Array.isArray(options.mode))
+      dat.push(datMode);
   
-  var gButton = buttons.selectAll(".button")
+    var gButton = buttons.selectAll(".button")
         .data(dat, function(d){ return d.txt; })
 
-  gButton.exit().remove();
+    gButton.exit().remove();
 
-  gButton.enter().append("g")
+    gButton.enter().append("g")
     .attr("class","button")
     .each(function(d,i){
 
-  d3.select(this).append("rect")
-    .attr("x",0)
-    .attr("y",5*(options.cex-1))
-    .attr("rx",2)
-    .attr("ry",2)
-    .attr("width",30)
-    .attr("height",10)
-    .on("click",function(){
-      d.callback();
-    });
+      var self = d3.select(this);
 
-  d3.select(this).append("text")
-      .attr("x",35)
-    .attr("y",9*options.cex)
-    .text(d.txt);
+      self.append("rect")
+      .attr("x",0)
+      .attr("y",5*(options.cex-1))
+      .attr("rx",5)
+      .attr("ry",5)
+      .attr("width",20)
+      .attr("height",10)
+      .on("click",function(){
+        options[d.key] = !options[d.key];
+        activeButton(250);
+        d.callback();
+      });
+
+      self.append("circle")
+      .attr("cx",5)
+      .attr("cy",5*(options.cex-1)+5)
+      .attr("r",5)
+      .attr("pointer-events","none")
+
+      self.append("text")
+        .attr("x",30)
+      .attr("y",9*options.cex)
+      .text(d.txt);
+
+      activeButton(0);
+
+      function activeButton(time){
+        var circle = self.select("circle");
+        if(time){
+          circle = circle.transition()
+            .duration(time)
+            .on("end",function(){
+              changeColor();
+            });
+        }else{
+          changeColor();
+        }
+        circle.attr("cx",options[d.key] ? 15 : 5);
+
+        function changeColor(){
+          self.style("fill",options[d.key] ? UIcolor : null);
+        }
+      }
 
     })
     .merge(gButton)
@@ -1615,6 +1642,41 @@ function drawSVG(sel){
       count += 15;
       return val;
     })
+
+    count += 10;
+
+    var resetButton = buttons.append("g")
+          .attr("transform","translate(0,"+(count*options.cex)+")"),
+        resetButtonWidth = 70*options.cex,
+        resetButtonHeight = 18*options.cex,
+        resetButtonPathScale = 1.2*options.cex,
+        resetButtonHpad = 5*options.cex;
+
+    resetButton.append("rect")
+      .attr("x",0)
+      .attr("y",0)
+      .attr("rx",5)
+      .attr("ry",5)
+      .attr("width",resetButtonWidth)
+      .attr("height",resetButtonHeight)
+      .style("cursor","pointer")
+      .style("fill",UIcolor)
+      .on("click",function(){
+        location.reload();
+      });
+
+    resetButton.append("text")
+      .attr("x",resetButtonHpad)
+      .attr("y",10*options.cex + (resetButtonHeight-13*options.cex)/2)
+      .attr("pointer-events","none")
+      .style("fill","#fff")
+      .text(texts.reset);
+
+    resetButton.append("path")
+      .style("fill","#fff")
+      .attr("pointer-events","none")
+      .attr("transform","translate("+(resetButtonWidth-8*resetButtonPathScale-resetButtonHpad)+","+(resetButtonHeight-8*resetButtonPathScale)/2+")scale("+resetButtonPathScale+")")
+      .attr("d",d4paths.loop)
   }
 
   function displaySlider(){
@@ -1630,7 +1692,8 @@ function drawSVG(sel){
         prop = "",
         callback = null,
         rounded = false,
-        brushedValue = false;
+        brushedValue = false,
+        handleR = 5;
 
     function displaySlider(sliders){
       scale = d3.scaleLinear()
@@ -1643,7 +1706,7 @@ function drawSVG(sel){
         .domain(domain2 ? domain2 : domain)
         .range([0, sliderWidth])
 
-      brush = d3.brushX().extent([[-6,0], [sliderWidth + 6,12]]);
+      brush = d3.brushX().extent([[-handleR,0], [sliderWidth + handleR, handleR*2]]);
 
       sliders = sliders.append("g")
             .attr("class","slider "+prop)
@@ -1677,8 +1740,8 @@ function drawSVG(sel){
       .attr("fill-opacity",null)
       .attr("stroke",null)
       .attr("shape-rendering",null)
-      .attr("rx",6)
-      .attr("ry",6)
+      .attr("rx",handleR)
+      .attr("ry",handleR)
       .on("mouseover",function(){ bubble.style("visibility","visible"); })
       .on("mouseleave",function(){ bubble.style("visibility","hidden"); })
 
@@ -1704,7 +1767,7 @@ function drawSVG(sel){
       if(rounded){
         value = Math.round(value);
         var tomove = scale2(renderedValue);
-        slider.call(brush.move,[tomove-6,tomove+6]);
+        slider.call(brush.move,[tomove-handleR,tomove+handleR]);
         bubble.attr("x",tomove+7);
       }else
         bubble.attr("x",brValue+7);
@@ -1712,7 +1775,7 @@ function drawSVG(sel){
     }
 
     function beforebrushstarted() {
-      var dx = 12,
+      var dx = handleR*2,
           cx = d3.mouse(this)[0],
           x0 = cx - dx / 2,
           x1 = cx + dx / 2;
@@ -1730,7 +1793,7 @@ function drawSVG(sel){
 
     displaySlider.move = function(value) {
       if(slider){
-        slider.call(brush.move,[scale(value)-6,scale(value)+6]);
+        slider.call(brush.move,[scale(value)-handleR,scale(value)+handleR]);
         value = innerBrushed(scale(value),value);
       }
     }
@@ -1881,7 +1944,7 @@ function frameStep(value){
 
 function drawNet(){
   d3.selectAll(".slider.charge, .slider.linkDistance")
-    .style("opacity",heatmap||options.stopped?0:1);
+    .style("opacity",options.heatmap||options.stopped?0:1);
   
   var svg = d3.select(".plot svg g.net");
 
@@ -1939,7 +2002,7 @@ function drawNet(){
   colorLinks = colorLinksScale?(function(d){ return colorLinksScale(d[options.linkColor]); }):defaultLinkColor;
 
   // compute link attributes
-  if(heatmap){
+  if(options.heatmap){
     var getLinkIntensity = getNumAttr(Graph.links,'linkIntensity',[0.1,1],1);
   }else{
     var getLinkDistance = getNumAttr(Graph.links,'linkWeight',linkWeightRange,options.linkDistance),
@@ -1964,8 +2027,8 @@ function drawNet(){
     getShape = function(d) { return d3["symbol"+symbolList(d[options.nodeShape])]; }
   }
 
-  svg.attr("clip-path", heatmap && heatmapTriangle?"url(#heatmapClip)":null);
-  if(heatmap){ // draw heatmap
+  svg.attr("clip-path", options.heatmap && options.heatmapTriangle?"url(#heatmapClip)":null);
+  if(options.heatmap){ // draw heatmap
 
     ctx.clearRect(0, 0, width, height);
     svg.selectAll("*").remove();
@@ -1982,9 +2045,9 @@ function drawNet(){
         scale = size * (k < 0.8 ? k : 0.8) / side,
         scaledSide = side*scale;
 
-    svg.attr("transform", heatmapTriangle ?
-      "translate(" + -(width - (Math.sqrt(scaledSide*scaledSide*2))) / 4 + "," + height/2 + ")scale(" + scale + ")rotate(-45)" :
-      "translate(" + (-scaledSide/2) + "," + (height/2 - scaledSide) + ")scale(" + scale + ")");
+    svg.attr("transform", options.heatmapTriangle ?
+      "translate(" + -(Math.sqrt(scaledSide*scaledSide*2))/2 + "," + (height/2 - 10) + ")scale(" + scale + ")rotate(-45)" :
+      "translate(" + (-scaledSide/2) + "," + (height/2 - scaledSide - 10) + ")scale(" + scale + ")");
 
     nodes.forEach(function(node, i) {
       node.index = i;
@@ -2003,7 +2066,7 @@ function drawNet(){
       if(options.linkBipolar)
         val = Math.abs(val);
       loadMatrix(link.source.index,link.target.index);
-      if(!options.showArrows || heatmapTriangle)
+      if(!options.showArrows || options.heatmapTriangle)
         loadMatrix(link.target.index,link.source.index);
     });
 
@@ -2084,10 +2147,10 @@ function drawNet(){
     if(options.nodeLabel){
     sel.append("text")
       .attr("class","label")
-      .attr("x", row? (heatmapTriangle? side + 6 : -6) : ((heatmapTriangle?-1:1) * (options.nodeOrder?18:6)))
-      .attr("y", (!row && heatmapTriangle? -1 : 1) * (x.bandwidth() / 2))
-      .attr("text-anchor", row ^ heatmapTriangle? "end" : "start")
-      .attr("transform", !row && heatmapTriangle? "rotate(180)" : null)
+      .attr("x", row? (options.heatmapTriangle? side + 6 : -6) : ((options.heatmapTriangle?-1:1) * (options.nodeOrder?18:6)))
+      .attr("y", (!row && options.heatmapTriangle? -1 : 1) * (x.bandwidth() / 2))
+      .attr("text-anchor", row ^ options.heatmapTriangle? "end" : "start")
+      .attr("transform", !row && options.heatmapTriangle? "rotate(180)" : null)
       .attr("dy", ".32em")
       .style("font-size",(x.bandwidth()-2)+"px")
       .style("fill",colorNodesScale? function(d, i) {
@@ -2129,7 +2192,7 @@ function drawNet(){
 
         svg.selectAll("path.cluster").remove();
 
-        t.selectAll(".column .label").attr("x",((heatmapTriangle?-1:1) * 6))
+        t.selectAll(".column .label").attr("x",((options.heatmapTriangle?-1:1) * 6))
 
         t.selectAll(".row")
           .delay(function(d, i) { return x(i) * 4; })
@@ -2223,7 +2286,7 @@ function drawNet(){
   }
 
     function checkNeighbors(l,p){
-      if(!l.noShow && !l._hideFrame && (((!options.showArrows || heatmapTriangle) && (l.target.index==p.x || l.target.index==p.y)) || (l.source.index==p.x || l.source.index==p.y))){
+      if(!l.noShow && !l._hideFrame && (((!options.showArrows || options.heatmapTriangle) && (l.target.index==p.x || l.target.index==p.y)) || (l.source.index==p.x || l.source.index==p.y))){
         l.source.__neighbor = l.target.__neighbor = true;
       }
     }
@@ -2292,7 +2355,7 @@ function drawNet(){
     }
   }
 
-  if(!heatmap && options.imageItem){
+  if(!options.heatmap && options.imageItem){
     if(options.imageItems && options.imageNames){
       dat = nodes.map(function(d){ return [d[options.imageNames[options.imageItems.indexOf(options.imageItem)]],d[options.imageItem]]; })
       dat.sort(function(a,b){
@@ -2346,8 +2409,8 @@ function drawNet(){
     }
 
     // draw links
-    ctx.globalAlpha = 0.6;
     links.forEach(function(link) {
+      ctx.globalAlpha = link._back? 0.2 : 0.6;
       var points = getLinkCoords(link);
       if(!points)
         return;
@@ -2393,6 +2456,7 @@ function drawNet(){
 
     // draw nodes
     nodes.forEach(function(node) {
+      ctx.globalAlpha = node._back? 0.2 : 1;
       ctx.lineWidth = node.selected || node._selected ? 2 : 1;
       var strokeStyle = node._selected ? "#F00" : (node.selected ? "#FF0" : false);
       ctx.strokeStyle = strokeStyle;
@@ -2427,6 +2491,7 @@ function drawNet(){
       ctx.beginPath();
       ctx.font = 10*options.cex+"px sans-serif";
       nodes.forEach(function(node) {
+        ctx.globalAlpha = node._back? 0.2 : 1;
         if(options.nodeLabelSize){
           if(node[options.nodeLabelSize]<0)
             return;
@@ -2455,7 +2520,7 @@ function drawNet(){
 
     doc.setLineWidth(scale);
 
-    if(heatmap){ // heatmap display
+    if(options.heatmap){ // heatmap display
       doc.setDrawColor(255);
       doc.setFillColor(238,238,238);
       var size = parseInt(d3.select("g.heatmap>rect").attr("width")) * scale,
@@ -2608,6 +2673,7 @@ function drawNet(){
           var x = ((node.x + node.nodeSize + 8)*scale)+translate[0],
               y = ((node.y + 4)*scale)+translate[1],
               txt = String(node[options.nodeLabel]);
+          doc.setFontSize(node.nodeLabelSize*scale);
           doc.text(x, y, txt);
         });
       }
@@ -2722,13 +2788,26 @@ function drawNet(){
   } // end pdf function
 }
 
+function showTooltip(node,fixed){
+    if(options.nodeText && node[options.nodeText] && plot.select("div.tooltip").filter(function(d){ return node[options.nodeName]==d[options.nodeName]; }).empty()){
+        plot.append("div")
+             .attr("class","tooltip"+(fixed?" fixed":""))
+             .datum(node)
+             .style("top",(transform.applyY(node.y)+20)+"px")
+             .style("left",(transform.applyX(node.x)+20)+"px")
+             .html(node[options.nodeText])
+    }
+}
+
 function findNode(){
   return simulation.find(transform.invertX(d3.mouse(d3.event.target)[0]), transform.invertY(d3.mouse(d3.event.target)[1]), findNodeRadius);
 }
 
 function clickNet(){
-  var node = findNode(),
-      tip = body.select("div.tooltip");
+  var node = findNode();
+  if(options.nodeText){
+    plot.selectAll("div.tooltip").remove();
+  }
   if(node){
     if(d3.event.ctrlKey || d3.event.metaKey){
       node.selected = !node.selected;
@@ -2738,18 +2817,13 @@ function clickNet(){
       });
       node.selected = true;
     }
-    if(!tip.empty()){
-      tooltipFixed = true;
-      showTooltip(tip,node);
+    if(options.nodeText){
+      showTooltip(node,true);
     }
   }else{
     Graph.nodes.forEach(function(n){
       n.selected = false;
     });
-    if(!tip.empty()){
-      tooltipFixed = false;
-      tip.style("display","none");
-    }
   }
   simulation.restart();
   showTables();
@@ -2770,27 +2844,40 @@ function dblClickNet(){
   }
 }
 
-function showTooltip(tip,node){
-    if(!tip.empty() && (tip.style("display")=="none" || tooltipFixed)){
-        if(node[options.nodeText]){
-          tip.style("display","block").html(node[options.nodeText])
-             .style("top",(d3.event.y+20)+"px")
-             .style("left",(d3.event.x+20)+"px")
-        }else
-          tip.style("display","none")
-    }
-}
-
+var hoverNode = false;
 function hoverNet(){
-  var node = findNode(),
-      tip = body.select("div.tooltip");
+  var node = findNode();
   if(node){
+    hoverNode = true;
+    Graph.nodes.forEach(function(d){
+      d._back = true;
+    })
+    Graph.links.forEach(function(d){
+      if(d.Source==node[options.nodeName] || d.Target==node[options.nodeName]){
+        delete d.source._back;
+        delete d.target._back;
+      }else{
+        d._back = true;
+      }
+    })
+    simulation.restart();
     d3.select(this).style("cursor","pointer");
-    if(!tip.empty() && !tooltipFixed)
-      showTooltip(tip,node);
+    if(options.nodeText && plot.select("div.tooltip.fixed").empty())
+      showTooltip(node);
   }else{
-    if(!tip.empty() && !tooltipFixed)
-      tip.style("display","none");
+    if(hoverNode){
+      hoverNode = false;
+      Graph.links.forEach(function(d){
+        delete d._back;
+      })
+      Graph.nodes.forEach(function(d){
+        delete d._back;
+      })
+      simulation.restart();
+    }
+    if(options.nodeText && plot.select("div.tooltip.fixed").empty()){
+      plot.selectAll("div.tooltip").remove();
+    }
     d3.select(this).style("cursor","grab");
   }
 }
@@ -2987,7 +3074,7 @@ function setColorScale(data,item,itemAttr){
           var absmax = Math.max(Math.abs(colorDomain[0]),Math.abs(colorDomain[1]));
           colorDomain = [-absmax,+absmax];
         }
-        if(!options.imageItem && ((itemAttr=="nodeColor" && !heatmap) || (itemAttr=="linkColor" && heatmap)))
+        if(!options.imageItem && ((itemAttr=="nodeColor" && !options.heatmap) || (itemAttr=="linkColor" && options.heatmap)))
           displayScale(colorDomain, "url(#"+nameScale+")", options[itemAttr]);
         scale = d3.scaleLinear().range(colorScales[nameScale])
           .domain([colorDomain[0],d3.mean(colorDomain),colorDomain[1]]);
@@ -3093,21 +3180,17 @@ function selectAllNodes(){
     Graph.nodes.forEach(function(d){
       delete d.selected;
     });
-  if(!heatmap)
+  if(!options.heatmap)
     simulation.restart();
   showTables();
 }
 
 function filterSelection(){
-  if(!Graph.nodes.filter(function(d){ return d.selected; }).length){
-    displayWindow(texts.alertnonodes);
-  }else{
     Graph.nodes.forEach(function(d){
       if(!d.selected)
         d.noShow = true;
     });
     drawNet();
-  }
 }
 
 function deleteNoShow(){
@@ -3120,9 +3203,6 @@ function deleteNoShow(){
 }
 
 function addNeighbors(){
-  if(!Graph.nodes.filter(function(d){ return d.selected; }).length){
-    displayWindow(texts.alertnonodes);
-  }else{
     Graph.links.forEach(function(d){
       if(checkSelectableLink(d))
         if(d.source.selected || d.target.selected)
@@ -3132,10 +3212,9 @@ function addNeighbors(){
       d.selected = checkSelectable(d) && d.__neighbor;
       delete d.__neighbor;
     });
-    if(!heatmap)
+    if(!options.heatmap)
       simulation.restart();
     showTables();
-  }
 }
 
 function switchEgoNet(){
@@ -3149,13 +3228,6 @@ function switchEgoNet(){
           d.target._neighbor = d.source._neighbor = true;
     });
     drawNet();
-}
-
-function displayEgoNet(){
-  if(!Graph.nodes.filter(function(d){ return d.selected; }).length)
-    displayWindow(texts.alertnonodes);
-  else
-    switchEgoNet();
 }
 
 function checkSelectable(node){
@@ -3199,7 +3271,6 @@ function treeAction(){
 }
 
 function stopResumeNet(){
-  options.stopped = !options.stopped;
   if(!options.stopped){
     Graph.nodes.forEach(function(node){
         delete node.fx;
@@ -3253,7 +3324,6 @@ function displayLegend(scale, key, color, shape, dat){
       .attr("class","title")
       .attr("x", 0)
       .attr("y", 5)
-      .style("cursor","pointer")
       .text(txt)
 
   var g = legend.selectAll("g")
@@ -3326,7 +3396,7 @@ function displayLegend(scale, key, color, shape, dat){
             return this.parentNode.selected? "bold" : null;
         });
         legendSelected();
-        if(!heatmap)
+        if(!options.heatmap)
           simulation.restart();
         showTables();
       }
@@ -3376,7 +3446,12 @@ function displayScale(domain, fill, title){
 }
 
 function showTables() {
-  var noShow = noShowFields.slice((options.showCoordinates && !heatmap) ? 4 : 2);
+  var noShow = noShowFields.slice((options.showCoordinates && !options.heatmap) ? 4 : 2);
+
+  var totalItems = {};
+  ["nodes","links"].forEach(function(name){
+    totalItems[name] = (frameControls ? Graph[name].filter(function(d){ return !d._hideFrame; }).length : Graph[name].length);
+  });
 
   var tableWrapper = function(dat, name, columns){
     var currentData;
@@ -3422,18 +3497,30 @@ function showTables() {
               else
                 selected = selecteds.indexOf(i)!=-1;
             }else{
-              if(d3.event.ctrlKey || d3.event.metaKey)
+              if(d3.event.ctrlKey || d3.event.metaKey){
                 selected = selected ^ d == origin;
-              else
+              }else{
                 selected = d == origin;
+                if(options.nodeText){
+                  plot.selectAll("div.tooltip").remove();
+                  if(name=="nodes"){
+                    showTooltip(currentData[origin],true);
+                  }else{
+                    showTooltip(currentData[origin].source,true);
+                    showTooltip(currentData[origin].target,true);
+                  }
+                }
+              }
             }
-            if(!heatmap){
+            if(!options.heatmap){
               currentData[d]._selected = selected;                
             }
             return selected;
           })
-          if(!heatmap)
+          if(!options.heatmap)
             simulation.restart();
+
+          enableSelectButtons("#tableselection",!table.selectAll("tr.selected").empty());
 
           if(d3.select(this).classed("selected"))
             last = this.rowIndex;
@@ -3488,7 +3575,7 @@ function showTables() {
     table.html("");
     table.append("div")
       .attr("class","title")
-      .html("<span>"+texts[name+"attributes"] + "</span> ("+dat.length+" "+texts.outof+" "+(frameControls ? Graph[name].filter(function(d){ return !d._hideFrame; }).length : Graph[name].length)+")");
+      .html("<span>"+texts[name+"attributes"] + "</span> ("+dat.length+" "+texts.outof+" "+totalItems[name]+")");
     table = table.append("div");
     if(dat.length==0){
       table.style("cursor",null);
@@ -3543,7 +3630,7 @@ function showTables() {
       nodeColumns = Graph.nodenames.filter(filterNoShow),
       linkColumns = Graph.linknames.filter(filterNoShow);
 
-  if(options.showCoordinates && !heatmap){
+  if(options.showCoordinates && !options.heatmap){
     var size = Math.min(width,height),
 
     x = d3.scaleLinear()
@@ -3564,6 +3651,19 @@ function showTables() {
 
   tableWrapper(nodesData,"nodes",nodeColumns);
   tableWrapper(linksData,"links",linkColumns);
+
+  if(options.showButtons2){
+    if(nodesData.length){
+      enableSelectButtons("#selectneighbors, #isolateselection, #egonet", nodesData.length!=totalItems["nodes"]);
+    }else{
+      enableSelectButtons("#tableselection, #selectneighbors, #isolateselection, #egonet", false);
+    }
+  }
+
+  function enableSelectButtons(buttons,enable){
+    panel.select(".selectButton").selectAll(buttons)
+      .attr("class",enable?"":"disabled")
+  }
 }
 
 function tables2xlsx(){
@@ -3616,8 +3716,6 @@ function selectNodesFromTable(){
                 names.push(d3.select(this).select("td:nth-child("+index+")").text());
               })
               .classed("selected",false);
-          }else{
-            displayWindow(texts.alertnonodestable);
           }
         }else{
           trSelected = d3.selectAll("div.links table tr.selected");
@@ -3631,15 +3729,13 @@ function selectNodesFromTable(){
                 }
               })
               .classed("selected",false);
-          }else{
-            displayWindow(texts.alertnonodestable);
           }
         }
         if(!trSelected.empty()){
           Graph.nodes.forEach(function(d){
             d.selected = names.indexOf(d[options.nodeName]) != -1;
           });
-          if(!heatmap)
+          if(!options.heatmap)
             simulation.restart();
           showTables();
         }
@@ -3792,9 +3888,9 @@ function computeHeight(){
   if(options.main)
       h = h-parseInt(body.select("div.panel").style("top"));
   if(options.showTables){
-      h = h - 170;
+      h = h - 165;
   }else if(options.showButtons2){
-      h = h - (40 + 12*options.cex);
+      h = h - (35 + 12*options.cex);
   }  
   return h;
 }

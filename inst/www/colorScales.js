@@ -1,3 +1,28 @@
+var UIcolor = "#327ee9"; // primary color for user interface
+
+var categoryColors = [
+  "#1f77b4", // blue
+  "#2ca02c", // green
+  "#d62728", // red
+  "#9467bd", // purple
+  "#ff7f0e", // orange
+  "#8c564b", // brown
+  "#e377c2", // pink
+  "#7f7f7f", // grey
+  "#bcbd22", // lime
+  "#17becf", // cyan
+  "#aec7e8", // light blue
+  "#98df8a", // light green
+  "#ff9896", // light red
+  "#c5b0d5", // light purple
+  "#ffbb78", // light orange
+  "#c49c94", // light brown
+  "#f7b6d2", // light pink
+  "#c7c7c7", // light grey
+  "#dbdb8d", // light lime
+  "#9edae5" // light cyan
+];
+
 var colorScales = {
   "WhBu": [
       "#ffffff",
@@ -100,26 +125,3 @@ var colorScales = {
       "#bcbd22"
     ]
 };
-
-var categoryColors = [
-  "#1f77b4", // blue
-  "#2ca02c", // green
-  "#d62728", // red
-  "#9467bd", // purple
-  "#ff7f0e", // orange
-  "#8c564b", // brown
-  "#e377c2", // pink
-  "#7f7f7f", // grey
-  "#bcbd22", // lime
-  "#17becf", // cyan
-  "#aec7e8", // light blue
-  "#98df8a", // light green
-  "#ff9896", // light red
-  "#c5b0d5", // light purple
-  "#ffbb78", // light orange
-  "#c49c94", // light brown
-  "#f7b6d2", // light pink
-  "#c7c7c7", // light grey
-  "#dbdb8d", // light lime
-  "#9edae5" // light cyan
-];

@@ -1042,7 +1042,11 @@ printNet <- function(x){
   }
 }
 
-plot.coin <- function(x, dir=tempdir(), language=c("en","es","ca"), ...){
+tempDir <- function(){
+  return(paste(tempdir(),round(as.numeric(Sys.time())),sep="/"))
+}
+
+plot.coin <- function(x, dir=tempDir(), language=c("en","es","ca"), ...){
     N <- asNodes(x, language = language)
     colnames(N)[2] <- "incidences"
     E <- edgeList(x,c("Frequencies","Expected"))
@@ -1052,15 +1056,15 @@ plot.coin <- function(x, dir=tempdir(), language=c("en","es","ca"), ...){
     browseURL(normalizePath(paste(dir, "index.html", sep = "/")))
 }
 
-plot.netCoin <- function(x, dir = tempdir(), ...){
+plot.netCoin <- function(x, dir = tempDir(), ...){
   plotCoin(x, dir, netCreate)
 }
 
-plot.barCoin <- function(x, dir = tempdir(), ...){
+plot.barCoin <- function(x, dir = tempDir(), ...){
   plotCoin(x, dir, barCreate)
 }
 
-plot.timeCoin <- function(x, dir = tempdir(), ...){
+plot.timeCoin <- function(x, dir = tempDir(), ...){
   plotCoin(x, dir, timeCreate)
 }
 
