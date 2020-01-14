@@ -26,7 +26,7 @@ var texts = {
     showhidesidebar: "Mostrar/ocultar control lateral",
     showhidebuttons: "Mostrar/ocultar botones",
     showhidetables: "Mostrar/ocultar tablas",
-    stopresume: "Parar",
+    stopresume: "Dinámico",
     netheatmap: "Mapa de color",
     isolateselection: "Filtrar selección",
     resetfilter: "Quitar filtro",

@@ -185,7 +185,7 @@ function network(Graph){
     loadTree();
 
     ["nodeText","nodeInfo"].forEach(function(d){
-      if(options[d])
+      if(options[d] && options[d]!=options.nodeName)
         noShowFields.push(options[d]);
     });
 
@@ -647,8 +647,6 @@ embedImages(svg2pdf); });
               }
             }
           });
-          if(!options.heatmap)
-            simulation.restart();
           showTables();
         }
       })
@@ -1156,8 +1154,6 @@ function applySelection(query,data){
     else
       delete d.selected;
   });
-  if(!options.heatmap)
-    simulation.restart();
   showTables();
 }
 
@@ -1205,9 +1201,6 @@ function drawSVG(sel){
 
   var zoom = d3.zoom()
     .scaleExtent(zoomRange)
-/*    .filter(function(){
-      return !d3.event.button && (d3.event.ctrlKey || d3.event.metaKey) && !d3.event.shiftKey;
-    }) */
     .on("end",function(){
       d3.select(this).style("cursor","grab");
     }) 
@@ -1307,7 +1300,6 @@ function drawSVG(sel){
               node.selected = checkSelectable(node) && (node.selected ^ (extent[0][0] <= node.x && node.x < extent[1][0] && extent[0][1] <= node.y && node.y < extent[1][1]));
             });
           }
-          simulation.restart();
           showTables();
           brushg.selectAll('.selection').style("display","none");
         });
@@ -1545,7 +1537,7 @@ function drawSVG(sel){
 
   function loadSVGbuttons(count){
     var dat = [],
-        datStopResume = {txt: texts.stopresume, key: "stopped", callback: stopResumeNet},
+        datStopResume = {txt: texts.stopresume, key: "dynamicNodes", callback: stopResumeNet},
         datDirectional = {txt: texts.directional, key: "showArrows", callback: function(){
           if(options.heatmap)
             drawNet();
@@ -1647,18 +1639,17 @@ function drawSVG(sel){
 
     var resetButton = buttons.append("g")
           .attr("transform","translate(0,"+(count*options.cex)+")"),
-        resetButtonWidth = 70*options.cex,
-        resetButtonHeight = 18*options.cex,
-        resetButtonPathScale = 1.2*options.cex,
-        resetButtonHpad = 5*options.cex;
+        resetButtonSize = 20,
+        resetButtonPathScale = 1.4,
+        resetButtonPad = (resetButtonSize-8*resetButtonPathScale)/2;
 
     resetButton.append("rect")
       .attr("x",0)
       .attr("y",0)
       .attr("rx",5)
       .attr("ry",5)
-      .attr("width",resetButtonWidth)
-      .attr("height",resetButtonHeight)
+      .attr("width",resetButtonSize)
+      .attr("height",resetButtonSize)
       .style("cursor","pointer")
       .style("fill",UIcolor)
       .on("click",function(){
@@ -1666,16 +1657,14 @@ function drawSVG(sel){
       });
 
     resetButton.append("text")
-      .attr("x",resetButtonHpad)
-      .attr("y",10*options.cex + (resetButtonHeight-13*options.cex)/2)
-      .attr("pointer-events","none")
-      .style("fill","#fff")
+      .attr("x",30)
+      .attr("y",10*options.cex + (resetButtonSize-13*options.cex)/2)
       .text(texts.reset);
 
     resetButton.append("path")
       .style("fill","#fff")
       .attr("pointer-events","none")
-      .attr("transform","translate("+(resetButtonWidth-8*resetButtonPathScale-resetButtonHpad)+","+(resetButtonHeight-8*resetButtonPathScale)/2+")scale("+resetButtonPathScale+")")
+      .attr("transform","translate("+resetButtonPad+","+resetButtonPad+")scale("+resetButtonPathScale+")")
       .attr("d",d4paths.loop)
   }
 
@@ -1856,7 +1845,7 @@ function drawSVG(sel){
 }
 
 function update_forces(){
-      if(!options.stopped){
+      if(options.dynamicNodes){
         simulation.force("charge")
           .strength(options.charge)
         if(!options.linkWeight)
@@ -1944,7 +1933,7 @@ function frameStep(value){
 
 function drawNet(){
   d3.selectAll(".slider.charge, .slider.linkDistance")
-    .style("opacity",options.heatmap||options.stopped?0:1);
+    .style("opacity",options.heatmap||!options.dynamicNodes?0:1);
   
   var svg = d3.select(".plot svg g.net");
 
@@ -2456,6 +2445,7 @@ function drawNet(){
 
     // draw nodes
     nodes.forEach(function(node) {
+      var nodeSize = checkNodeBigger(node);
       ctx.globalAlpha = node._back? 0.2 : 1;
       ctx.lineWidth = node.selected || node._selected ? 2 : 1;
       var strokeStyle = node._selected ? "#F00" : (node.selected ? "#FF0" : false);
@@ -2464,10 +2454,12 @@ function drawNet(){
       if(options.imageItem){
         var img = images[node[options.imageItem]],
             imgHeight = img.height*2/img.width;
-        try{ ctx.drawImage(img, -node.nodeSize, -(imgHeight/2)*node.nodeSize, node.nodeSize * 2, node.nodeSize * imgHeight); }catch(e){}
+        try{
+          ctx.drawImage(img, -nodeSize, -(imgHeight/2)*nodeSize, nodeSize * 2, nodeSize * imgHeight);
+        }catch(e){}
         if(strokeStyle){
           ctx.beginPath();
-          ctx.arc(0, 0, node.nodeSize, 0, 2 * Math.PI);
+          ctx.arc(0, 0, nodeSize, 0, 2 * Math.PI);
           ctx.closePath();
           ctx.stroke();
         }
@@ -2476,7 +2468,7 @@ function drawNet(){
         if(!strokeStyle)
           ctx.strokeStyle = d3.rgb(ctx.fillStyle).darker(1);
         ctx.beginPath();
-        d3.symbol().type(getShape(node)).size(node.nodeSize * node.nodeSize * Math.PI).context(ctx)();
+        d3.symbol().type(getShape(node)).size(nodeSize * nodeSize * Math.PI).context(ctx)();
         ctx.closePath();
         ctx.fill();
         ctx.stroke();
@@ -2491,17 +2483,25 @@ function drawNet(){
       ctx.beginPath();
       ctx.font = 10*options.cex+"px sans-serif";
       nodes.forEach(function(node) {
+        var fontSize = node._bigger ? 10/transform.k : 0;
         ctx.globalAlpha = node._back? 0.2 : 1;
         if(options.nodeLabelSize){
           if(node[options.nodeLabelSize]<0)
             return;
-          ctx.font = node.nodeLabelSize+"px sans-serif";
+          fontSize = node.nodeLabelSize+fontSize;
+        }else{
+          fontSize = 10+fontSize;
         }
-        ctx.fillText(node[options.nodeLabel], node.x + node.nodeSize + 4, node.y + 4);
+        ctx.font = fontSize*options.cex+"px sans-serif";
+        ctx.fillText(node[options.nodeLabel], node.x + checkNodeBigger(node) + 4, node.y + 4);
       });
       ctx.fill();
     }
     ctx.restore();
+
+    function checkNodeBigger(node){
+      return node._bigger ? node.nodeSize + 10/transform.k : node.nodeSize;
+    }
   }
 
   // generate pdf
@@ -2792,7 +2792,6 @@ function showTooltip(node,fixed){
     if(options.nodeText && node[options.nodeText] && plot.select("div.tooltip").filter(function(d){ return node[options.nodeName]==d[options.nodeName]; }).empty()){
         plot.append("div")
              .attr("class","tooltip"+(fixed?" fixed":""))
-             .datum(node)
              .style("top",(transform.applyY(node.y)+20)+"px")
              .style("left",(transform.applyX(node.x)+20)+"px")
              .html(node[options.nodeText])
@@ -2820,14 +2819,13 @@ function clickNet(){
     if(options.nodeText){
       showTooltip(node,true);
     }
+    displayInfoPanel(node,options.nodeInfo);
   }else{
     Graph.nodes.forEach(function(n){
       n.selected = false;
     });
   }
-  simulation.restart();
   showTables();
-  displayInfoPanel(node,options.nodeInfo);
 }
 
 function dblClickNet(){
@@ -2844,40 +2842,27 @@ function dblClickNet(){
   }
 }
 
-var hoverNode = false;
+var someBigger = false;
 function hoverNet(){
   var node = findNode();
+  if(someBigger){
+    Graph.nodes.forEach(function(node){
+      delete node._bigger;
+    })
+    someBigger = false;
+    simulation.restart();
+  }
+  if(options.nodeText){
+    plot.selectAll("div.tooltip:not(.fixed)").remove();
+  }
   if(node){
-    hoverNode = true;
-    Graph.nodes.forEach(function(d){
-      d._back = true;
-    })
-    Graph.links.forEach(function(d){
-      if(d.Source==node[options.nodeName] || d.Target==node[options.nodeName]){
-        delete d.source._back;
-        delete d.target._back;
-      }else{
-        d._back = true;
-      }
-    })
+    someBigger = true;
+    node._bigger = true;
     simulation.restart();
     d3.select(this).style("cursor","pointer");
     if(options.nodeText && plot.select("div.tooltip.fixed").empty())
       showTooltip(node);
   }else{
-    if(hoverNode){
-      hoverNode = false;
-      Graph.links.forEach(function(d){
-        delete d._back;
-      })
-      Graph.nodes.forEach(function(d){
-        delete d._back;
-      })
-      simulation.restart();
-    }
-    if(options.nodeText && plot.select("div.tooltip.fixed").empty()){
-      plot.selectAll("div.tooltip").remove();
-    }
     d3.select(this).style("cursor","grab");
   }
 }
@@ -2885,6 +2870,7 @@ function hoverNet(){
 function dragsubject() {
   var node = simulation.find(transform.invertX(d3.event.x), transform.invertY(d3.event.y), findNodeRadius);
   if(node){
+    node.position = [node.x,node.y];
     node.x = transform.applyX(node.x);
     node.y = transform.applyY(node.y);
   }
@@ -2908,7 +2894,15 @@ function dragged(d) {
 function dragended(d) {
   if (!d3.event.active) simulation.alphaTarget(0);
   var node = d3.event.subject;
-  if (!options.stopped && !node.fixed) {
+
+  if(node.position[0].toFixed(3)==node.fx.toFixed(3) && node.position[1].toFixed(3)==node.fy.toFixed(3)){
+    // only click (not dragging)
+    node.fx = node.x = node.position[0];
+    node.fy = node.y = node.position[1];
+  }
+  delete node.position;
+
+  if (options.dynamicNodes && !node.fixed) {
     node.fx = null;
     node.fy = null;
   }
@@ -3141,17 +3135,18 @@ function addGradient(defs,id, stops){
   });
 }
 
-function displayInfoPanel(d,i){
-  if(i && d[i]){
+function displayInfoPanel(node,info){
+  if(info && node[info]){
     d3.select("div.infopanel").remove();
     var div = body.append("div")
           .attr("class","infopanel"),
-        infoHeight = d3.select("div.tables").node().getBoundingClientRect().top
+        infoHeight = height
       - parseInt(div.style("top"))
       - parseInt(div.style("border-top-width"))
       - parseInt(div.style("border-bottom-width"))
       - parseInt(div.style("padding-top"))
-      - parseInt(div.style("padding-bottom"));
+      - parseInt(div.style("padding-bottom"))
+      - 10;
     div.style("left",infoPanelLeft+"px");
     div.style("height",infoHeight+"px");
     div.append("div")
@@ -3166,7 +3161,7 @@ function displayInfoPanel(d,i){
           .attr("class","close-button")
           .html("&#x2716;")
           .on("click", function(){ div.remove() });
-    div.append("div").html(d[i]);
+    div.append("div").html(node[info]);
   }
 }
 
@@ -3180,8 +3175,6 @@ function selectAllNodes(){
     Graph.nodes.forEach(function(d){
       delete d.selected;
     });
-  if(!options.heatmap)
-    simulation.restart();
   showTables();
 }
 
@@ -3212,8 +3205,6 @@ function addNeighbors(){
       d.selected = checkSelectable(d) && d.__neighbor;
       delete d.__neighbor;
     });
-    if(!options.heatmap)
-      simulation.restart();
     showTables();
 }
 
@@ -3271,7 +3262,7 @@ function treeAction(){
 }
 
 function stopResumeNet(){
-  if(!options.stopped){
+  if(options.dynamicNodes){
     Graph.nodes.forEach(function(node){
         delete node.fx;
         delete node.fy;
@@ -3396,8 +3387,6 @@ function displayLegend(scale, key, color, shape, dat){
             return this.parentNode.selected? "bold" : null;
         });
         legendSelected();
-        if(!options.heatmap)
-          simulation.restart();
         showTables();
       }
   }
@@ -3652,6 +3641,33 @@ function showTables() {
   tableWrapper(nodesData,"nodes",nodeColumns);
   tableWrapper(linksData,"links",linkColumns);
 
+  // highlight egonet of selection
+  if(!options.heatmap){
+    var names = nodesData.map(function(node){ return node[options.nodeName]; });
+    if(nodesData.length && nodesData.length!=totalItems["nodes"]){
+      Graph.nodes.forEach(function(d){
+        d._back = true;
+      })
+      Graph.links.forEach(function(d){
+        if(names.indexOf(d.Source)!=-1 || names.indexOf(d.Target)!=-1){
+          delete d.source._back;
+          delete d.target._back;
+        }else{
+          d._back = true;
+        }
+      })
+    }else{
+      Graph.links.forEach(function(d){
+        delete d._back;
+      })
+      Graph.nodes.forEach(function(d){
+        delete d._back;
+      })
+    }
+    simulation.restart();
+  }
+
+  // enable/disable selection buttons
   if(options.showButtons2){
     if(nodesData.length){
       enableSelectButtons("#selectneighbors, #isolateselection, #egonet", nodesData.length!=totalItems["nodes"]);
@@ -3735,13 +3751,13 @@ function selectNodesFromTable(){
           Graph.nodes.forEach(function(d){
             d.selected = names.indexOf(d[options.nodeName]) != -1;
           });
-          if(!options.heatmap)
-            simulation.restart();
           showTables();
         }
 }
 
 function adaptLayout(){
+  options.dynamicNodes = true;
+
   var anyFixed = false,
       nodes = backupNodes ? backupNodes : Graph.nodes;
 
@@ -3798,28 +3814,28 @@ function adaptLayout(){
       .domain(ydim);
 
 
-    options.stopped = true;
+    options.dynamicNodes = false;
     if(backupNodes){
       backupNodes.forEach(function(d){
         if(d.hasOwnProperty("fx"))
           d.fx = d.fx.map(function(e){ return(x(e)); });
         else
-          options.stopped = false;
+          options.dynamicNodes = true;
         if(d.hasOwnProperty("fy"))
           d.fy = d.fy.map(function(e){ return(y(e)); });
         else
-          options.stopped = false;
+          options.dynamicNodes = true;
       });
     }else{
       Graph.nodes.forEach(function(d){
         if(typeof d.fx == 'number')
           d.fx = x(d.fx);
         else
-          options.stopped = false;
+          options.dynamicNodes = true;
         if(typeof d.fy == 'number')
           d.fy = y(d.fy);
         else
-          options.stopped = false;
+          options.dynamicNodes = true;
       });
     }
   }
