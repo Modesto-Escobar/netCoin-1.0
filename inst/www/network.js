@@ -3322,19 +3322,6 @@ function displayLegend(scale, key, color, shape, dat){
     .enter().append("g")
       .attr("transform", function(d, i){ return "translate(0," + (22+i*20)*options.cex + ")"; });
 
-  function legendSelected(){
-        var selecteds = d3.selectAll(".legend > g").filter(function(){ return this.selected; })
-        Graph.nodes.forEach(function(d){
-           d.selected = false;
-           if(checkSelectable(d)){
-             selecteds.each(function(p){
-               if((p=="null" && d[this.selected]===null) || (p=="0" && d[this.selected]===0) || (d[this.selected] && (d[this.selected]==p || (typeof d[this.selected] == 'object' && d[this.selected].indexOf(p)!=-1))))
-                 d.selected = true;
-             });
-           }
-        });
-  }
-
   if(color == "image"){
     g.append("image")
         .attr("xlink:href", String)
@@ -3386,7 +3373,16 @@ function displayLegend(scale, key, color, shape, dat){
         d3.selectAll(".legend > g > text").style("font-weight",function(){
             return this.parentNode.selected? "bold" : null;
         });
-        legendSelected();
+        var selecteds = d3.selectAll(".legend > g").filter(function(){ return this.selected; })
+        Graph.nodes.forEach(function(d){
+           d.selected = false;
+           if(checkSelectable(d)){
+             selecteds.each(function(p){
+               if((p=="null" && d[this.selected]===null) || (p=="0" && d[this.selected]===0) || (d[this.selected] && (d[this.selected]==p || (typeof d[this.selected] == 'object' && d[this.selected].indexOf(p)!=-1))))
+                 d.selected = true;
+             });
+           }
+        });
         showTables();
       }
   }
@@ -3652,6 +3648,7 @@ function showTables() {
         if(names.indexOf(d.Source)!=-1 || names.indexOf(d.Target)!=-1){
           delete d.source._back;
           delete d.target._back;
+          delete d._back;
         }else{
           d._back = true;
         }
@@ -3674,6 +3671,26 @@ function showTables() {
     }else{
       enableSelectButtons("#tableselection, #selectneighbors, #isolateselection, #egonet", false);
     }
+  }
+
+  // check legend highlights
+  var legendSelected = d3.selectAll(".legend > g").filter(function(){ return this.selected; });
+  if(!legendSelected.empty()){
+      var noSelectedNodes = simulation.nodes().filter(function(d){ return !d.selected; });
+
+      legendSelected.each(function(p){
+        var key = this.selected,
+            self = d3.select(this);
+        noSelectedNodes.forEach(function(d){
+          if((p=="null" && d[key]===null) ||
+             (p=="0" && d[key]===0) ||
+             (d[key] && (d[key]==p ||
+               (typeof d[key] == 'object' && d[key].indexOf(p)!=-1)))){
+            self.property("selected",null)
+                .select("text").style("font-weight",null);
+          }
+        })
+      })
   }
 
   function enableSelectButtons(buttons,enable){

@@ -445,37 +445,6 @@ function topFilter(){
   return topFilter;
 }
 
-function tooltip(sel,text){
-    var body = d3.select("body"),
-        tip = body.select("div.tooltip");
-
-    if(tip.empty())
-      tip = body.append("div")
-          .attr("class","tooltip")
-
-    sel
-      .on("mouseenter", function(d){
-        var html = false;
-        if(typeof text == 'string'){
-          if(d[text])
-            html = d[text];
-        }else if(typeof text == 'function'){
-          html = text(d);
-        }
-        if(html)
-          tip.style("display","block").html(html);
-      })
-      .on("mousemove", function(){
-        var coor = [0, 0];
-        coor = d3.mouse(body.node());
-        tip.style("top",(coor[1]+20)+"px")
-           .style("left",(coor[0]+20)+"px")
-      })
-      .on("mouseleave", function(){
-        tip.style("display","none").html("")
-      })
-}
-
 function sortAsc(a,b){
   if(!isNaN(+a) && !isNaN(+b)){
     a = +a;

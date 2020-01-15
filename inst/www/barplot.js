@@ -688,6 +688,31 @@ function topOrder(topBar,data,displayGraph){
   topBar.append("span").style("padding","0 10px")
 }
 
+function tooltip(sel,text){
+    var body = d3.select("body"),
+        tip = body.select("div.tooltip");
+
+    if(tip.empty())
+      tip = body.append("div")
+          .attr("class","tooltip")
+
+    sel
+      .on("mouseenter", function(d){
+        if(d[text]){
+          tip.style("display","block").html(d[text]);
+        }
+      })
+      .on("mousemove", function(){
+        var coor = [0, 0];
+        coor = d3.mouse(body.node());
+        tip.style("top",(coor[1]+20)+"px")
+           .style("left",(coor[0]+20)+"px")
+      })
+      .on("mouseleave", function(){
+        tip.style("display","none").html("")
+      })
+}
+
 function svg2pdf(){
 
   var tWidth = width + margin.left + margin.right,

@@ -558,6 +558,64 @@ function timeline(json){
     }
   }
 
+var fixedTooltip = false;
+function tooltip(sel,text){
+    var body = d3.select("body"),
+        tip = body.select("div.tooltip");
+
+    if(tip.empty()){
+      tip = body.append("div")
+          .attr("class","tooltip")
+
+      body.on("click.hideTooltip",function(){
+        fixedTooltip = false;
+        tip.style("display","none").html("")
+      })
+    }
+
+    sel
+      .on("click",function(d){
+        d3.event.stopPropagation();
+        fixedTooltip = true;
+        tooltipText(d);
+        tooltipCoords();
+      })
+      .on("mouseenter", function(d){
+        if(fixedTooltip) return;
+
+        tooltipText(d);
+      })
+      .on("mousemove", function(){
+        if(fixedTooltip) return;
+
+        tooltipCoords();
+      })
+      .on("mouseleave", function(){
+        if(fixedTooltip) return;
+
+        tip.style("display","none").html("")
+      })
+
+    function tooltipText(d){
+        var html = false;
+        if(typeof text == 'string'){
+          if(d[text])
+            html = d[text];
+        }else if(typeof text == 'function'){
+          html = text(d);
+        }
+        if(html)
+          tip.style("display","block").html(html);
+    }
+
+    function tooltipCoords(){
+        var coor = [0, 0];
+        coor = d3.mouse(body.node());
+        tip.style("top",(coor[1]+20)+"px")
+           .style("left",(coor[0]+20)+"px")
+    }
+}
+
 function svgDownload(){
   var svgs = d3.selectAll(".plot>svg").filter(function(){ return d3.select(this).style("display")!="none"; }),
       tWidth = d3.select(".plot>svg").attr("width"),
