@@ -14,7 +14,7 @@ netCoin <- function(nodes, links = NULL, tree = NULL, name = NULL,
     showCoordinates = FALSE, showArrows = FALSE, showLegend = TRUE, showAxes = FALSE, axesLabels = NULL,
     language = c("en", "es", "ca"), image = NULL, imageNames = NULL, dir = NULL)
 {
-  if(class(nodes)=="netCoin"){
+  if(inherits(nodes,"netCoin")){
     links <- nodes$links
     tree <- nodes$tree
     options <- nodes$options
@@ -138,19 +138,19 @@ netCoin <- function(nodes, links = NULL, tree = NULL, name = NULL,
   # filters
   rownames(nodes) <- nodes[,name]
   if (!is.null(nodeFilter)){
-    nodes$noShow <- FALSE
+    nodes[,"hidden"] <- FALSE
     if(!is.null(links))
-      links$noShow <- FALSE
-    nodes[,"noShow"] <- !with(nodes,eval(parse(text=nodeFilter)))
-    noShowNodes <- as.character(nodes[nodes[,"noShow"],name])
+      links[,"hidden"] <- FALSE
+    nodes[,"hidden"] <- !with(nodes,eval(parse(text=nodeFilter)))
+    hiddenNodes <- as.character(nodes[nodes[,"hidden"],name])
     if(!is.null(links))
-      links[(as.character(links[,"Source"]) %in% noShowNodes)|(as.character(links[,"Target"]) %in% noShowNodes),"noShow"] <- TRUE
+      links[(as.character(links[,"Source"]) %in% hiddenNodes)|(as.character(links[,"Target"]) %in% hiddenNodes),"hidden"] <- TRUE
   }
 
   if (!is.null(links) && !is.null(linkFilter)){
-    if(!"noShow" %in% colnames(links))
-      links$noShow <- FALSE
-    links[,"noShow"] <- links[,"noShow"] | !with(links,eval(parse(text=linkFilter)))
+    if(!"hidden" %in% colnames(links))
+      links[,"hidden"] <- FALSE
+    links[,"hidden"] <- links[,"hidden"] | !with(links,eval(parse(text=linkFilter)))
   }
 
   if (!is.null(degreeFilter)) options[["degreeFilter"]] <- as.numeric(degreeFilter)
@@ -172,7 +172,7 @@ netCoin <- function(nodes, links = NULL, tree = NULL, name = NULL,
       layout <- coords[[layoutName]](toIgraph(net))
       if(layoutName=="su")layout=layout$layout
     }
-    if (class(layout)=="matrix")
+    if (inherits(layout,"matrix"))
       net <- netAddLayout(net,layout)
     else warning("layout is not a matrix")
   }
@@ -313,12 +313,12 @@ surCoin<-function(data,variables=names(data), commonlabel=NULL,
   #Names  
   if(!("language" %in% names(arguments))) arguments$language <- "en"
   nodes <- arguments$nodes
-  if ("tbl_df" %in% class(nodes)) nodes<-as.data.frame(nodes)
+  if (inherits(nodes,"tbl_df")) nodes<-as.data.frame(nodes)
   name <- arguments$name <- nameByLanguage(arguments$name,arguments$language,arguments$nodes)
   if (!("level" %in% names(arguments))) level<-.95 else level <-arguments$level
   
   #Data.frame  
-  if (all(class(data)==c("tbl_df","tbl","data.frame"))) data<-as.data.frame(data) # convert haven objects
+  if (all(inherits(data,c("tbl_df","tbl","data.frame"),TRUE))) data<-as.data.frame(data) # convert haven objects
   allvar<-union(union(metric,dichotomies),variables)
   
   if (!pairwise) {
@@ -327,7 +327,7 @@ surCoin<-function(data,variables=names(data), commonlabel=NULL,
   }
   
   if(!is.null(weight)) {
-    if(class(weight)=="character"){
+    if(inherits(weight,"character")){
       allvar<-setdiff(allvar,weight)
       variables<-setdiff(variables,weight)
       weight<-data[,weight]
@@ -402,7 +402,7 @@ surCoin<-function(data,variables=names(data), commonlabel=NULL,
     
     if(!is.null(arguments$layout)) {
       layout2 <- layout <- arguments$layout
-      if (class(layout)=="matrix" & is.null(metric)){
+      if (inherits(layout,"matrix") && is.null(metric)){
         if (!is.null(nodes)){
           if(nrow(layout)==nrow(nodes)){
             Oxy <- matrix(NA,nrow(O),2)
@@ -477,7 +477,7 @@ surCoin<-function(data,variables=names(data), commonlabel=NULL,
       else xNx$links<-rbind.all.columns(arguments$links,D)
 
       #Layout
-      if (class(layout)=="matrix"){
+      if (inherits(layout,"matrix")){
         if (!is.null(nodes)){
           if(nrow(layout2)==nrow(nodes)){
             Oxy <- matrix(NA,nrow(xNx$nodes),2)
@@ -498,7 +498,7 @@ surCoin<-function(data,variables=names(data), commonlabel=NULL,
                                  ((substr(xNx$links$Target,1,regexpr("\\:",xNx$links$Target)-1) %in% exogenous) |
                                     (xNx$links$Target %in% exogenous2)),"No","Yes")
       arguments$linkFilter<-paste(ifelse(is.null(arguments$linkFilter),"",paste(arguments$linkFilter,"&")),"chaine=='Yes'")
-      xNx$links[,"noShow"]<-with(xNx$links,!eval(parse(text=arguments$linkFilter)))
+      xNx$links[,"hidden"]<-with(xNx$links,!eval(parse(text=arguments$linkFilter)))
     }
     if ("showArrows" %in% names(xNx$options) & exists("nodes")) xNx$links<-orderEdges(xNx$links,nodes[[name]])
 
@@ -543,7 +543,7 @@ dichotomize <- function(data,variables, sep="", min=1, length=0, values=NULL,
     
     if(!is.null(nas) & sep=="C") { #Different columns, same factor levels or character.
       oldData<-data
-      if("tbl_df" %in% class(data)) data<-as_factor(data[,variables])
+      if(inherits(data,"tbl_df")) data<-as_factor(data[,variables])
       if(sep=="C")sep<-"|"
       String<-do.call(paste,c(data,sep=sep))
       String<-gsub(paste0("\\",sep,"NA"), "", String)
@@ -642,7 +642,7 @@ edgeList <- function(data, procedures="Haberman", criteria="Z", level = .95, Bon
     if (Bonferroni ) max<-max/choose(nrow(data),2) # Changes of Z max criterium (Bonferroni)
   }
   if (substr(tolower(procedures)[1],1,2)!="sh") { # For coin objects
-    if (class(data)!="coin") stop("Error: input must be a coin object (see coin function)")
+    if (!inherits(data,"coin")) stop("Error: input must be a coin object (see coin function)")
     funcs<-c.method(procedures)
     if(!is.null(sort)) funcs<-union(c.method(sort),funcs)
     criteria<-c.method(criteria)
@@ -659,9 +659,9 @@ edgeList <- function(data, procedures="Haberman", criteria="Z", level = .95, Bon
     Mat<-mats2edges(data[,],matrices,criteria=criteria,min=min,max=max,support=support,directed=directed,diagonal=diagonal)
   }
   else {
-    if (class(data)!="matrix" & class(data)!="data.frame") 
+    if (!inherits(data,"matrix") && !inherits(data,"data.frame"))
       stop("Error: input must be a matrix (shape) or a data.frame (tree)")    
-    if (class(data)=="matrix"){
+    if (inherits(data,"matrix")){
       if(min==-Inf)min<-1    
       #funcs="value"
       #M<-new.env()
@@ -670,7 +670,7 @@ edgeList <- function(data, procedures="Haberman", criteria="Z", level = .95, Bon
       #data<-list(f=M[[funcs]],n=NA)
       Mat<-mats2edges(data,min=min,max=max,directed=directed,diagonal=diagonal)
     }
-    if (class(data)=="data.frame") {
+    if (inherits(data,"data.frame")) {
       lines<-sapply(data,as.character)
       lines<-rbind(c(lines[1,1],rep(NA,ncol(lines)-1)),lines) # Add one blank case in order to avoid mXm problem.
       lines<-ifelse(lines=="",NA,lines)
@@ -754,7 +754,7 @@ sim<-function (input, procedures="Jaccard", level=.95, distance=FALSE, minimum=1
                weight=NULL, pairwise=FALSE) {
   level <- checkLevel(level)
   method<-c.method(procedures)
-  if (is.matrix(input) & !"coin" %in% class(input)) {
+  if (is.matrix(input) && !inherits(input,"coin")) {
     if (is.null(colnames(input))) dimnames(input)<-list(NULL,paste("X",1:ncol(input),sep=""))
     input<-as.data.frame(input)
   }
@@ -762,7 +762,7 @@ sim<-function (input, procedures="Jaccard", level=.95, distance=FALSE, minimum=1
     C<-coin(input, minimum, maximum, sort, decreasing, weight=weight, pairwise=pairwise)
     a<-C[,]
   }
-  else if (class(input)=="coin") {
+  else if (inherits(input,"coin")) {
     C <- input
     a <- input[(diag(input)>=minimum & diag(input)<=maximum),(diag(input)>=minimum &diag(input)<=maximum)]
   }
@@ -1027,12 +1027,12 @@ printNet <- function(x){
     cat("Title:",x$options$main,"\n")
     cat("\nNodes(",nrow(x$nodes),"):\n",sep="")
   row.names(x$nodes)<-NULL
-  print(as.data.frame(head(x$nodes[,setdiff(names(x$nodes),c("noShow","fixed","chaine","fx","fy")),drop=FALSE])),row.names=F)
+  print(as.data.frame(head(x$nodes[,setdiff(names(x$nodes),c("hidden","chaine","fx","fy")),drop=FALSE])),row.names=F)
   if (nrow(x$nodes)>6) cat("...\n")
   if(!is.null(x$links)){
     cat("\nLinks(",nrow(x$links),"):\n",sep="")
     row.names(x$links)<-NULL
-    print(as.data.frame(head(x$links[,setdiff(names(x$links),c("noShow","fixed","chaine"))])),row.names=F)
+    print(as.data.frame(head(x$links[,setdiff(names(x$links),c("hidden","chaine"))])),row.names=F)
     if (nrow(x$links)>6) cat("...\n")
   }
   cat("\n")
@@ -1113,7 +1113,7 @@ summaryNet <- function(x){
 }
 
 propCoin<-function(x, margin= 0, decimals=1) {
-  if (class(x)!="coin") stop("Error: input must be a coin object (see coin function)")
+  if (!inherits(x,"coin")) stop("Error: input must be a coin object (see coin function)")
   if ("m" %in% names(attributes(x))) n <- attr(x, "m")
   else n <- attr(x,"n")
   x <- x[,]
@@ -1126,7 +1126,7 @@ propCoin<-function(x, margin= 0, decimals=1) {
 # Transform a coin object into a data frame with name and frequency
 asNodes<-function(C, frequency = TRUE, percentages = FALSE, language = c("en","es","ca")){
   nodes <- NULL
-  if (class(C)=="coin") {
+  if (inherits(C,"coin")) {
     if ("m" %in% names(attributes(C))) divider <- diag(attr(C,"m"))
     else divider <- attr(C,"n")
     if (!percentages & frequency) nodes<-data.frame(name=as.character(colnames(C)),frequency=diag(C))
@@ -1183,7 +1183,7 @@ toColorScale <- function(items){
 
 # igraph -> netCoin
 fromIgraph <- function(G, ...){
-  if (class(G)=="igraph"){
+  if (inherits(G,"igraph")){
 
     #arguments
     arguments <- list(...)
@@ -1235,7 +1235,7 @@ fromIgraph <- function(G, ...){
 
 # netCoin -> igraph
 toIgraph <- function(net){
-  if (class(net)=="netCoin"){
+  if (inherits(net,"netCoin")){
     nodes <- net$nodes
     links <- net$links
     options <- net$options
@@ -1333,7 +1333,7 @@ savePajek<-function(net, file="file.net", arcs=NULL, edges=NULL, partitions= NUL
 }
 
 expectedList<- function(data, names=NULL, min=1, confidence=FALSE) {
-  if (class(data)!="coin") stop("Error: input must be a coin object")
+  if (!inherits(data,"coin")) stop("Error: input must be a coin object")
   if (!is.null(names)) colnames(data[,])<-rownames(data[,])<-names
   a<-data[,]
   b<--(a-diag(a))
@@ -1592,7 +1592,7 @@ rbind.all.columns <- function(x, y) {
 }
 
 pathParameter<-function(model,estimates=c("b","se","z","pvalue","beta")){
-  if(class(model)=="lavaan"){
+  if(inherits(model,"lavaan")){
     links<-lavaan::parameterEstimates(model,standardized = T)
     names(links)<-gsub("^est$","b",names(links))
     names(links)<-gsub("^std.all$","beta",names(links))
@@ -1805,7 +1805,7 @@ remodel<-function(model){
   C  <- model$coefficients
   ## VV<-row.names(attr(terms(F),"factors"))[-1]
   VV <- gsub("[[:space:]]","",unlist(strsplit(strsplit(FO,"\\~")[[1]][2],"\\+")))
-   V <- VV[sapply(DD[VV],class)=="factor"]
+   V <- VV[vapply(DD[VV],inherits,TRUE,what="factor")]
   if (length(V)==0) return(model)
   Vq <- paste0("^",V)
   y  <- lapply(Vq,grep,names(model$coefficients))
@@ -1889,7 +1889,7 @@ extract <- function(formulas, data) {
   for (formula in formulas) {
     dependent <- union(dependent, gsub("[[:space:]]","",unlist(strsplit(strsplit(formula,"\\~")[[1]][1],"\\+"))))
     variables <- union(variables, gsub("[[:space:]]","",unlist(strsplit(strsplit(formula,"\\~")[[1]][2],"\\+"))))
-    factors   <- union(factors, variables[sapply(data[variables],class)=="factor"])
+    factors   <- union(factors, variables[vapply(data[variables],inherits,TRUE,what="factor")])
   }
   independent<-setdiff(variables,factors)
   variables<-list(D=dependent, I=independent, F=factors)

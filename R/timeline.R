@@ -14,6 +14,7 @@ timeCreate <- function(time, dir = "timeCoin"){
 timeCoin <- function(nodes, name = "name", start = "start", end = "end", group = NULL,
                      text = NULL, main = NULL, note = NULL, events = NULL,
                      eventSource = "Source", eventTarget = "Target", eventTime = "Time",
+                     eventColor = NULL, eventShape = NULL,
                      cex = 1, language = c("en","es","ca"), dir = NULL){
   if(length(setdiff(c(name,start,end),names(nodes))))
     stop("name, start and end: must be present in nodes data frame as columns.")
@@ -30,6 +31,10 @@ timeCoin <- function(nodes, name = "name", start = "start", end = "end", group =
     time[['options']][['eventSource']] <- eventSource
     time[['options']][['eventTarget']] <- eventTarget
     time[['options']][['eventTime']] <- eventTime
+    if(!is.null(eventColor))
+      time[['options']][['eventColor']] <- eventColor
+    if(!is.null(eventShape))
+      time[['options']][['eventShape']] <- eventShape
   }
   if (!is.null(dir)) timeCreate(time, dir)
   return(time)

@@ -91,8 +91,17 @@ function barplot(json){
   var topBar = body.append("div")
     .attr("class","topbar")
 
-  iconButton(topBar,"pdf",pdfIcon_b64,"PDF export",svg2pdf);
-  iconButton(topBar,"svg",svgIcon_b64,"SVG export",svgDownload);
+  topBar.call(iconButton()
+        .alt("pdf")
+        .src(b64Icons.pdf)
+        .title(texts.pdfexport)
+        .job(svg2pdf));
+
+  topBar.call(iconButton()
+        .alt("svg")
+        .src(b64Icons.svg)
+        .title(texts.svgexport)
+        .job(svgDownload));
 
   // multigraph
   if(typeof multiGraph != 'undefined'){
@@ -421,7 +430,7 @@ function barplot(json){
         topFilterInst.removeFilter();
       })
 
-    svg.append("style").text("text { font-family: sans-serif; font-size: "+body.style("font-size")+"; } "+
+    svg.append("style").text("svg { font-family: sans-serif; font-size: "+body.style("font-size")+"; } "+
       ".main { font-size: 200%; }"+
       (whiskers ? "" : ".bar, .legend path { stroke: #000; stroke-width: .4px; }") +
       ".a { fill: "+colors[0]+"; }"+

@@ -9,9 +9,8 @@ body {
   -ms-user-select: none; /* Internet Explorer/Edge */
   user-select: none;
 }
-
 a {
-  color: #47c0c0;
+  color: #327ee9;
 }
 ul {
   list-style-type: none;
@@ -22,10 +21,17 @@ button, input, select {
   font-family: sans-serif;
   font-size: 100%;
   color: #333;
-  background-color: #ddd;
-}
-select {
   background-color: #fff;
+  border-radius: 3px;
+  padding: 2px 8px;
+}
+button {
+  background: #ddd;
+  cursor: pointer;
+}
+button.disabled {
+  color: #888;
+  pointer-events: none;
 }
 input[type=range]{
   -webkit-appearance: none;
@@ -134,18 +140,8 @@ img.icon {
   padding: 5px 10px;
 }
 .selectButton>button{
-  border-radius:3px;
-  background:#ddd;
-  border:solid 1px #aaa;
-  padding:2px 8px;
-  color:#333;
   display:inline-block;
   margin:0 5px 5px 0;
-  cursor:pointer;
-}
-.selectButton>button.disabled {
-  color:#888;
-  pointer-events: none;
 }
 div.switchNodeLink{
   height: 0px;
@@ -186,67 +182,209 @@ div.note {
 .clear {
   clear: both;
 }
+/* sidebar */
 .sidebar {
   position: absolute;
-  top: 10px;
-  left: 10px;
+  top: 0;
+  left: 0;
 }
 .sidebar h2 {
-  margin: 0 0 6px 2px;
-  color: #bbb;
+  margin: 0 0 6px 0;
+  color: #333;
   font-size: 120%;
   text-transform: uppercase;
 }
 .sidebar h3 {
-  margin: 0 0 4px 2px;
-  color: #666;
+  margin: 0 0 4px 0;
+  color: #333;
   font-size: 120%;
 }
 .sidebar h4 {
-  margin: 0 0 2px 2px;
+  margin: 0 0 2px 0;
+  color: #333;
   font-size: 100%;
 }
-.subSidebar {
-  width: 88%;
+.sidebar.expanded {
   background-color: #f5f5f5;
-  padding: 6px 6%;
-  margin: 0 0% 10px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.4);
 }
-.subSidebar>div {
-  margin-bottom: 12px;
+.sidebar select {
+  width: 100%;
 }
-.subSidebar select {
-  width: 97%;
+.subSidebar {
+  background-color: #fff;
+  padding: 12px;
+  margin-top: 10px;
+  border: solid 1px #ddd;
 }
 .subSidebar button {
   width: 72px;
   overflow: hidden;
+}
+.sidebar > .fixed{
+  padding: 12px;
+}
+.sidebar.expanded > .fixed {
+  background-color: #fff;
+}
+.sidebar > .fixed > .multigraph {
+  margin-bottom: 10px;
+}
+.sidebar > .fixed > .multigraph:after {
+  content: '';
+  display: block;
+  clear: both;
+}
+.sidebar > .fixed > .multigraph > div {
+  width: 60%;
+  display: block;
+  float: left;
+}
+.sidebar > .fixed > .multigraph > div:first-child {
+  width: 40%;
+}
+.sidebar > .fixed > .multigraph > div > h3{
+  margin: 6px 0;
+}
+.sidebar > .fixed > .search {
+  background-color: #fff;
+  border-radius: 5px;
+  position: relative;
+  padding: 0;
+  border: none;
+  margin: 0;
+}
+.sidebar > .fixed > .search > button {
+  border: none;
+  margin: 0;
+  background-color: transparent;
+  border-radius: 0;
+  padding: 0;
+  padding: 10px;
+}
+.sidebar > .fixed > .search > button.burger-box {
+  position: absolute;
+  top: 0;
+  left: 0;
+  opacity: 0.6;
+}
+.sidebar > .fixed > .search > button.burger-box:hover {
+  opacity: 0.8;
+}
+.sidebar > .fixed > .search > button.search-icon {
+  position: absolute;
+  top: 0;
+  right: 0;
+}
+.sidebar > .fixed > .search > button.search-icon > svg > path{
+  fill: #327ee9;
+}
+.sidebar > .fixed > .search > button.search-icon.disabled > svg > path{
+  fill: #888;
+}
+.sidebar > .fixed > .search > .search-box.shadowed,
+.sidebar:not(.expanded) > .fixed > .search > .search-box,
+.sidebar > .fixed > .search > ul.dropdown-list {
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2),0 -1px 0px rgba(0,0,0,0.02);
+}
+.sidebar > .fixed > .search > .search-box {
+  border: solid 1px #ddd;
+  border-radius: 5px;
+  font-size: 16px;
+  width: 100%;
+}
+.sidebar > .fixed > .search > .search-box > div {
+  padding: 10px 40px 10px 40px;
+}
+.sidebar > .fixed > .search > .search-box > div > input {
+  width: 100%;
+  border: none;
+  margin: 0;
+  padding: 0;
+}
+.sidebar > .fixed > .search > ul.dropdown-list {
+  background: #fff;
+  border: solid 1px #ddd;
+  border-top: none;
+  border-radius: 0 0 5px 5px;
+  padding: 4px 0;
+  position: absolute;
+  display: none;
+  width: 100%;
+  font-size: 120%;
+}
+.sidebar > .fixed > .search > ul.dropdown-list > li {
+  padding: 4px 40px;
   cursor: pointer;
 }
+.sidebar > .fixed > .search > ul.dropdown-list > li:hover,
+.sidebar > .fixed > .search > ul.dropdown-list > li.active {
+  background: #eee;
+}
+.subSidebar .filter-switch:after,
+.sidebar > .fixed > .search:after,
 .subSidebar .visSel:after {
-    content: '';
-    display: block;
-    clear: both;
+  content: '';
+  display: block;
+  clear: both;
 }
-.subSidebar .visSel span {
-  margin-top: 6px;
-  width: 29%;
-}
-.subSidebar .visSel select {
-  width: 68%;
-}
-.subSidebar .visSel select, .subSidebar .visSel span {
-  display: inline-block;
+.subSidebar .visSel > div {
+  display: block;
   float: left;
   white-space: nowrap;
+  width: 60%;
 }
-.subSidebar .filter {
-  display: none;
+.subSidebar .visSel > div:first-child {
+  width: 40%;
+}
+.subSidebar .visSel > div:first-child span {
+  display: inline-block;
+  margin: 6px 0;
+}
+.subSidebar .visSel > div:first-child span img {
+  opacity: 0.6;
+}
+.subSidebar .filter-switch {
+  margin: 12px 0 4px 0;
+}
+.subSidebar .filter-switch h4 {
+  display: inline;
+}
+.subSidebar .filter-switch h4:after {
+  content: "\20\2304";
+  font-size: 200%;
+  line-height: 0;
+}
+.subSidebar .filter-switch h4.expanded:after {
+  content: "";
+}
+.subSidebar .collapse-ctrl {
+  cursor: pointer;
+  text-align: center;
+  margin: 5px 30% 0 30%;
+  font-size: 200%;
+  line-height: 0;
+  padding-top: 15px;
+}
+.filter-tags {
+  margin: 4px 0;
+}
+.filter-tags > div {
+  display: inline-block;
+  background: #666;
+  color: #fff;
+  padding: 4px 8px 4px 8px;
+  margin: 2px;
+  border-radius: 9999px;
+}
+.filter-tags > div > span {
+  margin-left: 5px;
+  font-family: "Times", "Times New Roman", "serif", "sans-serif", "EmojiSymbols";
+  cursor: pointer;
 }
 textarea[name=query] {
   font-family: monospace;
   width: 87%; resize: none;
-  margin: 0 1.4%;
 }
 .panel {
   position: absolute;
@@ -287,13 +425,6 @@ div.topbar {
   content: '';
   display: block;
   clear: both;
-}
-.subSidebar.multigraph h3 {
-  width: 34%;
-  display: inline-block;
-}
-.subSidebar.multigraph select {
-  width: 60%;
 }
 ul.picker>li {
   cursor: pointer;
@@ -377,11 +508,11 @@ div.divFrameCtrl button {
   text-align: center;
   cursor: pointer;
 }
-svg .button {
+svg .button circle {
   fill: #888;
 }
 svg .button rect {
-  opacity: 0.4;
+  fill: #ccc;
   cursor: pointer;
 }
 svg .slider .selection {
@@ -398,8 +529,7 @@ svg .buttons text {
   fill: #444;
 }
 svg .axis.brushSlider .domain {
-  stroke: #888;
-  opacity: 0.4;
+  stroke: #ccc;
   stroke-width: 4px;
   stroke-linecap: round;
 }
@@ -412,7 +542,6 @@ svg .zoombutton rect {
 }
 svg .zoombutton rect:first-child {
   fill: #ddd;
-  stroke-width: 1.5px;
 }
 
 /* slider */
@@ -437,6 +566,7 @@ svg .zoombutton rect:first-child {
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
   top: -7px;
   left: -7px;
+  cursor: pointer;
 }
 
 .slider-extent {
@@ -445,20 +575,68 @@ svg .zoombutton rect:first-child {
   top: 1px;
   height: 6px;
   opacity: .8;
-  background-color: #47c0c0;
+  background-color: #327ee9;
 }
 
 .slider-min, .slider-max, .slider-text {
-    position: absolute;
-    display: block;
-    color: #333;
-    line-height: 1.333;
-    padding: 1px 3px;
-    background: rgba(0,0,0,0.1);
-    border-radius: 3px;
+  position: absolute;
+  display: block;
+  color: #333;
+  line-height: 1.333;
+  padding: 1px 3px;
+  background: rgba(0,0,0,0.1);
+  border-radius: 3px;
 }
 
 .slider-text {
-	color: #fff;
-	background: #47c0c0;
+  border: solid 1px #ccc;
+  background: #fff;
+  cursor: pointer;
+}
+
+.slider-text input {
+  width: 100%;
+  border: none;
+  margin: 0;
+  padding: 0;
+  position: absolute;
+  top: 1px;
+  left: 1px;
+}
+
+/* scale */
+.scale text {
+  font-size: 120%; fill: #444;
+}
+.scale text.title {
+  font-size: 160%;
+  text-anchor: middle;
+}
+
+/* legend */
+.legend > text.title {
+  text-anchor: end;
+}
+.legend-check-box {
+  fill: #fff;
+  stroke: #888;
+}
+.legend-check-path {
+  fill: #fff;
+  pointer-events: none;
+}
+.legend-separator {
+  stroke: #888;
+  stroke-width: 0.5px;
+}
+.legend-bottom-button > rect{
+  cursor: pointer;
+  fill: #ddd;
+  pointer-events: none;
+}
+.legend-bottom-button > text{
+  text-anchor: middle;
+  font-size: 8px !important;
+  fill: #fff !important;
+  pointer-events: none;
 }

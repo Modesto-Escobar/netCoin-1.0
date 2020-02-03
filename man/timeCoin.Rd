@@ -12,6 +12,7 @@ Object of class \code{timeCoin}.
 timeCoin(nodes, name = "name", start = "start", end = "end", group = NULL,
          text = NULL, main = NULL, note = NULL, events = NULL,
          eventSource = "Source", eventTarget = "Target", eventTime = "Time",
+         eventColor = NULL, eventShape = NULL,
          cex = 1, language = c("en","es","ca"), dir = NULL)
 }
 \arguments{
@@ -27,6 +28,8 @@ timeCoin(nodes, name = "name", start = "start", end = "end", group = NULL,
 \item{eventSource}{name of the vector with sources in the events data frame.}
 \item{eventTarget}{name of the vector with targets in the events data frame.}
 \item{eventTime}{name of the vector with time points in the events data frame.}
+\item{eventColor}{name of the vector with color criteria in the events data frame.}
+\item{eventShape}{name of the vector with shape criteria in the events data frame.}
 \item{cex}{number indicating the amount by which plotting text should be scaled relative to the default. Default = 1.}
 \item{language}{a character vector (es=spanish; en=english; ca=catalan).}
 \item{dir}{a "character" string representing the directory where the web files will be saved.}

@@ -1,14 +1,30 @@
 function timeline(json){
 
   var nodes = json.nodes,
-      options = json.options;
+      options = json.options,
+
+      defaultShape = "Circle", // node shape by default
+      symbolTypes = ["Circle","Square","Diamond","Triangle","Cross","Star","Wye"]; // list of available shapes
 
   var body = d3.select("body");
+
+  var tooltip = body.append("div")
+        .attr("class","tooltip");
+
+  body.on("click.hideTooltip",function(){
+        tooltip
+          .classed("fixed",false)
+          .style("display","none")
+          .html("");
+  })
 
   if(options.cex)
     body.style("font-size", 10*options.cex + "px")
   else
     options.cex = 1;
+
+  // default linear scale for events
+  options.colorScaleeventColor = "WhBu";
 
   // sort nodes by start
   nodes.sort(function(nodea, nodeb){
@@ -46,8 +62,17 @@ function timeline(json){
   var topBar = body.append("div")
         .attr("class","topbar")
 
-  iconButton(topBar,"pdf",pdfIcon_b64,"PDF export",svg2pdf);
-  iconButton(topBar,"svg",svgIcon_b64,"SVG export",svgDownload);
+  topBar.call(iconButton()
+        .alt("pdf")
+        .src(b64Icons.pdf)
+        .title(texts.pdfexport)
+        .job(svg2pdf));
+
+  topBar.call(iconButton()
+        .alt("svg")
+        .src(b64Icons.svg)
+        .title(texts.svgexport)
+        .job(svgDownload));
 
   // multigraph
   if(typeof multiGraph != 'undefined'){
@@ -57,23 +82,14 @@ function timeline(json){
       topBar.append("select").style("visibility","hidden");
 
   // groups selection in topBar
-  topBar.append("h3").text(texts.Group + ":")
+  topBarVisual(topBar,"Group","group",getOptions(nodes));
 
-  var groupSelect = topBar.append("select")
-    .on("change",function(){
-      options.group = this.value;
-      if(options.group=="-"+texts.none+"-")
-        options.group = false;
-      displayGraph();
-    })
-  var opt = getOptions(nodes);
-  opt.unshift("-"+texts.none+"-");
-  groupSelect.selectAll("option")
-        .data(opt)
-      .enter().append("option")
-        .property("value",String)
-        .text(String)
-        .property("selected",function(d){ return d==options.group?true:null; })
+  if(json.events){
+    // event colors in topBar
+    topBarVisual(topBar,"Color","eventColor",getOptions(json.events),displayPicker);
+    // event shapes in topBar
+    topBarVisual(topBar,"Shape","eventShape",getOptions(json.events));
+  }
 
   // node filter in topBar
   var topFilterInst = topFilter()
@@ -90,14 +106,13 @@ function timeline(json){
   // styles
   d3.select("head")
       .append("style")
-      .text("text { font-family: sans-serif; font-size: "+body.style("font-size")+"; } "+
+      .text("svg { font-family: sans-serif; font-size: "+body.style("font-size")+"; } "+
     ".laneLines {  shape-rendering: crispEdges; }"+
     ".mini text { font-size:  90%; }"+
     ".mini .item { fill-opacity: .7; stroke-width: 6;  }"+
     ".brush .selection { fill: dodgerblue; }"+
     ".axis path, .axis line { fill: none; stroke: #000; shape-rendering: crispEdges; }"+
-    ".main text { font-size:  120%; }"+
-    ".main .item { stroke-width: 6; }")
+    ".main text { font-size:  120%; }")
 
   displayGraph();
 
@@ -138,6 +153,28 @@ function timeline(json){
         d["text"] = d[options.name]+" </br>"+d[options.start]+((d[options.end]===null)?"":" - "+d[options.end]);
       })
       options.text = "text";
+    }
+
+    if(options.eventColor){
+      if(dataType(json.events,options.eventColor)=="number"){
+        var colorDomain = d3.extent(json.events,function(d){ return d[options.eventColor]; }),
+            eventColorScale = d3.scaleLinear()
+          .range(colorScales[options.colorScaleeventColor])
+          .domain([colorDomain[0],d3.mean(colorDomain),colorDomain[1]])
+      }else{
+        var eventColorScale = d3.scaleOrdinal()
+          .range(categoryColors)
+          .domain(d3.map(json.events,function(d){ return d[options.eventColor]; }).keys())
+      }
+    }
+
+    var getShape = function() { return d3["symbol"+defaultShape]; };
+    if(options.eventShape){
+      var eventShapeScale = d3.scaleOrdinal()
+        .range(symbolTypes)
+        .domain(d3.map(json.events,function(d){ return d[options.eventShape]; }).keys())
+
+      getShape = function(d) { return d3["symbol"+eventShapeScale(d[options.eventShape])]; };
     }
 
     //sizes
@@ -293,7 +330,6 @@ function timeline(json){
       .call(brush)
 
     // zoom
-
     var zoom = d3.zoom()
         .scaleExtent([1, 10])
         .translateExtent([[0, 0], [w, 1]])
@@ -302,12 +338,17 @@ function timeline(json){
           return !d3.event.button && (d3.event.ctrlKey || d3.event.metaKey);
         })
         .on("zoom", function() {
+          tooltip
+            .classed("fixed",false)
+            .style("display","none")
+            .html("")
           if (d3.event.sourceEvent && d3.event.sourceEvent.type === "brush") return;
           var t = d3.event.transform;
           mini.select(".brush").call(brush.move,x.range().map(t.invertX, t));
         })
 
-    var zoomArea = body.append("div")
+    var zoomArea = plot.append("div")
+      .attr("class","zoom-area")
       .style("display","none")
       .style("position","fixed")
       .style("top",0)
@@ -320,7 +361,8 @@ function timeline(json){
       })
 
     // sticky time header
-    var timeHeader = body.append("svg")
+    var timeHeader = plot.append("svg")
+      .attr("class","time-header")
       .style("display","none")
       .style("position","fixed")
       .style("top",0)
@@ -338,7 +380,8 @@ function timeline(json){
       .attr("transform", "translate(" + margin[3] + "," + (margin[2]-1) + ")")
 
     // dotted vertical guide
-    var yearGuideTop = 53 + (options.main ? parseInt(body.select("div.main").style("height")) : 0) + parseInt(body.select("div.plot>svg:first-child").style("height")),
+    var rect = plot.node().getBoundingClientRect(),
+        yearGuideTop = rect.top + body.select("div.plot>svg:first-child").node().clientHeight,
         yearGuide = plot.append("div")
       .attr("class","year-guide")
       .style("position","absolute")
@@ -349,7 +392,7 @@ function timeline(json){
       .style("border-left","dashed 1px #000")
       .style("z-index",-1);
 
-    var pYear = body.append("p")
+    var pYear = plot.append("p")
       .attr("class","year")
       .style("background-color","#fff")
       .style("position","absolute")
@@ -444,10 +487,11 @@ function timeline(json){
             .attr("fill", color(d))
           rectsEnter.append("rect")
             .attr("height", 10)
+            .style("stroke",function(){ return d3.rgb(d3.select(this).style("fill")).darker(1); })
           rectsEnter.append("text")
             .attr("y", -4)
 
-          tooltip(rectsEnter.selectAll("rect, text"),options.text);
+          tooltipActions(rectsEnter.selectAll("rect, text"),options.text);
 
           rects.exit().remove();
 
@@ -478,13 +522,10 @@ function timeline(json){
             var points = d3.select(this).selectAll(".event").data(d['_events_'],function(dd){ return dd[options.eventSource]; });
 
             var pointsEnter = points.enter()
-                  .append("circle")
+                  .append("path")
                   .attr("class","event")
-                  .attr("cx",0)
-                  .attr("cy",0)
-                  .attr("r",4)
 
-            tooltip(pointsEnter,function(d){
+            tooltipActions(pointsEnter,function(d){
               var html = "";
               for(var s in d){
                 if(d.hasOwnProperty(s)){
@@ -504,28 +545,35 @@ function timeline(json){
 
             var pointsUpdate = pointsEnter.merge(points);
 
-            pointsUpdate.attr("cx",function(dd){ return x1(dd[options.eventTime]); })
+            pointsUpdate
+              .attr("d",d3.symbol().type(getShape))
+              .style("fill",options.eventColor ? function(d){ return eventColorScale(d[options.eventColor]); } : null)
+              .style("stroke",function(){ return d3.rgb(d3.select(this).style("fill")).darker(1); })
 
             var lines = [-Infinity];
-            pointsUpdate.attr("cy",function(){
-              var selfCoords = this.getBBox(),
+            pointsUpdate.attr("transform",function(d){
+              var dim = 14,
+                  x = x1(d[options.eventTime]),
+                  y = 0,
                   i = 0;
-              while(lines[i]>=selfCoords.x){
+              while(lines[i]>=x){
                 i++;
                 if(!lines.length>i)
                   lines.push(-Infinity);
               }
-              lines[i] = selfCoords.x+selfCoords.width;
-              return 18+(i*10*options.cex);
+              lines[i] = x+dim;
+              y = 18+(i*dim);
+
+              return "translate("+x+","+y+")";
             });
           });
 
           var lines = [-Infinity],
               lineheight = 10;
           rectsUpdate.attr("transform",function(d){
-            var selfCoords = this.getBBox(),
+            var BBox = this.getBBox(),
                 i = 0, j = 0,
-                nlines = Math.ceil(selfCoords.height/lineheight)+(d['_events_']?1:0),
+                nlines = Math.ceil(BBox.height/lineheight)+(d['_events_']?1:0),
                 collision = isFinite(lines[0])?true:false;
             while(collision){
               i++;
@@ -533,13 +581,13 @@ function timeline(json){
               for(j=i; j<i+nlines; j++){
                 if(!lines.length>j){
                   break;
-                }else if(lines[j]>=selfCoords.x){
+                }else if(lines[j]>=BBox.x){
                   collision = true;
                   break;
                 }
               }
             }
-            lines[i] = selfCoords.x+selfCoords.width;
+            lines[i] = BBox.x+BBox.width;
             for(j=i+1; j<i+nlines; j++){
               lines[j] = lines[i];
             }
@@ -558,42 +606,28 @@ function timeline(json){
     }
   }
 
-var fixedTooltip = false;
-function tooltip(sel,text){
-    var body = d3.select("body"),
-        tip = body.select("div.tooltip");
-
-    if(tip.empty()){
-      tip = body.append("div")
-          .attr("class","tooltip")
-
-      body.on("click.hideTooltip",function(){
-        fixedTooltip = false;
-        tip.style("display","none").html("")
-      })
-    }
-
+  function tooltipActions(sel,text){
     sel
       .on("click",function(d){
         d3.event.stopPropagation();
-        fixedTooltip = true;
+        tooltip.classed("fixed",true);
         tooltipText(d);
         tooltipCoords();
       })
       .on("mouseenter", function(d){
-        if(fixedTooltip) return;
+        if(tooltip.classed("fixed")) return;
 
         tooltipText(d);
       })
       .on("mousemove", function(){
-        if(fixedTooltip) return;
+        if(tooltip.classed("fixed")) return;
 
         tooltipCoords();
       })
       .on("mouseleave", function(){
-        if(fixedTooltip) return;
+        if(tooltip.classed("fixed")) return;
 
-        tip.style("display","none").html("")
+        tooltip.style("display","none").html("")
       })
 
     function tooltipText(d){
@@ -605,34 +639,59 @@ function tooltip(sel,text){
           html = text(d);
         }
         if(html)
-          tip.style("display","block").html(html);
+          tooltip.style("display","block").html(html);
     }
 
     function tooltipCoords(){
         var coor = [0, 0];
         coor = d3.mouse(body.node());
-        tip.style("top",(coor[1]+20)+"px")
+        tooltip.style("top",(coor[1]+20)+"px")
            .style("left",(coor[0]+20)+"px")
     }
-}
+  }
 
-function svgDownload(){
-  var svgs = d3.selectAll(".plot>svg").filter(function(){ return d3.select(this).style("display")!="none"; }),
-      tWidth = d3.select(".plot>svg").attr("width"),
-      tHeight = 0,
-      styles = d3.select("head>style").text(),
-      svgString = "";
+  function topBarVisual(sel, visual, option, opt, picker){
+    sel.append("h3").text(texts[visual] + ":")
 
-  svgs.each(function(){
-    svgString = svgString + '<g transform="translate(0,' + tHeight + ')">' + this.innerHTML + '</g>';
-    tHeight = tHeight + parseInt(d3.select(this).attr("height"));
-  });
+    var visualSelect = sel.append("select")
+    .on("change",function(){
+      options[option] = this.value;
+      if(options[option]=="-"+texts.none+"-")
+        options[option] = false;
+      displayGraph();
+      if(picker && dataType(json.events,options[option])=='number'){
+        picker(options[option], function(val){
+          options["colorScaleeventColor"] = val;
+          displayGraph();
+        });
+      }
+    })
+    opt.unshift("-"+texts.none+"-");
+    visualSelect.selectAll("option")
+        .data(opt)
+      .enter().append("option")
+        .property("value",String)
+        .text(String)
+        .property("selected",function(d){ return d==options[option]?true:null; })
+  }
 
-  svgString = '<svg xmlns="http://www.w3.org/2000/svg" width="' + tWidth + '" height="' + tHeight + '"><style>' + styles + '</style>' + svgString + '</svg>';
+  function svgDownload(){
+    var svgs = d3.selectAll(".plot>svg").filter(function(){ return d3.select(this).style("display")!="none"; }),
+        tWidth = d3.select(".plot>svg").attr("width"),
+        tHeight = 0,
+        styles = d3.select("head>style").text(),
+        svgString = "";
 
-  var blob = new Blob([svgString], {type: 'image/svg+xml;charset=utf-8'});
-  fileDownload(blob, d3.select("head>title").text()+'.svg');
-}
+    svgs.each(function(){
+      svgString = svgString + '<g transform="translate(0,' + tHeight + ')">' + this.innerHTML + '</g>';
+      tHeight = tHeight + parseInt(d3.select(this).attr("height"));
+    });
+
+    svgString = '<svg xmlns="http://www.w3.org/2000/svg" width="' + tWidth + '" height="' + tHeight + '"><style>' + styles + '</style>' + svgString + '</svg>';
+
+    var blob = new Blob([svgString], {type: 'image/svg+xml;charset=utf-8'});
+    fileDownload(blob, d3.select("head>title").text()+'.svg');
+  }
 
 function svg2pdf(){
   var svgs = d3.selectAll(".plot>svg").filter(function(){ return d3.select(this).style("display")!="none"; }),
@@ -662,6 +721,8 @@ function svg2pdf(){
     unit: 'pt',
     format: [tWidth, tHeight]
   });
+
+  doc.polygon = pdfPolygon;
 
   doc.setTextColor(0);
   doc.setLineWidth(1);
@@ -780,10 +841,12 @@ function svg2pdf(){
 
         self.selectAll(".event").each(function(){
           var self = d3.select(this)
-              x = +self.attr("cx") + margin[0],
-              selfY = +self.attr("cy") + y;
+              color = d3.rgb(self.style("fill")),
+              x = +getTranslation(self.attr("transform"))[0] + margin[0],
+              selfY = +getTranslation(self.attr("transform"))[1] + y;
 
-          doc.circle(x,selfY,4,'F');
+          doc.setFillColor(color.r,color.g,color.b);
+          doc.polygon(self.attr("d"),x,selfY,[1,1],'F');
         })
       })
     }
