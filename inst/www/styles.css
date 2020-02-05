@@ -341,9 +341,6 @@ div.note {
   display: inline-block;
   margin: 6px 0;
 }
-.subSidebar .visSel > div:first-child span img {
-  opacity: 0.6;
-}
 .subSidebar .filter-switch {
   margin: 12px 0 4px 0;
 }
@@ -477,8 +474,11 @@ div.infopanel > div:last-child {
 
 div.tooltip {
   position: absolute;
-  background: #f5f5f5;
-  padding:10px;
+  background: #555;
+  color: #fff;
+  padding: 6px 12px;
+  border-radius: 6px;
+  line-height: 1.5;
 }
 
 div.showhideArrow {

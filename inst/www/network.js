@@ -14,8 +14,8 @@ function network(Graph){
       Sliders = {},
       Legends = {},
       Controllers = {},
-      initialNodesLength = 0,
-      initialLinksLength = 0,
+      GraphNodesLength = 0,
+      GraphLinksLength = 0,
       options;
 
   var defaultColor = categoryColors[0], // nodes and areas default color
@@ -148,8 +148,6 @@ function network(Graph){
       Graph.nodenames.forEach(function(d,j){
         node[d] = Graph.nodes[j][i];
       })
-      if(node.hidden)
-        node._hidden = true;
       node.degree = 0;
       splitMultiVariable(node);
       node[options.nodeName] = String(node[options.nodeName]);
@@ -178,8 +176,6 @@ function network(Graph){
         Graph.linknames.forEach(function(d,j){
           link[d] = Graph.links[j][i];
         })
-        if(link.hidden)
-          link._hidden = true;
         splitMultiVariable(link);
         link.source = Graph.nodes[link.Source];
         link.Source = link.source[options.nodeName];
@@ -194,8 +190,8 @@ function network(Graph){
       Graph.linknames = [];
     }
 
-    initialNodesLength = Graph.nodes.length;
-    initialLinksLength = Graph.links.length;
+    GraphNodesLength = Graph.nodes.length;
+    GraphLinksLength = Graph.links.length;
 
     loadTree();
 
@@ -303,11 +299,6 @@ function network(Graph){
         options.axesLabels = [options.axesLabels];
       else
         options.axesLabels = [];
-    }
-
-    if(!Array.isArray(options.degreeFilter)){
-      if(options.degreeFilter)
-        options.degreeFilter = [options.degreeFilter,Infinity];
     }
 
     options.heatmap = false;
@@ -1167,7 +1158,7 @@ function addFilterController(){
         Graph.nodes.forEach(function(d){
           delete d.selected;
         });
-        showHidden();
+        applyInitialFilter();
       });
 
     itemFilter.append("button")
@@ -1367,15 +1358,28 @@ function addFilterController(){
 } // end of Filter Controller
 
 function applyInitialFilter(){
-    Graph.nodes.forEach(function(d){ 
-      if((options.degreeFilter ? (d.degree >= options.degreeFilter[0] && d.degree <= options.degreeFilter[1]) : true) && !d.hidden){
-        delete d._hidden;
-      }else{
+    showHidden();
+    Graph.nodes.forEach(function(d){
+      if(d.hidden){
         d._hidden = true;
         delete d.selected;
       }
     });
+    Graph.links.forEach(function(d){
+      if(d.hidden){
+        d._hidden = true;
+      }
+    });
     drawNet();
+}
+
+function checkInitialFilters(){
+  for(var i = 0; i<Graph.nodes.length; i++){
+    if((Graph.nodes[i].hidden ? 1 : 0) != (Graph.nodes[i]._hidden ? 1 : 0)){
+      return false;
+    }
+  }
+  return true;
 }
 
 function applySelection(query,data){
@@ -2082,8 +2086,8 @@ function frameStep(value){
           }
         });
 
-        initialNodesLength = Graph.nodes.filter(function(node){ return !node._hideFrame; }).length;
-        initialLinksLength = Graph.links.filter(function(link){ return !link._hideFrame; }).length;
+        GraphNodesLength = Graph.nodes.filter(function(node){ return !node._hideFrame; }).length;
+        GraphLinksLength = Graph.links.filter(function(link){ return !link._hideFrame; }).length;
 
         drawNet();
 
@@ -2145,7 +2149,7 @@ function drawNet(){
 
   var links = Graph.links.filter(checkSelectableLink);
 
-  enableSelectButtons("#resetfilter",(nodes.length!=initialNodesLength) || (links.length!=initialLinksLength));
+  enableSelectButtons("#resetfilter",(nodes.length!=GraphNodesLength) || (links.length!=GraphLinksLength));
 
   for(var i=1; i<links.length; i++){
     for(var j = i-1; j>=0; j--){
@@ -3067,7 +3071,6 @@ function dblClickNet(){
     }else
       switchEgoNet();
   }else{
-    showHidden();
     applyInitialFilter();
   }
 }
@@ -3567,14 +3570,14 @@ function displayLegend(){
     .text(typeof title == "undefined" ? key : title)
 
     y = 15*options.cex;
-    if(legendControls && (initialNodesLength!=simulation.nodes().length)){
+    if(legendControls && !checkInitialFilters()){
       legend.append("text")
         .attr("x",-legendWidth)
         .attr("y",y+(10*options.cex))
         .style("fill",UIcolor)
         .style("cursor","pointer")
-        .on("click",showHidden)
-        .text("‹ "+texts.resetfilter)
+        .on("click",applyInitialFilter)
+        .text("‹ "+texts.goback)
 
       y = y + 18*options.cex;
     }

@@ -28,7 +28,7 @@ var texts = {
     stopresume: "Dinámico",
     netheatmap: "Mapa de color",
     isolateselection: "Filtrar selección",
-    resetfilter: "Quitar filtro",
+    resetfilter: "Quitar filtros",
     selectall: "Seleccionar todos/ninguno",
     selectneighbors: "Añadir vecinos",
     egonet: "EgoRed",
@@ -95,5 +95,6 @@ var texts = {
     removefilter: "Quitar filtro",
     alertrecordheatmap: "El mapa de color no puede ser grabado.",
     speed: "Velocidad",
-    search: "Buscar..."
+    search: "Buscar...",
+    goback: "Volver"
   };

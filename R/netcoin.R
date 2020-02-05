@@ -136,15 +136,20 @@ netCoin <- function(nodes, links = NULL, tree = NULL, name = NULL,
   if (!is.null(ltext)) options[["linkText"]] <- ltext
 
   # filters
+  hideLinks <- function(){
+    if(!is.null(links)){
+      if(!"hidden" %in% colnames(links))
+        links[,"hidden"] <<- FALSE
+      hiddenNodes <- as.character(nodes[nodes[,"hidden"],name])
+      links[(as.character(links[,"Source"]) %in% hiddenNodes) | (as.character(links[,"Target"]) %in% hiddenNodes),"hidden"] <<- TRUE
+    }
+  }
+
   rownames(nodes) <- nodes[,name]
   if (!is.null(nodeFilter)){
     nodes[,"hidden"] <- FALSE
-    if(!is.null(links))
-      links[,"hidden"] <- FALSE
     nodes[,"hidden"] <- !with(nodes,eval(parse(text=nodeFilter)))
-    hiddenNodes <- as.character(nodes[nodes[,"hidden"],name])
-    if(!is.null(links))
-      links[(as.character(links[,"Source"]) %in% hiddenNodes)|(as.character(links[,"Target"]) %in% hiddenNodes),"hidden"] <- TRUE
+    hideLinks()
   }
 
   if (!is.null(links) && !is.null(linkFilter)){
@@ -153,10 +158,29 @@ netCoin <- function(nodes, links = NULL, tree = NULL, name = NULL,
     links[,"hidden"] <- links[,"hidden"] | !with(links,eval(parse(text=linkFilter)))
   }
 
-  if (!is.null(degreeFilter)) options[["degreeFilter"]] <- as.numeric(degreeFilter)
+  if (!is.null(degreeFilter) && !is.null(links)){
+    degreeFilter <- as.numeric(degreeFilter)
+    if(length(degreeFilter)==1)
+      degreeFilter <- c(degreeFilter,Inf)
+    nodesDegree <- rep(0,nrow(nodes))
+    for(i in seq_len(nrow(links))){
+      if(!("hidden" %in% names(links)) || !links[i,"hidden"]){
+        s <- which(nodes[,name]==links[i,"Source"])
+        nodesDegree[s] <- nodesDegree[s] + 1
+        t <- which(nodes[,name]==links[i,"Target"])
+        nodesDegree[t] <- nodesDegree[t] + 1
+      }
+    }
+    if(!"hidden" %in% colnames(nodes))
+      nodes[,"hidden"] <- FALSE
+    nodes[,"hidden"] <- nodes[,"hidden"] | !(nodesDegree>=degreeFilter[1] & nodesDegree<=degreeFilter[2])
+    hideLinks()
+  }
 
+  #create net object
   net <- structure(list(links=links,nodes=nodes,options=options),class="netCoin")
 
+  #check tree
   if(!is.null(tree)){
     tree <- tree[tree$Source%in%nodes[[name]]&tree$Target%in%nodes[[name]],]
     if(nrow(tree)==0)

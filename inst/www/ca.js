@@ -28,7 +28,7 @@ var texts = {
     stopresume: "Dinàmic",
     netheatmap: "Xarxa/map de calor",
     isolateselection: "Filtre",
-    resetfilter: "Restablir filtre",
+    resetfilter: "Elimina els filtres",
     selectall: "Selecció tots/cap nodes",
     selectneighbors: "Afegir veïns",
     egonet: "EgoNet",
@@ -95,5 +95,6 @@ var texts = {
     removefilter: "Treure filtre",
     alertrecordheatmap: "el mapa de calor no es pot gravar.",
     speed: "Velocitat",
-    search: "Cerca..."
+    search: "Cerca...",
+    goback: "Tornar"
   };

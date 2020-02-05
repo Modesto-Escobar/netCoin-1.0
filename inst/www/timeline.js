@@ -9,13 +9,11 @@ function timeline(json){
   var body = d3.select("body");
 
   var tooltip = body.append("div")
-        .attr("class","tooltip");
+        .attr("class","tooltip")
+        .style("display","none")
 
   body.on("click.hideTooltip",function(){
-        tooltip
-          .classed("fixed",false)
-          .style("display","none")
-          .html("");
+    body.selectAll(".tooltip.fixed").remove();
   })
 
   if(options.cex)
@@ -338,10 +336,7 @@ function timeline(json){
           return !d3.event.button && (d3.event.ctrlKey || d3.event.metaKey);
         })
         .on("zoom", function() {
-          tooltip
-            .classed("fixed",false)
-            .style("display","none")
-            .html("")
+          body.selectAll(".tooltip.fixed").remove();
           if (d3.event.sourceEvent && d3.event.sourceEvent.type === "brush") return;
           var t = d3.event.transform;
           mini.select(".brush").call(brush.move,x.range().map(t.invertX, t));
@@ -610,27 +605,33 @@ function timeline(json){
     sel
       .on("click",function(d){
         d3.event.stopPropagation();
-        tooltip.classed("fixed",true);
-        tooltipText(d);
-        tooltipCoords();
+        var tooltipfixed = body.append("div")
+          .attr("class","tooltip fixed");
+        tooltipfixed.on("click",function(){
+          d3.event.stopPropagation();
+          d3.select(this).remove();
+        })
+        tooltipText(tooltipfixed,d);
+        tooltipCoords(tooltipfixed);
+        tooltip.style("display","none").html("");
       })
       .on("mouseenter", function(d){
-        if(tooltip.classed("fixed")) return;
+        if(!body.selectAll(".tooltip.fixed").empty()) return;
 
-        tooltipText(d);
+        tooltipText(tooltip,d);
       })
       .on("mousemove", function(){
-        if(tooltip.classed("fixed")) return;
+        if(!body.selectAll(".tooltip.fixed").empty()) return;
 
-        tooltipCoords();
+        tooltipCoords(tooltip);
       })
       .on("mouseleave", function(){
-        if(tooltip.classed("fixed")) return;
+        if(!body.selectAll(".tooltip.fixed").empty()) return;
 
         tooltip.style("display","none").html("")
       })
 
-    function tooltipText(d){
+    function tooltipText(tip,d){
         var html = false;
         if(typeof text == 'string'){
           if(d[text])
@@ -639,13 +640,13 @@ function timeline(json){
           html = text(d);
         }
         if(html)
-          tooltip.style("display","block").html(html);
+          tip.style("display","block").html(html);
     }
 
-    function tooltipCoords(){
+    function tooltipCoords(tip){
         var coor = [0, 0];
         coor = d3.mouse(body.node());
-        tooltip.style("top",(coor[1]+20)+"px")
+        tip.style("top",(coor[1]+20)+"px")
            .style("left",(coor[0]+20)+"px")
     }
   }

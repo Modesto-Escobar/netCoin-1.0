@@ -28,7 +28,7 @@ var texts = {
     stopresume: "Dynamic",
     netheatmap: "Heatmap",
     isolateselection: "Filter selection",
-    resetfilter: "Reset filter",
+    resetfilter: "Remove filters",
     selectall: "Select all/none",
     selectneighbors: "Add neighbors",
     egonet: "EgoNet",
@@ -95,5 +95,6 @@ var texts = {
     removefilter: "Remove filter",
     alertrecordheatmap: "Heatmap cannot be recorded.",
     speed: "Speed",
-    search: "Search..."
+    search: "Search...",
+    goback: "Return"
   };
