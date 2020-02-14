@@ -32,7 +32,7 @@ function network(Graph){
       timeRange = [5000,500], // speed range for dynamic net
       axisExtension = 50, // pixels to increase the axes size
       sliderWidth = 200, // width of the sliders
-      infoPanelLeft = docSize.width * (2/3), // information panel left position
+      infoPanelWidth = docSize.width * (1/3), // information panel left position
       findNodeRadius = 16, // radius in which to find a node in the canvas
       legendControls = true, // display legend checkboxes and buttons
       hiddenFields = ["Source","Target","x","y","source","target","fx","fy","hidden","childNodes","parentNode","_frame_"]; // not to show in sidebar controllers or tables
@@ -44,6 +44,10 @@ function network(Graph){
       .stop();
 
   var body = d3.select("body");
+
+  body.on("keydown.shortcut",function(){
+    if(d3.event.ctrlKey) d3.event.preventDefault();
+  });
 
   // get primary color for user interface;
   var a = body.append("a"),
@@ -71,6 +75,58 @@ function network(Graph){
       .attr("class", "plot")
       .style("position","relative")
 
+  body.on("keyup.shortcut",function(){
+    //d3.event.preventDefault();
+    var key = getKey(d3.event);
+    if(key == "Enter"){
+      if(selectedNodesLength()) switchEgoNet();
+      return;
+    }
+    if(d3.event.ctrlKey){
+      switch(key){
+        case "a":
+          plot.select(".button.showArrows > rect").dispatch("click");
+          return;
+        case "d":
+          plot.select(".button.dynamicNodes > rect").dispatch("click");
+          return;
+        case "e":
+            if(selectedNodesLength()) switchEgoNet();
+            return;
+        case "f":
+            if(selectedNodesLength()) filterSelection();
+            return;
+        case "h":
+          plot.select(".button.heatmap > rect").dispatch("click");
+          return;
+        case "i":
+          applyInitialFilter();
+          return;
+        case "l":
+          plot.select(".button.showLegend > rect").dispatch("click");
+          return;
+        case "m":
+            if(selectedNodesLength()) selectNodesFromTable();
+            return;
+        case "n": // warning: new window
+            if(selectedNodesLength()) addNeighbors();
+            return;
+        case "r":
+          showHidden();
+          return;
+        case "s":
+          selectAllNodes();
+          return;
+        case "t": // warning: new tab
+          plot.select(".button.heatmapTriangle > rect").dispatch("click");
+          return;
+        case "x":
+          plot.select(".button.showAxes > rect").dispatch("click");
+          return;
+      }
+    }
+  })
+
   if(options.note){
     var divNote = plot.append("div")
       .attr("class", "note")
@@ -86,6 +142,10 @@ function network(Graph){
 
   if(options.helpOn)
     displayWindow().html(options.help);
+
+  function selectedNodesLength(){
+    return Graph.nodes.filter(function(d){ return d.selected; }).length;
+  }
 
   function checkGraphData(){
 
@@ -1414,6 +1474,15 @@ function drawSVG(sel){
   body
     .on("keydown.viewbrush", keyflip)
     .on("keyup.viewbrush", keyflip)
+
+  width = parseInt(sel.style("width"))
+  var infopanel = body.select("div.infopanel");
+  if(!infopanel.empty()){
+    width = width
+    - parseInt(infopanel.style("width"))
+    - parseInt(infopanel.style("padding-left"))
+    - parseInt(infopanel.style("padding-right"));
+  }
   
   var svg = sel.insert("svg",":first-child")
       .attr("xmlns","http://www.w3.org/2000/svg")
@@ -1560,17 +1629,17 @@ function drawSVG(sel){
 
   sel.selectAll(".showhideArrow").filter(function(d,i){ return !i; }).style("top",top+"px");
 
-  if(options.showButtons){
-    var buttons = svg.append("g")
+  var buttons = svg.append("g")
         .attr("class", "buttons")
+        .style("display",options.showButtons ? null : "none")
         .attr("transform", "translate(30,"+(10 + top)+")")
 
-    var sliders = buttons.append("g")
+  var sliders = buttons.append("g")
         .attr("class","sliders")
 
-    var countY = 8;
+  var countY = 8;
 
-    Sliders.distance = displaySlider()
+  Sliders.distance = displaySlider()
       .y(countY*options.cex)
       .domain(linkDistanceRange)
       .domain2([0,100])
@@ -1580,12 +1649,12 @@ function drawSVG(sel){
         options['linkDistance'] = value;
         update_forces();
       })
-    sliders.call(Sliders.distance);
-    Sliders.distance.move(options['linkDistance']);
+  sliders.call(Sliders.distance);
+  Sliders.distance.move(options['linkDistance']);
 
-    countY += 18;
+  countY += 18;
 
-    Sliders.repulsion = displaySlider()
+  Sliders.repulsion = displaySlider()
       .y(countY*options.cex)
       .domain(chargeRange)
       .domain2([0,100])
@@ -1595,17 +1664,17 @@ function drawSVG(sel){
         options['charge'] = value;
         update_forces();
       })
-    sliders.call(Sliders.repulsion);
-    Sliders.repulsion.move(options['charge']);
+  sliders.call(Sliders.repulsion);
+  Sliders.repulsion.move(options['charge']);
 
-    countY += 18;
+  countY += 18;
 
-    Sliders.zoom.y(countY*options.cex)
-    sliders.call(Sliders.zoom);
+  Sliders.zoom.y(countY*options.cex)
+  sliders.call(Sliders.zoom);
 
-    countY += 18;
+  countY += 18;
 
-    if(frameControls){
+  if(frameControls){
       Sliders.frame.y(countY*options.cex)
       sliders.call(Sliders.frame);
       Sliders.frame.move(frameControls.frame);
@@ -1617,12 +1686,11 @@ function drawSVG(sel){
       Sliders.time.move(frameControls.time);
 
       countY += 18;
-    }
-
-    countY += 8;
-
-    loadSVGbuttons(countY);
   }
+
+  countY += 8;
+
+  loadSVGbuttons(countY);
 
   var makeZoomButton = function(y){
     var zoombutton = svg.append("g")
@@ -1695,13 +1763,13 @@ function drawSVG(sel){
       .attr("height",6)
   zoomout.append("title").text(texts.zoomout)
 
-
   Sliders.zoom.update(options.zoomScale);
 
-  if(frameControls)
+  if(frameControls){
     handleFrames(frameControls.frame);
-  else
+  }else{
     drawNet();
+  }
 
   function zoomed() {
       transform = d3.event.transform;
@@ -1760,7 +1828,7 @@ function drawSVG(sel){
     gButton.exit().remove();
 
     gButton.enter().append("g")
-    .attr("class","button")
+    .attr("class",function(d){ return "button "+d.key; })
     .each(function(d,i){
 
       var self = d3.select(this);
@@ -3053,7 +3121,7 @@ function clickNet(){
     if(options.nodeText){
       showTooltip(node,true);
     }
-    displayInfoPanel(node,options.nodeInfo);
+    displayInfoPanel(node[options.nodeInfo]);
   }else{
     Graph.nodes.forEach(function(n){
       n.selected = false;
@@ -3367,11 +3435,12 @@ function addGradient(defs,id, stops){
   });
 }
 
-function displayInfoPanel(node,info){
-  if(info && node[info]){
-    d3.select("div.infopanel").remove();
+function displayInfoPanel(info){
+  if(info){
+    body.select("div.infopanel").remove();
     var div = body.append("div")
           .attr("class","infopanel"),
+        infoLeft = docSize.width - infoPanelWidth;
         infoHeight = height
       - parseInt(div.style("top"))
       - parseInt(div.style("border-top-width"))
@@ -3379,34 +3448,42 @@ function displayInfoPanel(node,info){
       - parseInt(div.style("padding-top"))
       - parseInt(div.style("padding-bottom"))
       - 10;
-    div.style("left",infoPanelLeft+"px");
+    div.style("left",infoLeft+"px");
     div.style("height",infoHeight+"px");
     div.append("div")
       .attr("class","drag")
       .call(d3.drag()
         .on("drag", function() {
-          infoPanelLeft = d3.mouse(body.node())[0]-parseInt(div.style("border-left-width"));
-          div.style("left",infoPanelLeft+"px");
+          infoLeft = d3.mouse(body.node())[0]-parseInt(div.style("border-left-width"));
+          if(infoLeft>(docSize.width*2/4) && infoLeft<(docSize.width*3/4)){
+            div.style("left",infoLeft+"px");
+            plot.call(drawSVG);
+          }
         })
       )
     div.append("div")
           .attr("class","close-button")
           .html("&#x2716;")
-          .on("click", function(){ div.remove() });
-    div.append("div").html(node[info]);
+          .on("click", function(){
+            div.remove()
+            plot.call(drawSVG);
+          });
+    div.append("div").html(info);
+    plot.call(drawSVG);
   }
 }
 
 function selectAllNodes(){
-  if(Graph.nodes.filter(function(d){ return !d.selected && checkSelectable(d); }).length)
+  if(Graph.nodes.filter(function(d){ return !d.selected && checkSelectable(d); }).length){
     Graph.nodes.forEach(function(d){
       if(checkSelectable(d))
         d.selected = true;
     });
-  else
+  }else{
     Graph.nodes.forEach(function(d){
       delete d.selected;
     });
+  }
   showTables();
 }
 
@@ -3473,29 +3550,43 @@ function checkSelectableLink(link){
 }
 
 function treeAction(){
-  if(!Graph.nodes.filter(function(d){ return d.selected; }).length)
-    Graph.nodes.forEach(function(d){
-      if(checkSelectable(d))
-        d.selected = true;
-    });
-  Graph.nodes.forEach(function(d){
-    if(!d.selected)
-      return;
+  if(!selectedNodesLength()){
+      Graph.nodes.forEach(function(d){
+        if(checkSelectable(d))
+          d.selected = true;
+      });
+  }
+
+  Graph.nodes.filter(function(d){
+      return d.selected;
+  }).forEach(function(d){
     if(d.childNodes.length){
-      d.childNodes.forEach(function(c){ delete c._hidden; });
-      d._hidden = true;
-      delete d.selected;
+        d.childNodes.forEach(function(c){
+          c.selected = true;
+          delete c._hidden;
+        });
+        d._hidden = true;
+        delete d.selected;
     }else{
-      var return2roots = function(d){
-        if(d.parentNode){
-          return2roots(d.parentNode);
-        }else
-          delete d._hidden;
-        };
-      return2roots(d);
+        return2roots(d);
     }
   });
-  drawNet();
+
+  if(egoNet){
+      switchEgoNet();
+  }else{
+      drawNet();
+  }
+
+  function return2roots(d){
+    if(d.parentNode){
+      delete d.selected;
+      return2roots(d.parentNode);
+    }else{
+      d.selected = true;
+      delete d._hidden;
+    }
+  }
 }
 
 function stopResumeNet(){

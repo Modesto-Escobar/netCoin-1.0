@@ -162,7 +162,7 @@ function timeline(json){
       }else{
         var eventColorScale = d3.scaleOrdinal()
           .range(categoryColors)
-          .domain(d3.map(json.events,function(d){ return d[options.eventColor]; }).keys())
+          .domain(d3.map(json.events,function(d){ return d[options.eventColor]; }).keys().sort())
       }
     }
 
@@ -186,10 +186,9 @@ function timeline(json){
     var color,
         getMiniY;
     if(options.group){
-       color = d3.scaleOrdinal().range(categoryColors.slice(0,10));
-      if(laneLength>10)
-        color = d3.scaleOrdinal().range(categoryColors);
-      color.domain(nodes.map(function(n){ return n[options.group]; }));
+      color = d3.scaleOrdinal()
+        .range(categoryColors)
+        .domain(nodes.map(function(n){ return n[options.group]; }).sort());
 
       getMiniY = function(d){ return y2((lanes.indexOf(String(d[options.group]))) + 0.5) - 5; }
     }else{
@@ -508,6 +507,9 @@ function timeline(json){
               self.attr("x",w).attr("text-anchor","end");
             else
               self.attr("text-anchor",null);
+
+            if(options.eventColor && options.eventColor=="Target")
+              self.style("fill",eventColorScale(d[options.name]));
           });
 
           rectsUpdate.each(function(d){

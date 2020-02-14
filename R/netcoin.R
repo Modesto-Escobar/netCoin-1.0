@@ -22,17 +22,21 @@ netCoin <- function(nodes, links = NULL, tree = NULL, name = NULL,
     nodes <- nodes$nodes
   }else{
     name <- nameByLanguage(name,language,nodes)
-    if(!is.null(nodes))
+    if(!is.null(nodes)){
+      if (all(inherits(nodes,c("tbl_df","tbl","data.frame"),TRUE))) nodes<-as.data.frame(nodes) # convert haven objects
       nodes[[name]] <- as.character(nodes[[name]])
+    }
     options <- list(nodeName=name)
   }
 
   if(!is.null(links)){
+    if (all(inherits(links,c("tbl_df","tbl","data.frame"),TRUE))) links<-as.data.frame(links) # convert haven objects
     if(is.null(nodes)){
       nodes <- data.frame(name=union(links$Source,links$Target))
       names(nodes)[1] <- options$nodeName
-    }else
-      links <- links[links$Source %in% nodes[[name]] & links$Target %in% nodes[[name]],]
+    }else{
+      links <- links[links$Source %in% nodes[[name]] & links$Target %in% nodes[[name]] & as.character(links$Target)!=as.character(links$Source),]
+    }
     if(nrow(links)==0){
       links <- NULL
       warning("links: no row (Source and Target) matches the name column of the nodes")
@@ -136,45 +140,45 @@ netCoin <- function(nodes, links = NULL, tree = NULL, name = NULL,
   if (!is.null(ltext)) options[["linkText"]] <- ltext
 
   # filters
-  hideLinks <- function(){
-    if(!is.null(links)){
-      if(!"hidden" %in% colnames(links))
-        links[,"hidden"] <<- FALSE
-      hiddenNodes <- as.character(nodes[nodes[,"hidden"],name])
-      links[(as.character(links[,"Source"]) %in% hiddenNodes) | (as.character(links[,"Target"]) %in% hiddenNodes),"hidden"] <<- TRUE
-    }
-  }
-
-  rownames(nodes) <- nodes[,name]
-  if (!is.null(nodeFilter)){
-    nodes[,"hidden"] <- FALSE
-    nodes[,"hidden"] <- !with(nodes,eval(parse(text=nodeFilter)))
-    hideLinks()
-  }
-
-  if (!is.null(links) && !is.null(linkFilter)){
-    if(!"hidden" %in% colnames(links))
-      links[,"hidden"] <- FALSE
-    links[,"hidden"] <- links[,"hidden"] | !with(links,eval(parse(text=linkFilter)))
-  }
-
-  if (!is.null(degreeFilter) && !is.null(links)){
-    degreeFilter <- as.numeric(degreeFilter)
-    if(length(degreeFilter)==1)
-      degreeFilter <- c(degreeFilter,Inf)
-    nodesDegree <- rep(0,nrow(nodes))
-    for(i in seq_len(nrow(links))){
-      if(!("hidden" %in% names(links)) || !links[i,"hidden"]){
-        s <- which(nodes[,name]==links[i,"Source"])
-        nodesDegree[s] <- nodesDegree[s] + 1
-        t <- which(nodes[,name]==links[i,"Target"])
-        nodesDegree[t] <- nodesDegree[t] + 1
+  if(!is.null(nodeFilter) | !is.null(linkFilter) | !is.null(degreeFilter)){
+    hideLinks <- function(){
+      if(!is.null(links)){
+        hiddenNodes <- as.character(nodes[nodes[,"hidden"],name])
+        links[(as.character(links[,"Source"]) %in% hiddenNodes) | (as.character(links[,"Target"]) %in% hiddenNodes),"hidden"] <<- TRUE
       }
     }
-    if(!"hidden" %in% colnames(nodes))
-      nodes[,"hidden"] <- FALSE
-    nodes[,"hidden"] <- nodes[,"hidden"] | !(nodesDegree>=degreeFilter[1] & nodesDegree<=degreeFilter[2])
-    hideLinks()
+
+    nodes[,"hidden"] <- FALSE
+    if (!is.null(links)){
+      links[,"hidden"] <- FALSE
+    }
+
+    rownames(nodes) <- nodes[,name]
+    if (!is.null(nodeFilter)){
+      nodes[,"hidden"] <- !with(nodes,eval(parse(text=nodeFilter)))
+      hideLinks()
+    }
+
+    if (!is.null(links) && !is.null(linkFilter)){
+      links[,"hidden"] <- links[,"hidden"] | !with(links,eval(parse(text=linkFilter)))
+    }
+
+    if (!is.null(degreeFilter) && !is.null(links)){
+      degreeFilter <- as.numeric(degreeFilter)
+      if(length(degreeFilter)==1)
+        degreeFilter <- c(degreeFilter,Inf)
+      nodes[,"degree"] <- rep(0,nrow(nodes))
+      degrees <- table(c(as.character(links[!links[,"hidden"],"Source"]),as.character(links[!links[,"hidden"],"Target"])))
+      nodes[names(degrees),"degree"] <- degrees
+      nodes[,"hidden"] <- nodes[,"hidden"] | !(nodes[,"degree"]>=degreeFilter[1] & nodes[,"degree"]<=degreeFilter[2])
+      nodes[,"degree"] <- NULL
+      hideLinks()
+    }
+
+    if(!sum(nodes[,"hidden"]))
+      nodes[,"hidden"] <- NULL
+    if(!sum(links[,"hidden"]))
+      links[,"hidden"] <- NULL
   }
 
   #create net object
@@ -182,11 +186,11 @@ netCoin <- function(nodes, links = NULL, tree = NULL, name = NULL,
 
   #check tree
   if(!is.null(tree)){
-    tree <- tree[tree$Source%in%nodes[[name]]&tree$Target%in%nodes[[name]],]
+    tree <- tree[tree$Source %in% nodes[[name]] & tree$Target %in% nodes[[name]] & as.character(tree$Target)!=as.character(tree$Source),]
     if(nrow(tree)==0)
       warning("tree: no row (Source and Target) matches the name column of the nodes")
     else
-      net$tree <- tree
+      net$tree <- data.frame(Source=tree$Source,Target=tree$Target)
   }
 
   #layout
