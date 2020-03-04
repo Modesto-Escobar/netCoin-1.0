@@ -35,9 +35,9 @@ function timeline(json){
   if(json.events){
     var events = {};
     json.events.forEach(function(d,i){
-      if(typeof events[d[options.eventTarget]] == "undefined")
-        events[d[options.eventTarget]] = [];
-      events[d[options.eventTarget]].push(i);
+      if(typeof events[d[options.eventParent]] == "undefined")
+        events[d[options.eventParent]] = [];
+      events[d[options.eventParent]].push(i);
     })
     nodes.forEach(function(node){
       if(events.hasOwnProperty(node[options.name]))
@@ -479,6 +479,7 @@ function timeline(json){
               .append("g")
             .attr("class", "item")
             .attr("fill", color(d))
+            .style("cursor","pointer")
           rectsEnter.append("rect")
             .attr("height", 10)
             .style("stroke",function(){ return d3.rgb(d3.select(this).style("fill")).darker(1); })
@@ -508,7 +509,7 @@ function timeline(json){
             else
               self.attr("text-anchor",null);
 
-            if(options.eventColor && options.eventColor=="Target")
+            if(options.eventColor && options.eventColor==options.eventParent)
               self.style("fill",eventColorScale(d[options.name]));
           });
 
@@ -516,7 +517,7 @@ function timeline(json){
             if(!d['_events_'])
               return;
 
-            var points = d3.select(this).selectAll(".event").data(d['_events_'],function(dd){ return dd[options.eventSource]; });
+            var points = d3.select(this).selectAll(".event").data(d['_events_'],function(dd){ return dd[options.eventChild]; });
 
             var pointsEnter = points.enter()
                   .append("path")
@@ -526,9 +527,9 @@ function timeline(json){
               var html = "";
               for(var s in d){
                 if(d.hasOwnProperty(s)){
-                  if(s==options.eventTarget){
+                  if(s==options.eventParent){
                     continue;
-                  }else if(s==options.eventSource){
+                  }else if(s==options.eventChild){
                     html = d[s]+"<br>"+html;
                   }else{
                     html += s+": "+d[s]+"<br>";
@@ -608,13 +609,36 @@ function timeline(json){
       .on("click",function(d){
         d3.event.stopPropagation();
         var tooltipfixed = body.append("div")
-          .attr("class","tooltip fixed");
-        tooltipfixed.on("click",function(){
-          d3.event.stopPropagation();
-          d3.select(this).remove();
-        })
+          .attr("class","tooltip fixed")
+          .on("click",function(){
+            d3.event.stopPropagation();
+          })
+          .call(d3.drag()
+            .on("start",function(){
+              tooltipfixed.style("cursor","grabbing");
+              tooltipfixed.datum(d3.mouse(tooltipfixed.node()));
+            })
+            .on("drag",function(){
+              var coor = d3.mouse(body.node().parentNode),
+                  coor2 = tooltipfixed.datum();
+              coor[0] = coor[0]-coor2[0];
+              coor[1] = coor[1]-coor2[1];
+              tooltipfixed
+               .style("top",(coor[1])+"px")
+               .style("left",(coor[0])+"px")
+            })
+            .on("end",function(){
+              tooltipfixed.style("cursor","grab");
+              tooltipfixed.datum(null);
+            })
+          );
         tooltipText(tooltipfixed,d);
         tooltipCoords(tooltipfixed);
+        tooltipfixed.append("span")
+          .html("&#x274C;")
+          .on("click",function(){
+            d3.select(this.parentNode).remove();
+          })
         tooltip.style("display","none").html("");
       })
       .on("mouseenter", function(d){

@@ -13,7 +13,7 @@ timeCreate <- function(time, dir = "timeCoin"){
 
 timeCoin <- function(nodes, name = "name", start = "start", end = "end", group = NULL,
                      text = NULL, main = NULL, note = NULL, events = NULL,
-                     eventSource = "Source", eventTarget = "Target", eventTime = "Time",
+                     eventChild = "eventChild", eventParent = "eventParent", eventTime = "Time",
                      eventColor = NULL, eventShape = NULL,
                      cex = 1, language = c("en","es","ca"), dir = NULL){
   if(length(setdiff(c(name,start,end),names(nodes))))
@@ -28,8 +28,8 @@ timeCoin <- function(nodes, name = "name", start = "start", end = "end", group =
   if(!is.null(events)){
     events <- events[order(events[[eventTime]]),]
     time[['events']] <- events
-    time[['options']][['eventSource']] <- eventSource
-    time[['options']][['eventTarget']] <- eventTarget
+    time[['options']][['eventChild']] <- eventChild
+    time[['options']][['eventParent']] <- eventParent
     time[['options']][['eventTime']] <- eventTime
     if(!is.null(eventColor))
       time[['options']][['eventColor']] <- eventColor

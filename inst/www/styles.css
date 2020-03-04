@@ -171,13 +171,12 @@ div.main {
   text-align: center;
   margin-top: 8px;
 }
-.note {
-  padding: 30px;
-}
 div.note {
   position: absolute;
   left: 0;
   bottom: 0;
+  padding: 30px;
+  z-index: -1;
 }
 .clear {
   clear: both;
@@ -363,9 +362,6 @@ div.note {
   line-height: 0;
   padding-top: 15px;
 }
-.filter-tags {
-  margin: 4px 0;
-}
 .filter-tags > div {
   display: inline-block;
   background: #666;
@@ -480,6 +476,20 @@ div.tooltip {
   padding: 6px 12px;
   border-radius: 6px;
   line-height: 1.5;
+}
+div.tooltip.fixed{
+  cursor: grab;
+}
+div.tooltip.fixed > span:last-child {
+  position: absolute;
+  top: 0;
+  right: 3px;
+  font-family: "Times", "Times New Roman", "serif", "sans-serif", "EmojiSymbols";
+  cursor: pointer;
+  display: none;
+}
+div.tooltip.fixed:hover > span:last-child {
+  display: block;
 }
 
 div.showhideArrow {

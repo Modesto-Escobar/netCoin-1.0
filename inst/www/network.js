@@ -3,8 +3,6 @@ function network(Graph){
   var docSize = viewport(),
       width = docSize.width,
       height = docSize.height,
-      oldWidth = 0,
-      oldHeight = 0,
       images = false,
       images64 = false,
       egoNet = false,
@@ -55,6 +53,17 @@ function network(Graph){
       disUIcolor = applyOpacity(d3.rgb(UIcolor),0.4);
   a.remove();
 
+  var zoom = d3.zoom()
+    .scaleExtent(zoomRange)
+    .on("end",function(){
+      d3.select(this).style("cursor","grab");
+    }) 
+    .on("zoom", function() {
+      transform = d3.event.transform;
+      options.zoomScale = transform.k;
+      Sliders.zoom.update(options.zoomScale);
+    })
+
   checkGraphData();
 
   // main title
@@ -84,18 +93,33 @@ function network(Graph){
     }
     if(d3.event.ctrlKey){
       switch(key){
+        case "+":
+          plot.select(".zoombutton.zoomin").dispatch("click");
+          return;
+        case "-":
+          plot.select(".zoombutton.zoomout").dispatch("click");
+          return;
+        case "0":
+          plot.select(".zoombutton.zoomreset").dispatch("click");
+          return;
         case "a":
           plot.select(".button.showArrows > rect").dispatch("click");
+          return;
+        case "b":
+          if(selectedNodesLength()) addNeighbors();
           return;
         case "d":
           plot.select(".button.dynamicNodes > rect").dispatch("click");
           return;
         case "e":
-            if(selectedNodesLength()) switchEgoNet();
-            return;
+          if(selectedNodesLength()) switchEgoNet();
+          return;
         case "f":
-            if(selectedNodesLength()) filterSelection();
-            return;
+          if(selectedNodesLength()) filterSelection();
+          return;
+        case "g":
+          plot.select(".button.heatmapTriangle > rect").dispatch("click");
+          return;
         case "h":
           plot.select(".button.heatmap > rect").dispatch("click");
           return;
@@ -106,11 +130,13 @@ function network(Graph){
           plot.select(".button.showLegend > rect").dispatch("click");
           return;
         case "m":
-            if(selectedNodesLength()) selectNodesFromTable();
-            return;
+          if(selectedNodesLength()) selectNodesFromTable();
+          return;
         case "n": // warning: new window
-            if(selectedNodesLength()) addNeighbors();
-            return;
+          return;
+        case "p":
+          treeAction();
+          return;
         case "r":
           showHidden();
           return;
@@ -118,7 +144,6 @@ function network(Graph){
           selectAllNodes();
           return;
         case "t": // warning: new tab
-          plot.select(".button.heatmapTriangle > rect").dispatch("click");
           return;
         case "x":
           plot.select(".button.showAxes > rect").dispatch("click");
@@ -134,6 +159,8 @@ function network(Graph){
   }
 
   plot.style("width",width+"px")
+
+  adaptLayout();
 
   displayArrows();
   displayBottomPanel();
@@ -372,8 +399,9 @@ function network(Graph){
         if(p!=options.nodeName){
           if(typeof d[p] == "string" && d[p].indexOf("|")!=-1){
             var aux = d[p].split("|");
-            if(!frameControls || aux.length==frameControls.frames.length)
-              d[p] = aux.map(function(d){ return isNaN(parseInt(d)) ? d : +d; });
+            if(!frameControls || aux.length==frameControls.frames.length){
+              d[p] = aux.map(function(d){ return d=="" ? null : (isNaN(parseInt(d)) ? d : +d); });
+            }
           }
         }
       }
@@ -722,22 +750,23 @@ function displayBottomPanel(){
       })
     buttonsSelect.append("span").text(" ");
 
-    var selectButton = function(id,clk,enable){
+    var selectButton = function(id,clk,tooltip,enable){
           buttonsSelect.append("button")
             .attr("id",id)
             .attr("class",enable?"":"disabled")
             .text(texts[id])
             .on("click",clk)
+            .attr("title",tooltip)
         }
 
-    selectButton("selectall",selectAllNodes,true);
-    selectButton("tableselection",selectNodesFromTable);
-    selectButton("selectneighbors",addNeighbors);
-    selectButton("isolateselection",filterSelection);
-    selectButton("egonet",switchEgoNet);
+    selectButton("selectall",selectAllNodes,"ctrl + s",true);
+    selectButton("tableselection",selectNodesFromTable,"ctrl + m");
+    selectButton("selectneighbors",addNeighbors,"ctrl + b");
+    selectButton("isolateselection",filterSelection,"ctrl + f");
+    selectButton("egonet",switchEgoNet,"ctrl + e");
     if(Graph.tree)
-      selectButton("expandcollapse",treeAction,true);
-    selectButton("resetfilter",showHidden,true);
+      selectButton("expandcollapse",treeAction,"ctrl + p",true);
+    selectButton("resetfilter",showHidden,"ctrl + r",true);
   }
 
     if(options.showTables){
@@ -774,6 +803,7 @@ function displaySidebar(){
       .attr("class","search");
     searchSel.append("button")
       .attr("class","burger-box")
+      .style("display", options.showSidebar===false ? "none" : null)
       .call(getSVG()
         .d(d4paths.burger)
         .width(20).height(20))
@@ -897,8 +927,10 @@ function displaySidebar(){
       })
       .on("end", function() {
         body.style("cursor",null);
-        Controllers.nodeFilter.update();
-        Controllers.linkFilter.update();
+        if(Controllers.length){
+          Controllers.nodeFilter.update();
+          Controllers.linkFilter.update();
+        }
         sidebar.selectAll(".sidebar > div").style("visibility",null);
         if(options.showSidebar)
           plot.call(drawSVG);
@@ -1093,7 +1125,8 @@ function addVisualController(){
 
     sels.each(function(visual){
       var tmpData = attrData.filter(function(d){
-          if(onlyNumeric.indexOf(visual)!=-1 && dataType(data,d)!="number")
+          var t = dataType(data,d,true);
+          if(onlyNumeric.indexOf(visual)!=-1 && t!="number")
               return false;
           return true;
         });
@@ -1210,8 +1243,15 @@ function addFilterController(){
       .style("margin-bottom",0);
 
     itemFilter.append("button")
+      .text(texts.filter)
+      .on("click", function(){
+        updateAppliedFilters();
+        updateTags();
+        applyFilter(selectedValues2str(appliedFilters,data));
+      })
+
+    itemFilter.append("button")
       .text(texts.clear)
-      .style("display","block")
       .on("click", function(){
         selectedValues = {};
         changeAttrSel(attrSelect.property("value"));
@@ -1220,15 +1260,6 @@ function addFilterController(){
         });
         applyInitialFilter();
       });
-
-    itemFilter.append("button")
-      .text(texts.filter)
-      .style("display","block")
-      .on("click", function(){
-        updateAppliedFilters();
-        updateTags();
-        applyFilter(selectedValues2str(appliedFilters,data));
-      })
 
     filterTags = itemFilter.append("div")
       .attr("class","filter-tags")
@@ -1458,15 +1489,6 @@ function drawSVG(sel){
   sel.select("canvas").remove();
   sel.select("svg").remove();
 
-  var zoom = d3.zoom()
-    .scaleExtent(zoomRange)
-    .on("end",function(){
-      d3.select(this).style("cursor","grab");
-    }) 
-    .on("zoom", zoomed)
-
-  adaptLayout();
-
   simulation
       .force("x", d3.forceX().strength(0.1))
       .force("y", d3.forceY().strength(0.1))
@@ -1588,9 +1610,6 @@ function drawSVG(sel){
       options.charge = chargeRange[1] * (options.repulsion/100);
   if(!options.hasOwnProperty("linkDistance"))
       options.linkDistance = linkDistanceRange[1] * (options.distance/100);
-  if(!options.hasOwnProperty("zoomScale"))
-      resetZoom();
-  net.attr("transform", transform);
 
   Sliders.zoom = displaySlider()
       .domain(zoomRange)
@@ -1603,6 +1622,8 @@ function drawSVG(sel){
           if(!options.heatmap)
             simulation.restart();
       });
+
+  resetZoom();
 
   if(frameControls){
       Sliders.frame = displaySlider()
@@ -1692,9 +1713,9 @@ function drawSVG(sel){
 
   loadSVGbuttons(countY);
 
-  var makeZoomButton = function(y){
+  var makeZoomButton = function(y,n){
     var zoombutton = svg.append("g")
-      .attr("class","zoombutton")
+      .attr("class","zoombutton "+n)
       .attr("transform","translate("+(width-35)+","+(height-y)+")")
 
     zoombutton.append("rect")
@@ -1709,7 +1730,7 @@ function drawSVG(sel){
   }
 
   // zoom in
-  var zoomin = makeZoomButton(110);
+  var zoomin = makeZoomButton(110,"zoomin");
   zoomin.on("click",function(){
         transform.k = transform.k + 0.1;
         if(transform.k>zoomRange[1]){
@@ -1729,15 +1750,14 @@ function drawSVG(sel){
       .attr("y",7)
       .attr("width",6)
       .attr("height",16)
-  zoomin.append("title").text(texts.zoomin)
+  zoomin.append("title").text(texts.zoomin + " (ctrl + '+')")
 
   // reset zoom
-  var zoomreset = makeZoomButton(75);
+  var zoomreset = makeZoomButton(75,"zoomreset");
   zoomreset.on("click",function(){
         resetZoom();
-        Sliders.zoom.update(options.zoomScale,true);
       })
-  zoomreset.append("title").text(texts.resetzoom)
+  zoomreset.append("title").text(texts.resetzoom + " (ctrl + 0)")
   zoomreset.select("rect")
       .style("fill",UIcolor)
   zoomreset.append("path")
@@ -1746,7 +1766,7 @@ function drawSVG(sel){
       .attr("d",d4paths.resetzoom)
 
   // zoom out
-  var zoomout = makeZoomButton(40);
+  var zoomout = makeZoomButton(40,"zoomout");
   zoomout.on("click",function(){
         transform.k = transform.k - 0.1;
         if(transform.k<zoomRange[0]){
@@ -1761,7 +1781,7 @@ function drawSVG(sel){
       .attr("y",12)
       .attr("width",16)
       .attr("height",6)
-  zoomout.append("title").text(texts.zoomout)
+  zoomout.append("title").text(texts.zoomout + " (ctrl + '-')")
 
   Sliders.zoom.update(options.zoomScale);
 
@@ -1769,12 +1789,6 @@ function drawSVG(sel){
     handleFrames(frameControls.frame);
   }else{
     drawNet();
-  }
-
-  function zoomed() {
-      transform = d3.event.transform;
-      options.zoomScale = transform.k;
-      Sliders.zoom.update(options.zoomScale);
   }
 
   function keyflip() {
@@ -1789,25 +1803,24 @@ function drawSVG(sel){
 
   function loadSVGbuttons(count){
     var dat = [],
-        datStopResume = {txt: texts.stopresume, key: "dynamicNodes", callback: stopResumeNet},
-        datDirectional = {txt: texts.directional, key: "showArrows", callback: function(){
+        datStopResume = {txt: texts.stopresume, key: "dynamicNodes", tooltip: "ctrl + d", callback: stopResumeNet},
+        datDirectional = {txt: texts.directional, key: "showArrows", tooltip: "ctrl + a", callback: function(){
           if(options.heatmap)
             drawNet();
           else
             simulation.restart();
         }, gap: 5},
-        datLegend = {txt: texts.showhidelegend, key: "showLegend", callback: function(){
+        datLegend = {txt: texts.showhidelegend, key: "showLegend", tooltip: "ctrl + l", callback: function(){
           clickHide(d3.selectAll(".scale"), options.showLegend);
         }},
-        datAxes = {txt: texts.showhideaxes, key: "showAxes", callback: function(){
+        datAxes = {txt: texts.showhideaxes, key: "showAxes", tooltip: "ctrl + x", callback: function(){
           clickHide(d3.selectAll(".net .axis"), options.showAxes);
           clickHide(d3.selectAll(".net .axisLabel"), options.showAxes);
         }},
-        datMode = {txt: texts.netheatmap, key: "heatmap", callback: function(){
-          resetZoom();
+        datMode = {txt: texts.netheatmap, key: "heatmap", tooltip: "ctrl + h", callback: function(){
           displaySidebar();
         }, gap: 5},
-        datPyramid = {txt : texts.trianglesquare, key: "heatmapTriangle", callback: drawNet};
+        datPyramid = {txt : texts.trianglesquare, key: "heatmapTriangle", tooltip: "ctrl + g", callback: drawNet};
 
     if(options.heatmap)
       dat = [datPyramid];
@@ -1823,7 +1836,7 @@ function drawSVG(sel){
       dat.push(datMode);
   
     var gButton = buttons.selectAll(".button")
-        .data(dat, function(d){ return d.txt; })
+        .data(dat, function(d){ return d.key; })
 
     gButton.exit().remove();
 
@@ -1844,7 +1857,10 @@ function drawSVG(sel){
         options[d.key] = !options[d.key];
         activeButton(250);
         d.callback();
-      });
+      }).append("title")
+        .text(function(d){
+          return d.tooltip;
+        })
 
       self.append("circle")
       .attr("cx",5)
@@ -1907,7 +1923,9 @@ function drawSVG(sel){
       .style("fill",UIcolor)
       .on("click",function(){
         location.reload();
-      });
+      })
+      .append("title")
+        .text("F5")
 
     resetButton.append("text")
       .attr("x",30)
@@ -2163,7 +2181,6 @@ function frameStep(value){
           options.zoom = frameControls.zoom[frameControls.frame];
           if(Sliders.zoom.reset()){
             resetZoom();
-            Sliders.zoom.update(options.zoomScale,true);
           }
         }
         if(frameControls.hasOwnProperty("repulsion")){
@@ -2554,8 +2571,10 @@ function drawNet(){
     update_forces();
 
     // update sidebar filters
-    Controllers.nodeFilter.update();
-    Controllers.linkFilter.update();
+    if(Controllers.length){
+      Controllers.nodeFilter.update();
+      Controllers.linkFilter.update();
+    }
 
     //axes
     var axes = svg.selectAll(".axis")
@@ -3136,8 +3155,9 @@ function dblClickNet(){
     if(Graph.tree && (d3.event.ctrlKey || d3.event.metaKey)){
       node.selected = true;
       treeAction();
-    }else
+    }else{
       switchEgoNet();
+    }
   }else{
     applyInitialFilter();
   }
@@ -3322,8 +3342,6 @@ function forceEnd(){
       var size = Math.min(width,height)-axisExtension;
     }
 
-
-
     d3.selectAll(".net .axis")
         .attr("x1",function(d){ return -(d[0]*size/2); })
         .attr("y1",function(d){ return -(d[1]*size/2); })
@@ -3496,8 +3514,10 @@ function filterSelection(){
 }
 
 function showHidden(){
-  Controllers.nodeFilter.cleanFilterTags();
-  Controllers.linkFilter.cleanFilterTags();
+  if(Controllers.length){
+    Controllers.nodeFilter.cleanFilterTags();
+    Controllers.linkFilter.cleanFilterTags();
+  }
   egoNet = false;
   Graph.nodes.forEach(function(d){
     delete d._hidden;
@@ -3622,7 +3642,8 @@ function clickHide(items, show) {
 }
 
 function displayLegend(){
-  var legend,
+  var parent,
+      legend,
       key,
       title,
       text = stripTags,
@@ -3639,6 +3660,8 @@ function displayLegend(){
     if(!data.length)
       return 0;
 
+    parent = d3.select(sel.node().parentNode);
+    parent.selectAll(".legend-bottom-button").remove();
     y = sel.node().getBBox().height;
     if(y!=0)
       y = y + 40*options.cex;
@@ -3653,26 +3676,35 @@ function displayLegend(){
     legend = sel.append("g")
     .attr("class","legend")
     .attr("transform", "translate(0,"+y+")")
+    .property("key",key)
 
-    legend.append("text")
+    y = 5*options.cex;
+    var textTitle = legend.append("text")
     .attr("class","title")
     .attr("x", 0)
-    .attr("y", 5)
+    .attr("y", y)
     .text(typeof title == "undefined" ? key : title)
 
-    y = 15*options.cex;
-    if(legendControls && !checkInitialFilters()){
+    if(legendControls && parent.select(".goback").empty() && (!checkInitialFilters() || egoNet)){
+      var lineApart = textTitle.node().getBBox().width>=legendWidth;
+      if(lineApart){
+        y = 25*options.cex;
+      }
       legend.append("text")
+        .attr("class","goback")
         .attr("x",-legendWidth)
-        .attr("y",y+(10*options.cex))
+        .attr("y",y)
+        .style("text-anchor",lineApart ? "start" : "end")
         .style("fill",UIcolor)
         .style("cursor","pointer")
         .on("click",applyInitialFilter)
         .text("‹ "+texts.goback)
-
-      y = y + 18*options.cex;
+        .append("title")
+          .text("ctrl + i")
     }
-    if(checkOffset){
+    y = y + 10*options.cex;
+
+    if(checkOffset && parent.select(".legend-selectall").empty()){
       var gSelectAll = legend.append("g")
       .attr("class","legend-selectall")
       .attr("transform", "translate(0,"+y+")");
@@ -3724,8 +3756,8 @@ function displayLegend(){
 
       y = y + 10*options.cex;
 
-      displayBottomButton(legend,1,y,"egonet",switchEgoNet);
-      displayBottomButton(legend,2,y,"filter",filterSelection);
+      displayBottomButton(legend,1,y,"egonet","ctrl + e",switchEgoNet);
+      displayBottomButton(legend,2,y,"filter","ctrl + f",filterSelection);
     }
 
     sel.transition()
@@ -3767,17 +3799,30 @@ function displayLegend(){
 
     sel.style("cursor","pointer")
     .on("click",function(){
-      selectCheckBox(this,!this.selected);
-
-      var selectedValues = {};
-      selectedValues[key] = [];
-      legend.selectAll(".legend-item")
-        .each(function(d){
-          if(this.selected)
-            selectedValues[key].push(String(d));
+      var value = String(d3.select(this).datum()),
+          selected = this.selected = !this.selected;
+      if(!this.item){
+        // select all/none nodes
+        Graph.nodes.forEach(function(d){
+            if(selected && checkSelectable(d)){
+              d.selected = true;
+            }else{
+              delete d.selected;
+            }
         });
-
-      applySelection(selectedValues2str(selectedValues,Graph.nodes),Graph.nodes);
+      }else{
+        // select especific nodes
+        Graph.nodes.forEach(function(d){
+          if(d[key]==value){
+            if(selected && checkSelectable(d)){
+              d.selected = true;
+            }else{
+              delete d.selected;
+            }
+          }
+        });
+      }
+      showTables();
     })
 
     sel.append("path")
@@ -3786,88 +3831,25 @@ function displayLegend(){
       .attr("d",item ? "M1,3L4,6L9,1L10,2L4,8L0,4Z" : "M2,4L8,4L8,6L2,6z")
   }
 
-  // visually mark/unmark checkbox (and environment consequences)
-  function selectCheckBox(thiz,select){
-      checkInBox(thiz,select);
-
-      if(thiz.item){
-        checkInBox(legend.select(".legend-selectall").node(),howManySelected());
-      }else{
-        legend.selectAll(".legend-item").each(function(){
-          checkInBox(this,select);
-        });
-      }
-
-      enableBottomButtons();
-
-      function checkInBox(thiz,select){
-        var checkBox = d3.select(thiz).select(".legend-check-box");
-        if(select){
-          thiz.selected = true;
-          checkBox
-            .style("fill",UIcolor)
-            .style("stroke","none")
-        }else{
-          thiz.selected = false;
-          checkBox
-            .style("fill",null)
-            .style("stroke",null)
-        }
-      }
-  }
-
-  function enableBottomButtons(){
-      var enable = howManySelected() && (howManySelected() < data.length);
-      legend.selectAll(".legend-bottom-button > rect")
-        .style("fill", enable ? UIcolor : disUIcolor)
-        .style("pointer-events", enable ? "all" : null)
-  }
-
-  function howManySelected(){
-      return legend.selectAll(".legend-item").filter(function(){ return this.selected; }).size();
-  }
-
-  function displayBottomButton(sel,x,y,text,callback){
-    var w = 50;
-    x = -50*x;
-    var g = sel.append("g")
-      .attr("class","legend-bottom-button")
+  function displayBottomButton(sel,x,y,text,tooltip,callback){
+      var w = 50;
+      x = -50*x;
+      var g = sel.append("g")
+      .attr("class","legend-bottom-button "+text)
       .attr("transform","translate("+x+","+y+")")
-    g.append("rect")
+      g.append("rect")
       .attr("x",3)
       .attr("y",0)
       .attr("width",w-6)
       .attr("height",15)
       .attr("rx",2)
       .on("click",callback)
-    g.append("text")
+      .append("title")
+        .text(tooltip)
+      g.append("text")
       .attr("x",w/2)
       .attr("y",10)
       .text(texts[text])
-  }
-
-  // check checkboxes after node selections
-  exports.checkItemsChecked = function(x) {
-    if(legend && checkOffset){
-      var items = legend.selectAll("g.legend-item");
-      if(!items.empty()){
-        var noSelectedNodes = simulation.nodes().filter(function(d){ return !d.selected; });
-
-        items.each(function(p){
-          selectCheckBox(this,true);
-          var selectedValues = {};
-          selectedValues[key] = [p];
-          var query = selectedValues2str(selectedValues,noSelectedNodes);
-          for(var i = 0; i<noSelectedNodes.length; i++){
-            var d = noSelectedNodes[i];
-            if(eval(query)){
-              selectCheckBox(this,false);
-              break;
-            }
-          }
-        })
-      }
-    }
   }
 
   exports.key = function(x) {
@@ -4190,18 +4172,65 @@ function showTables() {
   }
 
   // check legend items checked
-  for(var k in Legends){
-    Legends[k].checkItemsChecked();
-  }
+  checkLegendItemsChecked();
 
   // enable/disable selection buttons
   if(options.showButtons2){
     if(nodesData.length){
-      enableSelectButtons("#selectneighbors, #isolateselection, #egonet", nodesData.length!=totalItems["nodes"]);
+      enableSelectButtons("#selectneighbors, #isolateselection, #egonet", nodesData.length<totalItems["nodes"]);
     }else{
       enableSelectButtons("#tableselection, #selectneighbors, #isolateselection, #egonet", false);
     }
   }
+}
+
+// check checkboxes after node selections
+function checkLegendItemsChecked() {
+    var parent = plot.select("svg > .scale"),
+        legendSelectAll = parent.select(".legend-selectall");
+    if(!legendSelectAll.empty()){
+      var items = parent.selectAll("g.legend-item");
+      if(!items.empty()){
+        var noSelectedNodes = simulation.nodes().filter(function(d){ return !d.selected; });
+
+        items.each(function(p){
+          checkInBox(this,true);
+          var selectedValues = {};
+          selectedValues[this.parentNode.key] = [p];
+          var query = selectedValues2str(selectedValues,noSelectedNodes);
+          for(var i = 0; i<noSelectedNodes.length; i++){
+            var d = noSelectedNodes[i];
+            if(eval(query)){
+              checkInBox(this,false);
+              break;
+            }
+          }
+        })
+
+        var size = parent.selectAll(".legend-item").filter(function(){ return this.selected; }).size(),
+            enable = size && size < parent.selectAll(".legend-item").size();
+        parent.selectAll(".legend-bottom-button > rect")
+        .style("fill", enable ? UIcolor : disUIcolor)
+        .style("pointer-events", enable ? "all" : null)
+        checkInBox(legendSelectAll.node(), size ? true : false);
+      }
+    }
+
+    // visually mark/unmark checkbox
+    function checkInBox(thiz,select){
+        var checkBox = d3.select(thiz).select(".legend-check-box");
+        if(select){
+          thiz.selected = true;
+          checkBox
+            .style("fill",UIcolor)
+            .style("stroke","none")
+        }else{
+          thiz.selected = false;
+          checkBox
+            .style("fill",null)
+            .style("stroke",null)
+        }
+    }
 }
 
 function enableSelectButtons(buttons,enable){
@@ -4295,7 +4324,7 @@ function adaptLayout(){
       }
   }
   if(anyFixed){
-    var size = Math.min(width,height),
+    var size = Math.min(width,computeHeight()),
         xdim, ydim, xrange, yrange,
         centerDim = function(dim){
           if(dim[0]==dim[1]){
@@ -4305,17 +4334,10 @@ function adaptLayout(){
           return dim;
         }
 
-    if(oldWidth && oldHeight){
-      var oldSize = Math.min(oldWidth,oldHeight);
-      xdim = [(oldWidth-oldSize)/2,(oldWidth-oldSize)/2+oldSize];
-      ydim = [(oldHeight-oldSize)/2,(oldHeight-oldSize)/2+oldSize];
-      xrange = [(width-size)/2,(width-size)/2+size];
-      yrange = [(height-size)/2,(height-size)/2+size];
-    }else{
-      if(options.hasOwnProperty("limits") && options.limits.length==4){
+    if(options.hasOwnProperty("limits") && options.limits.length==4){
         xdim = [options.limits[0],options.limits[2]];
         ydim = [options.limits[1],options.limits[3]];
-      }else{
+    }else{
         if(backupNodes){
           xdim = centerDim(d3.extent(d3.merge(nodes.map(function(d){ return d.fx }))));
           ydim = centerDim(d3.extent(d3.merge(nodes.map(function(d){ return d.fy }))));
@@ -4323,14 +4345,10 @@ function adaptLayout(){
           xdim = centerDim(d3.extent(nodes,function(d){ return d.fx }));
           ydim = centerDim(d3.extent(nodes,function(d){ return d.fy }));
         }
-      }
-      size = size/1.2;
-      xrange = [-size/2,-size/2 +size];
-      yrange = [-size/2 +size,-size/2];
     }
-
-    oldWidth = width;
-    oldHeight = height;
+    size = size/1.2;
+    xrange = [-size/2,-size/2 +size];
+    yrange = [-size/2 +size,-size/2];
 
     var x = d3.scaleLinear()
       .range(xrange)
@@ -4467,6 +4485,7 @@ function resetZoom(){
   transform.k = options.zoomScale = options.zoom;
   transform.x = width/2;
   transform.y = height/2;
+  Sliders.zoom.update(options.zoomScale,true);
 }
 
 function computeHeight(){

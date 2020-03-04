@@ -43,6 +43,8 @@ netCoin <- function(nodes, links = NULL, tree = NULL, name = NULL,
     }
   }
 
+  rownames(nodes) <- nodes[,name]
+
   # graph options
   if(!is.numeric(cex)){
     cex <- formals(netCoin)[["cex"]]
@@ -140,7 +142,7 @@ netCoin <- function(nodes, links = NULL, tree = NULL, name = NULL,
   if (!is.null(ltext)) options[["linkText"]] <- ltext
 
   # filters
-  if(!is.null(nodeFilter) | !is.null(linkFilter) | !is.null(degreeFilter)){
+  if(!is.null(nodeFilter) || !is.null(linkFilter) || !is.null(degreeFilter)){
     hideLinks <- function(){
       if(!is.null(links)){
         hiddenNodes <- as.character(nodes[nodes[,"hidden"],name])
@@ -153,7 +155,6 @@ netCoin <- function(nodes, links = NULL, tree = NULL, name = NULL,
       links[,"hidden"] <- FALSE
     }
 
-    rownames(nodes) <- nodes[,name]
     if (!is.null(nodeFilter)){
       nodes[,"hidden"] <- !with(nodes,eval(parse(text=nodeFilter)))
       hideLinks()

@@ -96,7 +96,7 @@ function escapeHtml(unsafe) {
 }
 
 function getKey(event){
-  if(event.hasOwnProperty("key")){
+  if(typeof event.key != "undefined"){
     // modern browsers
     var key = event.key;
 
@@ -150,6 +150,7 @@ function getKey(event){
   '55': "7",
   '56': "8",
   '57': "9",
+  '60': "<",
   '65': "a",
   '66': "b",
   '67': "c",
@@ -176,6 +177,22 @@ function getKey(event){
   '88': "x",
   '89': "y",
   '90': "z",
+  '96': "0",
+  '97': "1",
+  '98': "2",
+  '99': "3",
+  '100': "4",
+  '101': "5",
+  '102': "6",
+  '103': "7",
+  '104': "8",
+  '105': "9",
+  '106': "*",
+  '107': "+",
+  '108': ".",
+  '109': "-",
+  '110': ".",
+  '111': "/",
   '190': "."
     //TODO: complete list
     };
@@ -416,12 +433,28 @@ function brushSlider(){
   return exports;
 }
 
-function dataType(data,key){
-  var type = d3.map(data.filter(function(d){ return d[key] !== null; }),function(d){ return typeof d[key]; }).keys();
-  if(type.length == 1)
+function dataType(data,key,deep){
+  var type = [];
+  for(var i = 0; i<data.length; i++){
+      if(data[i][key] !== null){
+        var t = typeof data[i][key];
+        if(deep && t=="object"){
+          data[i][key].forEach(function(d){
+            if(d !== null){
+              type.push(typeof d);
+            }
+          })
+        }else{
+          type.push(t);
+        }
+      }
+  }
+  type = d3.set(type).values();
+  if(type.length == 1){
     return type[0];
-  else
+  }else{
     return 'undefined';    
+  }
 }
 
 function selectedValues2str(selectedValues,data){
