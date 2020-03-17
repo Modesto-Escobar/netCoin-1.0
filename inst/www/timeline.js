@@ -8,6 +8,12 @@ function timeline(json){
 
   var body = d3.select("body");
 
+  // get primary color for user interface;
+  var a = body.append("a"),
+      UIcolor = a.style("color"),
+      disUIcolor = applyOpacity(d3.rgb(UIcolor),0.4);
+  a.remove();
+
   var tooltip = body.append("div")
         .attr("class","tooltip")
         .style("display","none")
@@ -96,6 +102,15 @@ function timeline(json){
     .displayGraph(displayGraph);
   topBar.call(topFilterInst);
 
+  topBar.append("span").style("padding","0 10px");
+
+  topBar.append("button")
+    .text(texts.expandcollapse)
+    .on("click",function(){
+      options.collapse = !options.collapse;
+      displayGraph();
+    })
+
   if(options.main)
     body.append("div")
         .attr("class","main")
@@ -175,12 +190,34 @@ function timeline(json){
       getShape = function(d) { return d3["symbol"+eventShapeScale(d[options.eventShape])]; };
     }
 
+    //topSVG
+    var topSVG = plot.append("svg"),
+        mini = topSVG.append("g").attr("class", "mini");
+
     //sizes
     var vp = viewport(),
-      margin = [20, 15, 20*options.cex, 120*options.cex], //top right bottom left
-      w = vp.width - 30 - margin[1] - margin[3],
-      miniHeight = laneLength * (12*options.cex) + 50,
-      mainHeight = 10;
+        marginLeft = 0,
+        laneText = mini.append("g").append("g").attr("class","laneText").append("text");
+    lanes.forEach(function(l){
+      laneText.text(l);
+      var w = laneText.node().getBBox().width+34;
+      if(w>marginLeft)
+        marginLeft = w;
+    })
+    mini.selectAll("*").remove();
+    if(marginLeft>vp.width/3)
+      marginLeft = vp.width/3;
+
+    var margin = [22*options.cex, 15, 20*options.cex, marginLeft], //top right bottom left
+        w = vp.width - 30 - margin[1] - margin[3],
+        miniHeight = laneLength * (20*options.cex),
+        mainHeight = 10;
+
+    topSVG
+      .attr("width", w + margin[1] + margin[3])
+      .attr("height", miniHeight + margin[0] + margin[2]*2 + 3*options.cex);
+
+    mini.attr("transform", "translate(" + margin[3] + "," + margin[0] + ")");
 
     //scales
     var color,
@@ -206,16 +243,6 @@ function timeline(json){
       .domain([0, laneLength])
       .range([0, miniHeight]);
 
-    //mini
-    var topSVG = plot
-      .append("svg")
-      .attr("width", w + margin[1] + margin[3])
-      .attr("height", miniHeight + margin[0] + margin[2]*2);
-
-    var mini = topSVG.append("g")
-      .attr("transform", "translate(" + margin[3] + "," + margin[0] + ")")
-      .attr("class", "mini");
-
     //mini lanes and texts
     mini.append("g").selectAll(".laneLines")
       .data(lanes)
@@ -227,34 +254,150 @@ function timeline(json){
       .attr("y2", function(d,i) {return y2(i);})
       .attr("stroke", "lightgray");
 
-    var selectedGroups = d3.set();
-    var laneText = mini.append("g").selectAll(".laneText")
-      .data(lanes)
-      .enter().append("text")
-      .text(function(d) {return d;})
-      .attr("x", -margin[1])
-      .attr("y", function(d, i) {return y2(i + .5);})
-      .attr("dy", ".5ex")
-      .attr("text-anchor", "end")
-      .attr("class", "laneText")
+    var defCheckOffset = 26,
+        y = -4,
+        selectedGroups = d3.set();
+
+    var gLaneTexts = mini.append("g");
+
+    var showCheckControls = !filter && laneLength>1;
+
+    if(showCheckControls){
+      var gSelectAll = mini.append("g")
+      .attr("class","legend-selectall")
+      .attr("transform", "translate("+(-margin[3])+","+(y-18*options.cex)+")")
       .style("cursor", "pointer")
-      .on("click",function(group){
-        if(d3.event.ctrlKey || d3.event.metaKey){
-          selectedGroups[selectedGroups.has(group)?"remove":"add"](group);
+      .on("click",function(){
+        if(!selectedGroups.size()){
+          gLaneTexts.selectAll(".laneText").each(function(){
+            d3.select(this).dispatch("click");
+          })
         }else{
-          if(selectedGroups.has(group)){
+          gLaneTexts.selectAll(".laneText").each(function(g){
+            if(selectedGroups.has(g)){
+              d3.select(this).dispatch("click");
+            }
+          })
+        }
+      })
+      gSelectAll.append("text")
+      .attr("x", defCheckOffset)
+      .attr("y", 10*options.cex)
+      .text(texts.selectall)
+      displayCheck(gSelectAll,1*options.cex*options.cex*options.cex);
+
+      displaySeparator(mini,margin[3],y);
+    }else if(filter){
+      mini.append("text")
+        .attr("class","goback")
+        .attr("x",(-margin[3]+8))
+        .attr("y",-4*options.cex)
+        .style("fill",UIcolor)
+        .style("cursor","pointer")
+        .on("click",displayGraph)
+        .text("‹ "+texts.goback)
+    }
+
+    var laneText = gLaneTexts.selectAll(".laneText")
+      .data(lanes)
+      .enter().append("g")
+        .attr("class", "laneText")
+        .style("pointer-events", showCheckControls ? "all" : "none")
+        .style("cursor", "pointer")
+        .attr("transform", function(d, i) { return "translate("+(-margin[3])+","+y2(i + .5)+")"; })
+        .on("click",function(group){
+          selectedGroups[selectedGroups.has(group)?"remove":"add"](group);
+          laneText.each(function(g){
+            checkBox(d3.select(this),selectedGroups.has(g));
+          })
+          checkBox(gSelectAll,selectedGroups.size())
+          enableBottomButton(selectedGroups.size());
+        })
+
+    laneText.append("text")
+      .text(String)
+      .attr("x", defCheckOffset)
+      .attr("y", "4px")
+
+    if(showCheckControls){
+      displayCheck(laneText,-5,true);
+
+      y = gLaneTexts.node().getBBox().height + 8*options.cex;
+      displaySeparator(mini,margin[3],y);
+      y = y + 8;
+      displayBottomButton(mini,margin[3],y,"filter",function(){
             var filter = nodes.filter(function(d){ return selectedGroups.has(d[options.group]); })
                        .map(function(d){ return d[options.name]; });
             displayGraph(filter);
-          }else{
-            selectedGroups.clear();
-            selectedGroups.add(group);
-          }
-        }
-        laneText.each(function(g){
-          d3.select(this).style("font-weight",selectedGroups.has(g)?"bold":null);
-        })
-      })
+      });
+      enableBottomButton(false);
+    }
+
+    function displayCheck(sel,y,item){
+      var ml = 2,
+          boxml = ml+8;
+
+      sel.append("rect")
+    .attr("x",ml)
+    .attr("y",y-5)
+    .attr("width",110)
+    .attr("height",20)
+    .attr("pointer-events","all")
+    .style("fill","none")
+
+      sel.append("rect")
+    .attr("class","legend-check-box")
+    .attr("x",boxml)
+    .attr("y",y)
+    .attr("width",10)
+    .attr("height",10)
+    .attr("rx",2)
+
+      sel.append("path")
+        .attr("class","legend-check-path")
+        .attr("transform","translate("+boxml+","+y+")")
+        .attr("d",item ? "M1,3L4,6L9,1L10,2L4,8L0,4Z" : "M2,4L8,4L8,6L2,6z")
+    }
+
+    function displaySeparator(sel,w,y){
+      sel.append("line")
+        .attr("class","legend-separator")
+        .attr("x1",-8)
+        .attr("y1",y)
+        .attr("x2",-w+8)
+        .attr("y2",y)
+    }
+
+    function displayBottomButton(sel,x,y,text,callback){
+      var w = 50;
+      x = -x+8;
+      var g = sel.append("g")
+      .attr("class","legend-bottom-button "+text)
+      .attr("transform","translate("+x+","+y+")")
+      g.append("rect")
+      .attr("x",3)
+      .attr("y",0)
+      .attr("width",w-6)
+      .attr("height",15)
+      .attr("rx",2)
+      .on("click",callback)
+      g.append("text")
+      .attr("x",w/2)
+      .attr("y",10)
+      .text(texts[text])
+    }
+
+    function enableBottomButton(enable){
+      mini.select(".legend-bottom-button > rect")
+        .style("fill", enable ? UIcolor : disUIcolor)
+        .style("pointer-events", enable ? "all" : null)
+    }
+
+    function checkBox(sel,check){
+      sel.select(".legend-check-box")
+              .style("fill",check ? UIcolor : null)
+              .style("stroke",check ? "none" : null)
+    }
 
     //mini axis
     var xAxis = d3.axisBottom(x).tickFormat(formatter);
@@ -266,7 +409,7 @@ function timeline(json){
 
     var mainAxis = mini.append("g")
       .attr("class", "x1 axis")
-      .attr("transform", "translate(0," + (miniHeight + margin[0] + margin[2] - 1) + ")");
+      .attr("transform", "translate(0," + (miniHeight + margin[0] + margin[2]) + ")");
 
     //mini item rects
     mini.append("g").selectAll(".item")
@@ -570,24 +713,25 @@ function timeline(json){
               lineheight = 10;
           rectsUpdate.attr("transform",function(d){
             var BBox = this.getBBox(),
-                i = 0, j = 0,
-                nlines = Math.ceil(BBox.height/lineheight)+(d['_events_']?1:0),
-                collision = isFinite(lines[0])?true:false;
+                i = 0,
+                nlines = Math.ceil(BBox.height/lineheight)+(d['_events_']?1:0);
+                j = 0,
+                collision = true;
             while(collision){
-              i++;
-              collision = false;
-              for(j=i; j<i+nlines; j++){
-                if(!lines.length>j){
-                  break;
-                }else if(lines[j]>=BBox.x){
-                  collision = true;
-                  break;
+                i++;
+                collision = false;
+                for(j=i; j<i+nlines; j++){
+                  if(!lines.length>j){
+                    break;
+                  }else if(lines[j]>=BBox.x){
+                    collision = true;
+                    break;
+                  }
                 }
-              }
             }
-            lines[i] = BBox.x+BBox.width;
+            lines[i] = options.collapse ? BBox.x+BBox.width+4 : Infinity;
             for(j=i+1; j<i+nlines; j++){
-              lines[j] = lines[i];
+                lines[j] = lines[i];
             }
             return "translate(0,"+((40+i*lineheight)*options.cex)+")";
           });

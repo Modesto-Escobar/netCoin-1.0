@@ -30,8 +30,9 @@ function network(Graph){
       timeRange = [5000,500], // speed range for dynamic net
       axisExtension = 50, // pixels to increase the axes size
       sliderWidth = 200, // width of the sliders
-      infoPanelWidth = docSize.width * (1/3), // information panel left position
-      findNodeRadius = 16, // radius in which to find a node in the canvas
+      infoPanelWidth = docSize.width * (1/3), // information panel initial width
+      infoLeft = 0, // global variable for panel left position
+      findNodeRadius = 20, // radius in which to find a node in the canvas
       legendControls = true, // display legend checkboxes and buttons
       hiddenFields = ["Source","Target","x","y","source","target","fx","fy","hidden","childNodes","parentNode","_frame_"]; // not to show in sidebar controllers or tables
 
@@ -61,7 +62,7 @@ function network(Graph){
     .on("zoom", function() {
       transform = d3.event.transform;
       options.zoomScale = transform.k;
-      Sliders.zoom.update(options.zoomScale);
+      Sliders.zoom.update(options.zoomScale).brushedValue(true);
     })
 
   checkGraphData();
@@ -85,7 +86,6 @@ function network(Graph){
       .style("position","relative")
 
   body.on("keyup.shortcut",function(){
-    //d3.event.preventDefault();
     var key = getKey(d3.event);
     if(key == "Enter"){
       if(selectedNodesLength()) switchEgoNet();
@@ -167,8 +167,9 @@ function network(Graph){
   displaySidebar();
   applyInitialFilter();
 
-  if(options.helpOn)
-    displayWindow().html(options.help);
+  if(options.helpOn){
+    displayInfoPanel(options.help);
+  }
 
   function selectedNodesLength(){
     return Graph.nodes.filter(function(d){ return d.selected; }).length;
@@ -567,8 +568,7 @@ function displayBottomPanel(){
         .src(b64Icons.info)
         .title("info")
         .job(function(){
-          var win = displayWindow();
-          win.html(options.help);
+          displayInfoPanel(options.help);
         }));
     }
 
@@ -826,12 +826,17 @@ function displaySidebar(){
         })
         .on("keydown",function(){
           var key = getKey(d3.event);
-          if((key == "Tab" || key == "Enter") && !dropdownList.selectAll("li").empty()){
+          if(key == "Tab" && !dropdownList.selectAll("li").empty()){
             dropdownList.select("li.active").dispatch("click");
           }
         })
         .on("keyup",function(){
           var key = getKey(d3.event);
+          if(key == "Enter" && !dropdownList.selectAll("li").empty()){
+            dropdownList.select("li.active").dispatch("click");
+            d3.event.stopPropagation();
+            return;
+          }
           if(key == "ArrowUp" || key == "ArrowDown"){
             var li = dropdownList.selectAll('li');
             if(li.size() > 1){
@@ -867,6 +872,7 @@ function displaySidebar(){
                       delete node.selected;
                     })
                     node.selected = true;
+                    displayInfoPanel(node[options.nodeInfo]);
                     showTables();
                   });
               }
@@ -1033,7 +1039,7 @@ function visArrow(){
     function exports(panel){
       if(options[item]!==false){
         plot.append("div")
-          .attr("class","showhideArrow")
+          .attr("class","showhideArrow "+item)
           .style("top",top)
           .style("left",left)
           .style("bottom",bottom)
@@ -1648,7 +1654,7 @@ function drawSVG(sel){
 
   var top = !options.showSidebar && !d3.select(".sidebar").empty() ? parseInt(body.select(".sidebar .fixed").style("height"))+30 - (options.main ? parseInt(body.select("div.main").style("height")) : 0) : 10;
 
-  sel.selectAll(".showhideArrow").filter(function(d,i){ return !i; }).style("top",top+"px");
+  sel.select(".showhideArrow.showButtons").style("top",top+"px");
 
   var buttons = svg.append("g")
         .attr("class", "buttons")
@@ -1671,7 +1677,7 @@ function drawSVG(sel){
         update_forces();
       })
   sliders.call(Sliders.distance);
-  Sliders.distance.move(options['linkDistance']);
+  Sliders.distance.update(options['linkDistance']);
 
   countY += 18;
 
@@ -1686,7 +1692,7 @@ function drawSVG(sel){
         update_forces();
       })
   sliders.call(Sliders.repulsion);
-  Sliders.repulsion.move(options['charge']);
+  Sliders.repulsion.update(options['charge']);
 
   countY += 18;
 
@@ -1698,13 +1704,13 @@ function drawSVG(sel){
   if(frameControls){
       Sliders.frame.y(countY*options.cex)
       sliders.call(Sliders.frame);
-      Sliders.frame.move(frameControls.frame);
+      Sliders.frame.update(frameControls.frame);
 
       countY += 18;
 
       Sliders.time.y(countY*options.cex)
       sliders.call(Sliders.time);
-      Sliders.time.move(frameControls.time);
+      Sliders.time.update(frameControls.time);
 
       countY += 18;
   }
@@ -1738,7 +1744,7 @@ function drawSVG(sel){
           return;
         }
         options.zoomScale = transform.k
-        Sliders.zoom.update(options.zoomScale);
+        Sliders.zoom.update(options.zoomScale).brushedValue(true);
       })
   zoomin.append("rect")
       .attr("x",7)
@@ -1774,7 +1780,7 @@ function drawSVG(sel){
           return;
         }
         options.zoomScale = transform.k
-        Sliders.zoom.update(options.zoomScale);
+        Sliders.zoom.update(options.zoomScale).brushedValue(true);
       })
   zoomout.append("rect")
       .attr("x",7)
@@ -2029,20 +2035,15 @@ function drawSVG(sel){
         var tomove = scale2(renderedValue);
         slider.call(brush.move,[tomove-handleRadius,tomove+handleRadius]);
         bubble.attr("x",tomove+7);
-      }else
+      }else{
         bubble.attr("x",brValue+7);
+      }
       return value;
     }
 
     function beforebrushstarted() {
-      var dx = handleRadius*2,
-          cx = d3.mouse(this)[0],
-          x0 = cx - dx / 2,
-          x1 = cx + dx / 2;
-      slider.call(brush.move, x1 > sliderWidth ? [sliderWidth - dx, sliderWidth] 
-            : 0 < 0 ? [0, 0 + dx] 
-            : [x0, x1]);
-      exports.update(scale.invert(cx));
+      exports.update(scale.invert(d3.mouse(this)[0]));
+      brushedValue = true;
     }
 
     function brushed() {
@@ -2051,17 +2052,14 @@ function drawSVG(sel){
       callback(innerBrushed(brushedValue,scale.invert(brushedValue)));
     }
 
-    exports.update = function(value,reset) {
-      exports.move(value);
-      callback(rounded ? Math.round(value) : value);
-      exports.reset(reset);
-    }
-
-    exports.move = function(value) {
+    exports.update = function(value) {
       if(slider){
+        brush.on("brush", null);
         slider.call(brush.move,[scale(value)-handleRadius,scale(value)+handleRadius]);
-        value = innerBrushed(scale(value),value);
+        callback(innerBrushed(scale(value),value));
+        brush.on("brush", brushed);
       }
+      return exports;
     }
 
     exports.y = function(x) {
@@ -2106,9 +2104,9 @@ function drawSVG(sel){
       return exports;
     };
 
-    exports.reset = function(x) {
-      if (!arguments.length) return brushedValue ? false : true;
-      if(x) brushedValue = false;
+    exports.brushedValue = function(x) {
+      if (!arguments.length) return brushedValue;
+      brushedValue = x;
       return exports;
     };
 
@@ -2179,22 +2177,22 @@ function frameStep(value){
 
         if(frameControls.hasOwnProperty("zoom")){
           options.zoom = frameControls.zoom[frameControls.frame];
-          if(Sliders.zoom.reset()){
+          if(Sliders.zoom.brushedValue()===false){
             resetZoom();
           }
         }
         if(frameControls.hasOwnProperty("repulsion")){
           options.repulsion = frameControls.repulsion[frameControls.frame];
-          if(Sliders.repulsion.reset()){
+          if(Sliders.repulsion.brushedValue()===false){
             options.charge = chargeRange[1] * (options.repulsion/100);
-            Sliders.repulsion.update(options.charge,true);
+            Sliders.repulsion.update(options.charge).brushedValue(false);
           }
         }
         if(frameControls.hasOwnProperty("distance")){
           options.distance = frameControls.distance[frameControls.frame];
-          if(Sliders.distance.reset()){
+          if(Sliders.distance.brushedValue()===false){
             options.linkDistance = linkDistanceRange[1] * (options.distance/100);
-            Sliders.distance.update(options.linkDistance,true);
+            Sliders.distance.update(options.linkDistance).brushedValue(false);
           }
         }
 
@@ -3454,11 +3452,16 @@ function addGradient(defs,id, stops){
 }
 
 function displayInfoPanel(info){
+  if(!options.nodeInfo)
+    return;
+
+  body.select("div.infopanel").remove();
   if(info){
-    body.select("div.infopanel").remove();
+    if(!infoLeft){
+      infoLeft = docSize.width - infoPanelWidth;
+    }
     var div = body.append("div")
           .attr("class","infopanel"),
-        infoLeft = docSize.width - infoPanelWidth;
         infoHeight = height
       - parseInt(div.style("top"))
       - parseInt(div.style("border-top-width"))
@@ -3472,8 +3475,9 @@ function displayInfoPanel(info){
       .attr("class","drag")
       .call(d3.drag()
         .on("drag", function() {
-          infoLeft = d3.mouse(body.node())[0]-parseInt(div.style("border-left-width"));
-          if(infoLeft>(docSize.width*2/4) && infoLeft<(docSize.width*3/4)){
+          var left = d3.mouse(body.node())[0]-parseInt(div.style("border-left-width"));
+          if(left>(docSize.width*2/4) && left<(docSize.width*3/4)){
+            infoLeft = left;
             div.style("left",infoLeft+"px");
             plot.call(drawSVG);
           }
@@ -3487,8 +3491,8 @@ function displayInfoPanel(info){
             plot.call(drawSVG);
           });
     div.append("div").html(info);
-    plot.call(drawSVG);
   }
+  plot.call(drawSVG);
 }
 
 function selectAllNodes(){
@@ -3545,7 +3549,11 @@ function addNeighbors(){
 function switchEgoNet(){
     egoNet = true;
     Graph.nodes.forEach(function(d){
-      delete d._neighbor;
+      if(d.selected){
+        d._neighbor = true;
+      }else{
+        delete d._neighbor;
+      }
     });
     Graph.links.forEach(function(d){
       if(!d._hidden && !d._hideFrame)
@@ -3833,7 +3841,7 @@ function displayLegend(){
 
   function displayBottomButton(sel,x,y,text,tooltip,callback){
       var w = 50;
-      x = -50*x;
+      x = -w*x;
       var g = sel.append("g")
       .attr("class","legend-bottom-button "+text)
       .attr("transform","translate("+x+","+y+")")
@@ -4208,7 +4216,7 @@ function checkLegendItemsChecked() {
         })
 
         var size = parent.selectAll(".legend-item").filter(function(){ return this.selected; }).size(),
-            enable = size && size < parent.selectAll(".legend-item").size();
+            enable = noSelectedNodes.length && simulation.nodes().length > noSelectedNodes.length;
         parent.selectAll(".legend-bottom-button > rect")
         .style("fill", enable ? UIcolor : disUIcolor)
         .style("pointer-events", enable ? "all" : null)
@@ -4485,7 +4493,7 @@ function resetZoom(){
   transform.k = options.zoomScale = options.zoom;
   transform.x = width/2;
   transform.y = height/2;
-  Sliders.zoom.update(options.zoomScale,true);
+  Sliders.zoom.update(options.zoomScale).brushedValue(false);
 }
 
 function computeHeight(){
