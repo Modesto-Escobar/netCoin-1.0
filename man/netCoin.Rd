@@ -67,7 +67,7 @@ drl("da"), circle("ci"), fruchterman.reingold("fr"), gem("ge"), grid("gr"), kama
 \item{cex}{number indicating the amount by which plotting text should be scaled relative to the default. Default = 1.}
 \item{controls}{a numeric vector indicating which controls will be shown. 1 = sidebar, 2 = selection buttons, 3 = tables, 4 = sliders & buttons, 5 = export buttons. NULL hide all controls, negative values deny each control and 0 deny all.}
 \item{mode}{a character vector indicating the graph mode allowed: network, heatmap or both (both by default).}
-\item{showCoordinates}{a logical value true if the coordinates are to be shown in tables. Default = FALSE.}
+\item{showCoordinates}{a logical value true if the coordinates are to be shown in tables and axes. Default = FALSE.}
 \item{showArrows}{a logical value true if the directional arrows are to be shown. Default = FALSE.}
 \item{showLegend}{a logical value true if the legend is to be shown. Default = TRUE.}
 \item{showAxes}{a logical value true if the axes are to be shown. Default = FALSE.}
