@@ -12,7 +12,7 @@ timeCreate <- function(time, dir = "timeCoin"){
 }
 
 timeCoin <- function(nodes, name = "name", start = "start", end = "end", group = NULL,
-                     text = NULL, main = NULL, note = NULL, events = NULL,
+                     text = NULL, main = NULL, note = NULL, info = NULL, events = NULL,
                      eventChild = "eventChild", eventParent = "eventParent", eventTime = "Time",
                      eventColor = NULL, eventShape = NULL,
                      cex = 1, language = c("en","es","ca"), dir = NULL){
@@ -23,6 +23,7 @@ timeCoin <- function(nodes, name = "name", start = "start", end = "end", group =
   if (!is.null(text)) options[['text']] <- text
   if (!is.null(main)) options[['main']] <- main
   if (!is.null(note)) options[['note']] <- note
+  if (!is.null(info)) options[['info']] <- info
   if(!is.null(language)) options[['language']] <- language[1]
   time <- structure(list(nodes=nodes,options=options),class="timeCoin")
   if(!is.null(events)){

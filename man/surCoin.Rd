@@ -14,8 +14,9 @@ surCoin(data,variables=names(data), commonlabel=NULL,
         weight=NULL, subsample=FALSE, pairwise=FALSE,
         minimum=1, maximum=nrow(data), sort=FALSE, decreasing=TRUE,
         frequency=FALSE, percentages=TRUE,
-        procedures="Haberman", criteria="Z", Bonferroni=FALSE,
-        support=-Inf, minL=-Inf, maxL=Inf,
+        procedures="Haberman", criteria="Z", Bonferroni=FALSE, support=-Inf,
+        minL=ifelse(toupper(substr(criteria,1,1))=="H", qt(.95,nrow(data)-1),-Inf),
+        maxL=ifelse(toupper(substr(criteria,1,1))=="Z", .05 ,-Inf),
         directed=FALSE, diagonal=FALSE, sortL=NULL, decreasingL=TRUE,
         igraph=FALSE, coin=FALSE, dir=NULL, ...)
 }

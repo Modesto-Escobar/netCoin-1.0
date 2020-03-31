@@ -4,7 +4,8 @@ function timeline(json){
       options = json.options,
 
       defaultShape = "Circle", // node shape by default
-      symbolTypes = ["Circle","Square","Diamond","Triangle","Cross","Star","Wye"]; // list of available shapes
+      symbolTypes = ["Circle","Square","Diamond","Triangle","Cross","Star","Wye"], // list of available shapes
+      infoLeft = 0; // global variable for panel left position
 
   var body = d3.select("body");
 
@@ -286,6 +287,13 @@ function timeline(json){
       .text(texts.selectall)
       displayCheck(gSelectAll,1*options.cex*options.cex*options.cex);
 
+      displayBottomButton(mini,margin[3]-gSelectAll.node().getBBox().width,(y-18*options.cex),"filter",function(){
+            var filter = nodes.filter(function(d){ return selectedGroups.has(d[options.group]); })
+                       .map(function(d){ return d[options.name]; });
+            displayGraph(filter);
+      });
+      enableBottomButton(false);
+
       displaySeparator(mini,margin[3],y);
     }else if(filter){
       mini.append("text")
@@ -324,13 +332,6 @@ function timeline(json){
 
       y = gLaneTexts.node().getBBox().height + 8*options.cex;
       displaySeparator(mini,margin[3],y);
-      y = y + 8;
-      displayBottomButton(mini,margin[3],y,"filter",function(){
-            var filter = nodes.filter(function(d){ return selectedGroups.has(d[options.group]); })
-                       .map(function(d){ return d[options.name]; });
-            displayGraph(filter);
-      });
-      enableBottomButton(false);
     }
 
     function displayCheck(sel,y,item){
@@ -629,6 +630,8 @@ function timeline(json){
           rectsEnter.append("text")
             .attr("y", -4)
 
+          rectsEnter.selectAll("rect, text").on("click.infopanel",function(d){ displayInfoPanel(d[options.info]); });
+
           tooltipActions(rectsEnter.selectAll("rect, text"),options.text);
 
           rects.exit().remove();
@@ -664,7 +667,9 @@ function timeline(json){
 
             var pointsEnter = points.enter()
                   .append("path")
-                  .attr("class","event")
+                  .attr("class","event");
+
+            pointsEnter.on("click.infopanel",function(d){ displayInfoPanel(d[options.info]); });
 
             tooltipActions(pointsEnter,function(d){
               var html = "";
@@ -750,7 +755,7 @@ function timeline(json){
 
   function tooltipActions(sel,text){
     sel
-      .on("click",function(d){
+      .on("click.tooltip",function(d){
         d3.event.stopPropagation();
         var tooltipfixed = body.append("div")
           .attr("class","tooltip fixed")
@@ -844,6 +849,59 @@ function timeline(json){
         .property("value",String)
         .text(String)
         .property("selected",function(d){ return d==options[option]?true:null; })
+  }
+
+  function displayInfoPanel(info){
+    if(!options.info)
+      return;
+
+    var docSize = viewport(),
+        div = body.select("div.infopanel"),
+        prevPanel = !div.empty();
+
+    if(info){
+      div.remove();
+      if(!infoLeft){
+        infoLeft = docSize.width * 2/3;
+      }
+      div = body.append("div")
+          .attr("class","infopanel");
+      var infoHeight = docSize.height
+      - parseInt(div.style("top"))
+      - parseInt(div.style("border-top-width"))
+      - parseInt(div.style("border-bottom-width"))
+      - parseInt(div.style("padding-top"))
+      - parseInt(div.style("padding-bottom"))
+      - 10;
+      div.style("height",infoHeight+"px");
+      div.style("left",docSize.width+"px").transition().duration(prevPanel?0:500)
+      .style("left",infoLeft+"px")
+
+      div.append("div")
+      .attr("class","drag")
+      .call(d3.drag()
+        .on("drag", function() {
+          var left = d3.mouse(body.node())[0]-parseInt(div.style("border-left-width"));
+          if(left>(docSize.width*2/4) && left<(docSize.width*3/4)){
+            infoLeft = left;
+            div.style("left",infoLeft+"px");
+          }
+        })
+      )
+      div.append("div")
+          .attr("class","close-button")
+          .html("&#x2716;")
+          .on("click", function(){
+            div.transition().duration(500)
+              .style("left",docSize.width+"px")
+              .on("end",function(){
+                div.remove();
+              })
+          });
+      div.append("div").html(info);
+    }else{
+      div.select("div.infopanel > div.close-button").dispatch("click");
+    }
   }
 
   function svgDownload(){

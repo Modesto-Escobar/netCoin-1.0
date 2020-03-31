@@ -10,7 +10,7 @@ Object of class \code{timeCoin}.
 
 \usage{
 timeCoin(nodes, name = "name", start = "start", end = "end", group = NULL,
-         text = NULL, main = NULL, note = NULL, events = NULL,
+         text = NULL, main = NULL, note = NULL, info = NULL, events = NULL,
          eventChild = "eventChild", eventParent = "eventParent", eventTime = "Time",
          eventColor = NULL, eventShape = NULL,
          cex = 1, language = c("en","es","ca"), dir = NULL)
@@ -24,6 +24,7 @@ timeCoin(nodes, name = "name", start = "start", end = "end", group = NULL,
 \item{text}{name of the vector with html text in the nodes data frame.}
 \item{main}{upper title of the graph.}
 \item{note}{lower title of the graph.}
+\item{info}{name of the vector with information to display in a panel in the nodes data frame.}
 \item{events}{a data frame of events realted to nodes with three columns: node name, event name and event date}
 \item{eventChild}{name of the vector with sources in the events data frame.}
 \item{eventParent}{name of the vector with targets in the events data frame.}

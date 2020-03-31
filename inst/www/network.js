@@ -30,7 +30,7 @@ function network(Graph){
       timeRange = [5000,500], // speed range for dynamic net
       axisExtension = 50, // pixels to increase the axes size
       sliderWidth = 200, // width of the sliders
-      infoPanelWidth = docSize.width * (1/3), // information panel initial width
+      sidebarOffset = 220, // initial sidebar width (will increase with cex)
       infoLeft = 0, // global variable for panel left position
       findNodeRadius = 20, // radius in which to find a node in the canvas
       legendControls = true, // display legend checkboxes and buttons
@@ -161,7 +161,7 @@ function network(Graph){
       .html(typeof options.note == "string" ? options.note : "");
   }
 
-  plot.style("width",width+"px")
+  plot.style("width",computeWidth()+"px")
 
   adaptLayout();
 
@@ -338,10 +338,12 @@ function network(Graph){
       }
     }
 
-    if(options.cex)
+    if(options.cex){
       body.style("font-size", 10*options.cex + "px")
-    else
+      sidebarOffset = sidebarOffset * Math.sqrt(options.cex);
+    }else{
       options.cex = 1;
+    }
 
     if(!options.hasOwnProperty("zoom"))
       options.zoom = 1;
@@ -784,14 +786,13 @@ function displayBottomPanel(){
 
 function displaySidebar(){
   var sidebar = body.select("div.sidebar"),
-      sidebarOffset = 220 * Math.sqrt(options.cex),
       dragbar = body.select("body>div.dragbar");
 
   if(sidebar.empty()){
 
     sidebar = body.append("div")
       .attr("class", "sidebar")
-      .style("width", sidebarOffset-5 + "px")
+      .style("width", (sidebarOffset-15) + "px")
 
     var subFixed = sidebar.append("div").attr("class","fixed");
 
@@ -910,7 +911,7 @@ function displaySidebar(){
       .style("cursor","col-resize")
       .style("position","absolute")
       .style("top","0px")
-      .style("left",(sidebarOffset-5) + "px")
+      .style("left",(sidebarOffset-15) + "px")
       .style("z-index",1);
 
     dragbar.call(d3.drag()
@@ -928,8 +929,9 @@ function displaySidebar(){
           dragbar.style("left", value + "px")
           sidebar.style("width", (value) + "px")
           if(options.showSidebar){
-            panel.style("left", (value+15) + "px")
-            width = docSize.width - 25 - value;
+            sidebarOffset = value+15;
+            panel.style("left", sidebarOffset + "px")
+            width = computeWidth();
             plot.style("width",width+"px");
           }
         }
@@ -1025,8 +1027,6 @@ function displaySidebar(){
   }
   sidebar.classed("expanded",options.showSidebar);
   dragbar.style("height",(8 + parseInt(sidebar.style("height"))) + "px");
-  width = docSize.width - sidebarOffset - 20;
-  plot.style("width",width+"px");
   plot.call(drawSVG);
 }
 
@@ -1500,6 +1500,11 @@ function drawSVG(sel){
   sel.select("canvas").remove();
   sel.select("svg").remove();
 
+  width = computeWidth();
+  sel.style("width",width+"px");
+
+  var size = Math.min(width,height);
+
   simulation
       .force("x", d3.forceX().strength(0.1))
       .force("y", d3.forceY().strength(0.1))
@@ -1507,28 +1512,6 @@ function drawSVG(sel){
   body
     .on("keydown.viewbrush", keyflip)
     .on("keyup.viewbrush", keyflip)
-
-  width = parseInt(sel.style("width"))
-  var infopanel = body.select("div.infopanel");
-  if(!infopanel.empty()){
-    width = width
-    - parseInt(infopanel.style("width"))
-    - parseInt(infopanel.style("padding-left"))
-    - parseInt(infopanel.style("padding-right"));
-
-    if(options.note){
-      divNote.style("width", (width
-      - parseInt(divNote.style("margin-right"))
-      - parseInt(divNote.style("margin-left")))
-      + "px");
-    }
-  }else{
-    if(options.note){
-      divNote.style("width", null);
-    }
-  }
-
-  var size = Math.min(width,height);
   
   var svg = sel.insert("svg",":first-child")
       .attr("xmlns","http://www.w3.org/2000/svg")
@@ -1561,7 +1544,7 @@ function drawSVG(sel){
       .attr("width",height*2)
       .attr("height",height)
 
-  svg.append("rect")
+  var rect = svg.append("rect")
     .attr("x", 0)
     .attr("y", 0)
     .attr("width", width)
@@ -1585,28 +1568,51 @@ function drawSVG(sel){
     .call(zoom)
     .on("dblclick.zoom",null)
 
-  if(options.showCoordinates){
-      var offset = 50*options.cex;
+  if(typeof options.zoomScale != "undefined"){
+    rect.call(zoom.transform,transform);
+  }
+
+  if(!options.heatmap && options.showCoordinates){
+      var range = getLayoutRange();
 
       var xAxisScale = d3.scaleLinear()
-        .range([offset,width-offset])
-        .domain([scaleCoorX.invert(offset),scaleCoorX.invert(width-offset)]);
+        .range(range.x)
+        .domain([scaleCoorX.invert(range.x[0]),scaleCoorX.invert(range.x[1])]);
 
       var yAxisScale = d3.scaleLinear()
-        .range([offset,height-offset])
-        .domain([scaleCoorY.invert(offset),scaleCoorY.invert(height-offset)]);
+        .range(range.y)
+        .domain([scaleCoorY.invert(range.y[0]),scaleCoorY.invert(range.y[1])]);
 
       var gxaxis = svg.append("g")
         .attr("class", "x axis")
         .style("opacity",options.showAxes?1:0)
-        .attr("transform", "translate(0," + (height-(offset)) + ")")
+        .attr("transform", "translate(0," + (range.y[1]) + ")")
+
+      if(options.axesLabels.length>0){
+        svg.append("text")
+          .attr("class","axisLabel")
+          .attr("x", range.x[1])
+          .attr("y", range.y[1]-4)
+          .style("text-anchor", "end")
+          .text(options.axesLabels[0]);
+      }
 
       var xAxis = d3.axisBottom();
 
       var gyaxis = svg.append("g")
         .attr("class", "y axis")
         .style("opacity",options.showAxes?1:0)
-        .attr("transform", "translate(" + (offset) + ",0)")
+        .attr("transform", "translate(" + (range.x[0]) + ",0)")
+
+      if(options.axesLabels.length>1){
+        svg.append("text")
+          .attr("class","axisLabel")
+          .attr("transform", "rotate(-90)")
+          .attr("x", -range.x[0])
+          .attr("y", range.y[0]+10)
+          .style("text-anchor", "end")
+          .text(options.axesLabels[1]);
+      }
 
       var yAxis = d3.axisLeft();
   }
@@ -1668,16 +1674,20 @@ function drawSVG(sel){
           options.zoomScale = value;
           transform.k = options.zoomScale;
           net.attr("transform", transform);
-          if(options.showCoordinates){
-            gxaxis.call(xAxis.scale(transform.rescaleX(xAxisScale)));
-            gyaxis.call(yAxis.scale(transform.rescaleY(yAxisScale)));
-          }
           if(!options.heatmap){
+            if(options.showCoordinates){
+              gxaxis.call(xAxis.scale(transform.rescaleX(xAxisScale)));
+              gyaxis.call(yAxis.scale(transform.rescaleY(yAxisScale)));
+            }
             simulation.restart();
           }
       });
 
-  resetZoom();
+  if(typeof options.zoomScale == "undefined"){
+    resetZoom();
+  }else{
+    Sliders.zoom.update(options.zoomScale).brushedValue(false);
+  }
 
   if(frameControls){
       Sliders.frame = displaySlider()
@@ -1707,7 +1717,7 @@ function drawSVG(sel){
   var buttons = svg.append("g")
         .attr("class", "buttons")
         .style("display",options.showButtons ? null : "none")
-        .attr("transform", "translate("+(options.showCoordinates ? 60 : 30)+","+(10 + top)+")")
+        .attr("transform", "translate("+(!options.heatmap && options.showCoordinates ? 70 : 30)+","+(10 + top)+")")
 
   var sliders = buttons.append("g")
         .attr("class","sliders")
@@ -3524,11 +3534,11 @@ function displayInfoPanel(info){
   if(info){
     div.remove();
     if(!infoLeft){
-      infoLeft = docSize.width - infoPanelWidth;
+      infoLeft = docSize.width * 2/3;
     }
     div = body.append("div")
-          .attr("class","infopanel"),
-        infoHeight = height
+          .attr("class","infopanel");
+    var infoHeight = height
       - parseInt(div.style("top"))
       - parseInt(div.style("border-top-width"))
       - parseInt(div.style("border-bottom-width"))
@@ -4390,12 +4400,33 @@ function selectNodesFromTable(){
         }
 }
 
+function getLayoutRange(){
+  var xrange, yrange,
+      compWidth = computeWidth(),
+      compHeight = computeHeight();
+  if(options.showCoordinates){
+      var offsetBottom = 50*options.cex,
+          offsetLeft = 50;
+
+      if(options.note){
+        offsetBottom = offsetBottom + divNote.node().clientHeight;
+      }
+
+      xrange = [offsetLeft,compWidth-offsetLeft],
+      yrange = [offsetLeft,compHeight-offsetBottom];
+  }else{
+      var size = Math.min(compWidth,compHeight) / 1.2;
+
+      xrange = [0,size];
+      yrange = [0,size];
+  }
+  return { x: xrange, y: yrange };
+}
+
 function adaptLayout(){
   options.dynamicNodes = true;
 
   var anyFixed = false,
-      cHeight = computeHeight(),
-      size = Math.min(width,cHeight),
       nodes = backupNodes ? backupNodes : Graph.nodes;
 
   for(var i=0; i<nodes.length; i++){
@@ -4406,7 +4437,8 @@ function adaptLayout(){
   }
 
   if(anyFixed){
-    var xdim, ydim, xrange, yrange,
+    var xdim, ydim,
+        range = getLayoutRange(),
         centerDim = function(dim){
           if(dim[0]==dim[1]){
             dim[0] = dim[0] - 1;
@@ -4427,16 +4459,21 @@ function adaptLayout(){
           ydim = centerDim(d3.extent(nodes,function(d){ return d.fy }));
         }
     }
-    size = size/1.2;
-    xrange = [-size/2,size/2];
-    yrange = [size/2,-size/2];
+
+    var dx = range.x[1]-range.x[0],
+        dy = range.y[1]-range.y[0];
+
+    range.x = range.x.map(function(d){ return d-(dx/2)-range.x[0]; });
+    range.y = range.y.map(function(d){ return d-(dy/2)-range.y[0]; });
+
+    range.y.reverse();
 
     scaleCoorX = d3.scaleLinear()
-      .range(xrange)
+      .range(range.x)
       .domain(xdim);
 
     scaleCoorY = d3.scaleLinear()
-      .range(yrange)
+      .range(range.y)
       .domain(ydim);
 
     options.dynamicNodes = false;
@@ -4464,13 +4501,17 @@ function adaptLayout(){
       });
     }
   }else{
+      var compWidth = computeWidth(),
+          compHeight = computeHeight(),
+          size = Math.min(compWidth,compHeight);
+
       scaleCoorX = d3.scaleLinear()
-      .domain([0,2*width/size])
-      .range([0,width]);
+      .domain([0,2*compWidth/size])
+      .range([0,compWidth]);
 
       scaleCoorY = d3.scaleLinear()
-      .domain([0,-2*cHeight/size])
-      .range([0,cHeight]);
+      .domain([0,-2*compHeight/size])
+      .range([0,compHeight]);
   }
 }
 
@@ -4576,6 +4617,21 @@ function resetZoom(){
   Sliders.zoom.update(options.zoomScale).brushedValue(false);
 }
 
+function computeWidth(){
+  var w = docSize.width;
+  if(options.showSidebar){
+    w = w - sidebarOffset - 20;
+  }
+  var infopanel = body.select("div.infopanel");
+  if(!infopanel.empty()){
+    w = w
+    - parseInt(infopanel.style("width"))
+    - parseInt(infopanel.style("padding-left"))
+    - parseInt(infopanel.style("padding-right"));
+  }
+  return w;
+}
+
 function computeHeight(){
   var h = docSize.height - 2;
   if(options.main)
@@ -4589,10 +4645,7 @@ function computeHeight(){
 }
 
 window.onresize = function(){
-  docSize = viewport();
-  width = docSize.width;
-
-  width = width - parseInt(panel.style("left")) - 20;
+  width = computeWidth();
   height = computeHeight();
 
   plot.style("width",width+"px");
