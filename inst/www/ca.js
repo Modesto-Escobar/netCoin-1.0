@@ -96,5 +96,6 @@ var texts = {
     alertrecordheatmap: "el mapa de calor no es pot gravar.",
     speed: "Velocitat",
     search: "Cerca...",
-    goback: "Tornar"
+    goback: "Tornar",
+    newtab: "Obriu a la pestanya nova"
   };

@@ -96,5 +96,6 @@ var texts = {
     alertrecordheatmap: "Heatmap cannot be recorded.",
     speed: "Speed",
     search: "Search...",
-    goback: "Return"
+    goback: "Return",
+    newtab: "Open in new tab"
   };

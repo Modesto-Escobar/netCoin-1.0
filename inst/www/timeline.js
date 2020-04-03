@@ -873,9 +873,10 @@ function timeline(json){
       - parseInt(div.style("padding-top"))
       - parseInt(div.style("padding-bottom"))
       - 10;
-      div.style("height",infoHeight+"px");
-      div.style("left",docSize.width+"px").transition().duration(prevPanel?0:500)
-      .style("left",infoLeft+"px")
+      div.style("position","fixed")
+         .style("height",infoHeight+"px")
+         .style("left",docSize.width+"px").transition().duration(prevPanel?0:500)
+           .style("left",infoLeft+"px")
 
       div.append("div")
       .attr("class","drag")

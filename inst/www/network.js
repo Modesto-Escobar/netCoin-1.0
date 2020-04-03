@@ -111,6 +111,9 @@ function network(Graph){
         case "b":
           if(selectedNodesLength()) addNeighbors();
           return;
+        case "c":
+          resetPan();
+          return;
         case "d":
           plot.select(".button.dynamicNodes > rect").dispatch("click");
           return;
@@ -577,12 +580,13 @@ function displayBottomPanel(){
         }));
     }
 
-    if(options.showTables)
+    if(options.showTables){
       tables.call(iconButton()
         .alt("xlsx")
         .src(b64Icons.xlsx)
         .title(texts.downloadtable)
         .job(tables2xlsx));
+    }
 
     tables.call(iconButton()
         .alt("pdf")
@@ -605,6 +609,16 @@ function displayBottomPanel(){
           fileDownload(blob, d3.select("head>title").text()+'.png');
         }
       }));
+
+    if(inIframe()){
+      tables.call(iconButton()
+        .alt("png")
+        .src(b64Icons.newtab)
+        .title(texts.newtab)
+        .job(function(){
+          window.open(window.location);
+        }));
+    }
   }
 
   if(frameControls){
@@ -876,7 +890,9 @@ function displaySidebar(){
                       delete node.selected;
                     })
                     node.selected = true;
-                    displayInfoPanel(node[options.nodeInfo]);
+                    if(options.nodeInfo){
+                      displayInfoPanel(node[options.nodeInfo]);
+                    }
                     showTables();
                   });
               }
@@ -1497,6 +1513,8 @@ function applySelection(query,data){
 // draw canvas and svg environment for plot
 function drawSVG(sel){
 
+  adaptLayout();
+
   sel.select("canvas").remove();
   sel.select("svg").remove();
 
@@ -1608,8 +1626,8 @@ function drawSVG(sel){
         svg.append("text")
           .attr("class","axisLabel")
           .attr("transform", "rotate(-90)")
-          .attr("x", -range.x[0])
-          .attr("y", range.y[0]+10)
+          .attr("x", -range.y[0])
+          .attr("y", range.x[0]+(10*options.cex))
           .style("text-anchor", "end")
           .text(options.axesLabels[1]);
       }
@@ -1683,11 +1701,8 @@ function drawSVG(sel){
           }
       });
 
-  if(typeof options.zoomScale == "undefined"){
-    resetZoom();
-  }else{
-    Sliders.zoom.update(options.zoomScale).brushedValue(false);
-  }
+  resetZoom();
+
 
   if(frameControls){
       Sliders.frame = displaySlider()
@@ -1717,7 +1732,7 @@ function drawSVG(sel){
   var buttons = svg.append("g")
         .attr("class", "buttons")
         .style("display",options.showButtons ? null : "none")
-        .attr("transform", "translate("+(!options.heatmap && options.showCoordinates ? 70 : 30)+","+(10 + top)+")")
+        .attr("transform", "translate(30,"+(10 + top)+")")
 
   var sliders = buttons.append("g")
         .attr("class","sliders")
@@ -1879,10 +1894,9 @@ function drawSVG(sel){
         }},
         datAxes = {txt: texts.showhideaxes, key: "showAxes", tooltip: "ctrl + x", callback: function(){
           if(!options.showCoordinates){
-            clickHide(d3.selectAll(".net .axis"), options.showAxes);
-            clickHide(d3.selectAll(".net .axisLabel"), options.showAxes);
+            clickHide(d3.selectAll(".net .axis, .net .axisLabel"), options.showAxes);
           }else{
-            clickHide(d3.selectAll(".plot > svg > .axis"), options.showAxes);
+            clickHide(d3.selectAll(".plot > svg > .axis, .plot > svg > .axisLabel"), options.showAxes);
           }
         }},
         datMode = {txt: texts.netheatmap, key: "heatmap", tooltip: "ctrl + h", callback: function(){
@@ -3206,7 +3220,9 @@ function clickNet(){
     if(options.nodeText){
       showTooltip(node,true);
     }
-    displayInfoPanel(node[options.nodeInfo]);
+    if(options.nodeInfo){
+      displayInfoPanel(node[options.nodeInfo]);
+    }
   }else{
     Graph.nodes.forEach(function(n){
       n.selected = false;
@@ -3525,8 +3541,6 @@ function addGradient(defs,id, stops){
 }
 
 function displayInfoPanel(info){
-  if(!options.nodeInfo)
-    return;
 
   var div = body.select("div.infopanel"),
       prevPanel = !div.empty();
@@ -3548,9 +3562,6 @@ function displayInfoPanel(info){
     div.style("height",infoHeight+"px");
     div.style("left",docSize.width+"px").transition().duration(prevPanel?0:500)
       .style("left",infoLeft+"px")
-      .on("end",function(){
-        plot.call(drawSVG);
-      });
     div.append("div")
       .attr("class","drag")
       .call(d3.drag()
@@ -3559,7 +3570,6 @@ function displayInfoPanel(info){
           if(left>(docSize.width*2/4) && left<(docSize.width*3/4)){
             infoLeft = left;
             div.style("left",infoLeft+"px");
-            plot.call(drawSVG);
           }
         })
       )
@@ -3571,7 +3581,6 @@ function displayInfoPanel(info){
               .style("left",docSize.width+"px")
               .on("end",function(){
                 div.remove();
-                plot.call(drawSVG);
               })
           });
     div.append("div").html(info);
@@ -3716,18 +3725,16 @@ function stopResumeNet(){
         delete node.fy;
       });
     }
-    d3.selectAll(".slider.charge, .slider.linkDistance")
-      .style("opacity",1);
     update_forces();
   }else{
     Graph.nodes.forEach(function(node){
         node.fx = node.x ? node.x : 0;
         node.fy = node.y ? node.y : 0;
     });
-    d3.selectAll(".slider.charge, .slider.linkDistance")
-      .style("opacity",0);
     simulation.stop();
   }
+  d3.selectAll(".slider.charge, .slider.linkDistance")
+      .style("opacity",options.dynamicNodes ? 1 : 0);
 }
 
 function clickHide(items, show) {
@@ -4405,52 +4412,62 @@ function getLayoutRange(){
       compWidth = computeWidth(),
       compHeight = computeHeight();
   if(options.showCoordinates){
-      var offsetBottom = 50*options.cex,
-          offsetLeft = 50;
+      var offsetTop = 50,
+          offsetRight = 200,
+          offsetBottom = 50*Math.max(options.cex,1),
+          offsetLeft = 200;
 
       if(options.note){
         offsetBottom = offsetBottom + divNote.node().clientHeight;
       }
 
-      xrange = [offsetLeft,compWidth-offsetLeft],
-      yrange = [offsetLeft,compHeight-offsetBottom];
+      xrange = [offsetLeft,compWidth-offsetRight],
+      yrange = [offsetTop,compHeight-offsetBottom];
   }else{
       var size = Math.min(compWidth,compHeight) / 1.2;
 
-      xrange = [0,size];
-      yrange = [0,size];
+      xrange = [0,size].map(function(d){ return ((compWidth-size)/2)+d; });
+      yrange = [0,size].map(function(d){ return ((compHeight-size)/2)+d; });
   }
   return { x: xrange, y: yrange };
 }
 
 function adaptLayout(){
-  options.dynamicNodes = true;
+  var initialize = false;
+  if(typeof options.dynamicNodes == "undefined"){
+    initialize = true;
+    options.dynamicNodes = true;
+  }
 
   var anyFixed = false,
       nodes = backupNodes ? backupNodes : Graph.nodes;
 
-  for(var i=0; i<nodes.length; i++){
+  if(options.dynamicNodes){
+    for(var i=0; i<nodes.length; i++){
       if(nodes[i].hasOwnProperty("fx") || nodes[i].hasOwnProperty("fy")){
         anyFixed = true;
         break;
       }
+   }
+  }else{
+    anyFixed = true;
   }
 
   if(anyFixed){
-    var xdim, ydim,
-        range = getLayoutRange(),
-        centerDim = function(dim){
-          if(dim[0]==dim[1]){
-            dim[0] = dim[0] - 1;
-            dim[1] = dim[1] + 1;
+    if(initialize){
+      var xdim, ydim,
+          centerDim = function(dim){
+            if(dim[0]==dim[1]){
+              dim[0] = dim[0] - 1;
+              dim[1] = dim[1] + 1;
+            }
+            return dim;
           }
-          return dim;
-        }
 
-    if(options.hasOwnProperty("limits") && options.limits.length==4){
+      if(options.hasOwnProperty("limits") && options.limits.length==4){
         xdim = [options.limits[0],options.limits[2]];
         ydim = [options.limits[1],options.limits[3]];
-    }else{
+      }else{
         if(backupNodes){
           xdim = centerDim(d3.extent(d3.merge(nodes.map(function(d){ return d.fx }))));
           ydim = centerDim(d3.extent(d3.merge(nodes.map(function(d){ return d.fy }))));
@@ -4458,60 +4475,88 @@ function adaptLayout(){
           xdim = centerDim(d3.extent(nodes,function(d){ return d.fx }));
           ydim = centerDim(d3.extent(nodes,function(d){ return d.fy }));
         }
+      }
+
+      scaleCoorX = d3.scaleLinear().domain(xdim);
+      scaleCoorY = d3.scaleLinear().domain(ydim);
+    }else{
+      if(backupNodes){
+        backupNodes.forEach(function(d){
+          if(d.hasOwnProperty("fx")){
+            d.fx = d.fx.map(function(e){ return(scaleCoorX.invert(e)); });
+          }
+          if(d.hasOwnProperty("fy")){
+            d.fy = d.fy.map(function(e){ return(scaleCoorY.invert(e)); });
+          }
+        });
+      }else{
+        Graph.nodes.forEach(function(d){
+          if(typeof d.fx == 'number'){
+            d.fx = scaleCoorX.invert(d.fx);
+          }
+          if(typeof d.fy == 'number'){
+            d.fy = scaleCoorY.invert(d.fy);
+          }
+        });
+      }
     }
 
-    var dx = range.x[1]-range.x[0],
+    var range = getLayoutRange(),
+        dx = range.x[1]-range.x[0],
         dy = range.y[1]-range.y[0];
 
-    range.x = range.x.map(function(d){ return d-(dx/2)-range.x[0]; });
-    range.y = range.y.map(function(d){ return d-(dy/2)-range.y[0]; });
+    range.x = range.x.map(function(d){ return d-(computeWidth()/2); });
+    range.y = range.y.map(function(d){ return d-(computeHeight()/2); });
 
     range.y.reverse();
 
-    scaleCoorX = d3.scaleLinear()
-      .range(range.x)
-      .domain(xdim);
-
-    scaleCoorY = d3.scaleLinear()
-      .range(range.y)
-      .domain(ydim);
+    scaleCoorX.range(range.x);
+    scaleCoorY.range(range.y);
 
     options.dynamicNodes = false;
     if(backupNodes){
       backupNodes.forEach(function(d){
-        if(d.hasOwnProperty("fx"))
+        if(d.hasOwnProperty("fx")){
           d.fx = d.fx.map(function(e){ return(scaleCoorX(e)); });
-        else
+        }else{
           options.dynamicNodes = true;
-        if(d.hasOwnProperty("fy"))
+        }
+        if(d.hasOwnProperty("fy")){
           d.fy = d.fy.map(function(e){ return(scaleCoorY(e)); });
-        else
+        }else{
           options.dynamicNodes = true;
+        }
       });
     }else{
       Graph.nodes.forEach(function(d){
-        if(typeof d.fx == 'number')
+        if(typeof d.fx == 'number'){
           d.fx = scaleCoorX(d.fx);
-        else
+        }else{
           options.dynamicNodes = true;
-        if(typeof d.fy == 'number')
+        }
+        if(typeof d.fy == 'number'){
           d.fy = scaleCoorY(d.fy);
-        else
+        }else{
           options.dynamicNodes = true;
+        }
       });
     }
   }else{
-      var compWidth = computeWidth(),
-          compHeight = computeHeight(),
-          size = Math.min(compWidth,compHeight);
+    var compWidth = computeWidth(),
+        compHeight = computeHeight();
+
+    if(initialize){
+      var size = Math.min(compWidth,compHeight);
 
       scaleCoorX = d3.scaleLinear()
-      .domain([0,2*compWidth/size])
-      .range([0,compWidth]);
+        .domain([0,2*compWidth/size])
 
       scaleCoorY = d3.scaleLinear()
-      .domain([0,-2*compHeight/size])
-      .range([0,compHeight]);
+        .domain([0,-2*compHeight/size])
+    }
+
+    scaleCoorX.range([0,compWidth]);
+    scaleCoorY.range([0,compHeight]);
   }
 }
 
@@ -4617,29 +4662,29 @@ function resetZoom(){
   Sliders.zoom.update(options.zoomScale).brushedValue(false);
 }
 
+function resetPan(){
+  transform.x = width/2;
+  transform.y = height/2;
+  Sliders.zoom.update(options.zoomScale).brushedValue(false);
+}
+
 function computeWidth(){
-  var w = docSize.width;
+  var w = docSize.width - 20;
   if(options.showSidebar){
-    w = w - sidebarOffset - 20;
-  }
-  var infopanel = body.select("div.infopanel");
-  if(!infopanel.empty()){
-    w = w
-    - parseInt(infopanel.style("width"))
-    - parseInt(infopanel.style("padding-left"))
-    - parseInt(infopanel.style("padding-right"));
+    w = w - sidebarOffset;
   }
   return w;
 }
 
 function computeHeight(){
   var h = docSize.height - 2;
-  if(options.main)
-      h = h-parseInt(body.select("div.panel").style("top"));
+  if(options.main){
+    h = h-parseInt(body.select("div.panel").style("top"));
+  }
   if(options.showTables){
-      h = h - 165;
+    h = h - 165;
   }else if(options.showButtons2){
-      h = h - (35 + 12*options.cex);
+    h = h - (35 + 12*options.cex);
   }  
   return h;
 }
