@@ -269,10 +269,20 @@ div.note {
 .sidebar > .fixed > .search > button.burger-box:hover {
   opacity: 0.8;
 }
-.sidebar > .fixed > .search > button.search-icon {
+.sidebar > .fixed > .search > button.search-icon,
+.sidebar > .fixed > .search > button.help-icon {
   position: absolute;
   top: 0;
   right: 0;
+}
+.sidebar > .fixed > .search > button.help-icon:before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 20%;
+  height: 60%;
+  width: 1px;
+  border-left: 1px solid #ddd;
 }
 .sidebar > .fixed > .search > button.search-icon > svg > path{
   fill: #327ee9;
@@ -346,9 +356,12 @@ div.note {
   display: inline;
 }
 .subSidebar .filter-switch h4:after {
-  content: "\20\2304";
+  display: inline-block;
+  content: "\2039";
+  padding-right: 6px;
   font-size: 200%;
   line-height: 0;
+  transform: rotate(-90deg);
 }
 .subSidebar .filter-switch h4.expanded:after {
   content: "";

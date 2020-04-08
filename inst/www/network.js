@@ -14,7 +14,9 @@ function network(Graph){
       Controllers = {},
       GraphNodesLength = 0,
       GraphLinksLength = 0,
-      options;
+      options = Graph.options;
+
+  delete Graph.options;
 
   var defaultColor = categoryColors[0], // nodes and areas default color
       defaultLinkColor = "#999", // links default color
@@ -29,8 +31,8 @@ function network(Graph){
       linkDistanceRange = [0,500], // link distance range
       timeRange = [5000,500], // speed range for dynamic net
       axisExtension = 50, // pixels to increase the axes size
-      sliderWidth = 200, // width of the sliders
-      sidebarOffset = 220, // initial sidebar width (will increase with cex)
+      sliderWidth = 100, // width of the sliders
+      sidebarOffset = options.help ? 240 : 220, // initial sidebar width (will increase with cex)
       infoLeft = 0, // global variable for panel left position
       findNodeRadius = 20, // radius in which to find a node in the canvas
       legendControls = true, // display legend checkboxes and buttons
@@ -97,13 +99,39 @@ function network(Graph){
     if(d3.event.ctrlKey){
       switch(key){
         case "+":
-          plot.select(".zoombutton.zoomin").dispatch("click");
+          if(d3.event.shiftKey){
+            Sliders.repulsion.update(options['charge']+(chargeRange[1]/100));
+          }else{
+            plot.select(".zoombutton.zoomin").dispatch("click");
+          }
           return;
         case "-":
-          plot.select(".zoombutton.zoomout").dispatch("click");
+          if(d3.event.shiftKey){
+            Sliders.repulsion.update(options['charge']-(chargeRange[1]/100));
+          }else{
+            plot.select(".zoombutton.zoomout").dispatch("click");
+          }
           return;
         case "0":
           plot.select(".zoombutton.zoomreset").dispatch("click");
+          return;
+        case "1":
+          body.select("div.search > button.burger-box").dispatch("click");
+          return;
+        case "2":
+          plot.select(".showhideArrow.showButtons2").dispatch("click");
+          return;
+        case "3":
+          plot.select(".showhideArrow.showTables").dispatch("click");
+          return;
+        case "4":
+          plot.select(".showhideArrow.showButtons").dispatch("click");
+          return;
+        case "5":
+          if(typeof options.showExport != "undefined"){
+            options.showExport = !options.showExport;
+            displayBottomPanel();
+          }
           return;
         case "a":
           plot.select(".button.showArrows > rect").dispatch("click");
@@ -127,7 +155,9 @@ function network(Graph){
           plot.select(".button.heatmapTriangle > rect").dispatch("click");
           return;
         case "h":
-          plot.select(".button.heatmap > rect").dispatch("click");
+          if(options.help){
+            displayInfoPanel(options.help);
+          }
           return;
         case "i":
           applyInitialFilter();
@@ -136,9 +166,12 @@ function network(Graph){
           plot.select(".button.showLegend > rect").dispatch("click");
           return;
         case "m":
-          if(selectedNodesLength()) selectNodesFromTable();
+          plot.select(".button.heatmap > rect").dispatch("click");
           return;
         case "n": // warning: new window
+          return;
+        case "o":
+          if(selectedNodesLength()) selectNodesFromTable();
           return;
         case "p":
           treeAction();
@@ -153,6 +186,12 @@ function network(Graph){
           return;
         case "x":
           plot.select(".button.showAxes > rect").dispatch("click");
+          return;
+        case "ArrowUp":
+        case "ArrowLeft":
+        case "ArrowDown":
+        case "ArrowRight":
+          movePan(key);
           return;
       }
     }
@@ -182,9 +221,6 @@ function network(Graph){
   }
 
   function checkGraphData(){
-
-    options = Graph.options;
-    delete Graph.options;
 
     simulation.force("link").id(function(d) { return d[options.nodeName]; });
 
@@ -419,19 +455,19 @@ function network(Graph){
     function showControls(n){
       if(options.hasOwnProperty("controls")){
         if(options.controls===0)
-          return false;
+          return undefined;
         if(options.controls==-n)
-          return false;
+          return undefined;
         if(options.controls==n)
           return true;
         if(Array.isArray(options.controls)){
           if(options.controls.indexOf(-n)!=-1)
-            return false;
+            return undefined;
           if(options.controls.indexOf(n)!=-1)
             return true;
         }
       }
-      return null;
+      return false;
     }
   } // end of checkGraphData
 
@@ -569,16 +605,7 @@ function displayBottomPanel(){
       .style("border-bottom-color","#f5f5f5")
   }
 
-  if(options.showExport!==false){
-    if(options.help){
-      tables.call(iconButton()
-        .alt("help")
-        .src(b64Icons.info)
-        .title("info")
-        .job(function(){
-          displayInfoPanel(options.help);
-        }));
-    }
+  if(options.showExport){
 
     if(options.showTables){
       tables.call(iconButton()
@@ -610,6 +637,7 @@ function displayBottomPanel(){
         }
       }));
 
+/*
     if(inIframe()){
       tables.call(iconButton()
         .alt("png")
@@ -619,6 +647,7 @@ function displayBottomPanel(){
           window.open(window.location);
         }));
     }
+*/
   }
 
   if(frameControls){
@@ -779,13 +808,13 @@ function displayBottomPanel(){
         }
 
     selectButton("selectall",selectAllNodes,"ctrl + s",true);
-    selectButton("tableselection",selectNodesFromTable,"ctrl + m");
+    selectButton("tableselection",selectNodesFromTable,"ctrl + o");
     selectButton("selectneighbors",addNeighbors,"ctrl + b");
     selectButton("isolateselection",filterSelection,"ctrl + f");
     selectButton("egonet",switchEgoNet,"ctrl + e");
     if(Graph.tree)
       selectButton("expandcollapse",treeAction,"ctrl + p",true);
-    selectButton("resetfilter",showHidden,"ctrl + r",true);
+    selectButton("resetfilter",showHidden,"ctrl + r",(simulation.nodes().length!=GraphNodesLength) || (simulation.force("link").links().length!=GraphLinksLength));
   }
 
     if(options.showTables){
@@ -821,11 +850,11 @@ function displaySidebar(){
       .attr("class","search");
     searchSel.append("button")
       .attr("class","burger-box")
-      .style("display", options.showSidebar===false ? "none" : null)
+      .style("display", typeof options.showSidebar=="undefined" ? "none" : null)
       .call(getSVG()
         .d(d4paths.burger)
         .width(20).height(20))
-      .on("click",function(){
+      .on("click",typeof options.showSidebar=="undefined" ? null : function(){
           options.showSidebar = !options.showSidebar;
           displaySidebar();
         })
@@ -905,12 +934,26 @@ function displaySidebar(){
 
     var searchIcon = searchSel.append("button")
       .attr("class","search-icon disabled")
+      .style("right",options.help ? "40px" : null)
       .call(getSVG()
         .d(d4paths.search)
         .width(20).height(20))
       .on("click",function(){
           dropdownList.select("li.active").dispatch("click");
       })
+
+    if(options.help){
+      var helpIcon = searchSel.append("button")
+      .attr("class","help-icon")
+      .call(getSVG()
+        .d(d4paths.info)
+        .width(20).height(20))
+      .on("click",function(){
+        displayInfoPanel(options.help);
+      })
+      .attr("title","info")
+      helpIcon.select("path").style("fill",UIcolor);
+    }
 
     var dropdownList = searchSel.append("ul")
       .attr("class","dropdown-list");
@@ -1058,7 +1101,7 @@ function visArrow(){
         arrows = ["&#9666;","&#9656;"];
 
     function exports(panel){
-      if(options[item]!==false){
+      if(typeof options[item]!="undefined"){
         plot.append("div")
           .attr("class","showhideArrow "+item)
           .style("top",top)
@@ -1303,7 +1346,8 @@ function addFilterController(){
 
     itemFilter.append("div")
       .attr("class","collapse-ctrl")
-      .html("&#8963;")
+      .style("transform","rotate(90deg)")
+      .html("&#x2039;")
       .on("click",function(){
         showFilter(false);
         expandCtrlSwitch();
@@ -1352,11 +1396,17 @@ function addFilterController(){
     tags.enter().append("div")
       .text(String)
       .append("span")
-        .html("&#x274C;")
+        .html("&#x2716;")
         .on("click",function(k){
           delete appliedFilters[k];
           updateTags();
           applyFilter(selectedValues2str(appliedFilters,data));
+          data.forEach(function(d){
+            if(d.hidden){
+              d._hidden = true;
+            }
+          });
+          drawNet();
         })
 
     tags.exit().remove();
@@ -1609,6 +1659,7 @@ function drawSVG(sel){
       if(options.axesLabels.length>0){
         svg.append("text")
           .attr("class","axisLabel")
+          .style("opacity",options.showAxes?1:0)
           .attr("x", range.x[1])
           .attr("y", range.y[1]-4)
           .style("text-anchor", "end")
@@ -1625,6 +1676,7 @@ function drawSVG(sel){
       if(options.axesLabels.length>1){
         svg.append("text")
           .attr("class","axisLabel")
+          .style("opacity",options.showAxes?1:0)
           .attr("transform", "rotate(-90)")
           .attr("x", -range.y[0])
           .attr("y", range.x[0]+(10*options.cex))
@@ -1890,7 +1942,13 @@ function drawSVG(sel){
             simulation.restart();
         }, gap: 5},
         datLegend = {txt: texts.showhidelegend, key: "showLegend", tooltip: "ctrl + l", callback: function(){
-          clickHide(d3.selectAll(".scale"), options.showLegend);
+          if(options.showLegend){
+            drawNet();
+            d3.selectAll(".scale").style("opacity", 0)
+            clickHide(d3.selectAll(".scale"), true);
+          }else{
+            clickHide(d3.selectAll(".scale"), false, drawNet);
+          }
         }},
         datAxes = {txt: texts.showhideaxes, key: "showAxes", tooltip: "ctrl + x", callback: function(){
           if(!options.showCoordinates){
@@ -1899,7 +1957,7 @@ function drawSVG(sel){
             clickHide(d3.selectAll(".plot > svg > .axis, .plot > svg > .axisLabel"), options.showAxes);
           }
         }},
-        datMode = {txt: texts.netheatmap, key: "heatmap", tooltip: "ctrl + h", callback: function(){
+        datMode = {txt: texts.netheatmap, key: "heatmap", tooltip: "ctrl + m", callback: function(){
           displaySidebar();
         }, gap: 5},
         datPyramid = {txt : texts.trianglesquare, key: "heatmapTriangle", tooltip: "ctrl + g", callback: drawNet};
@@ -2129,7 +2187,7 @@ function drawSVG(sel){
     }
 
     exports.update = function(value) {
-      if(slider){
+      if(slider && (value >= d3.min(domain) && value <= d3.max(domain))){
         brush.on("brush", null);
         slider.call(brush.move,[scale(value)-handleRadius,scale(value)+handleRadius]);
         callback(innerBrushed(scale(value),value));
@@ -2683,8 +2741,9 @@ function drawNet(){
   }
 
   // display legends
-  Legends = {};
-  var data;
+  if(options.showLegend){
+    Legends = {};
+    var data;
 
   if(options.nodeLegend){
     data = nodes.map(function(d){ return d[options.nodeLegend]; });
@@ -2737,9 +2796,10 @@ function drawNet(){
     }
   }
 
-  for(var k in Legends){
-    gScale.call(Legends[k]);
-  }
+    for(var k in Legends){
+      gScale.call(Legends[k]);
+    }
+  } // end legends
 
   showTables();
 
@@ -3552,13 +3612,10 @@ function displayInfoPanel(info){
     }
     div = body.append("div")
           .attr("class","infopanel");
-    var infoHeight = height
+    var infoHeight = (options.showTables ? computeHeight()+panel.select(".tables > .selectButton").node().offsetHeight : docSize.height - 10)
       - parseInt(div.style("top"))
-      - parseInt(div.style("border-top-width"))
-      - parseInt(div.style("border-bottom-width"))
       - parseInt(div.style("padding-top"))
-      - parseInt(div.style("padding-bottom"))
-      - 10;
+      - parseInt(div.style("padding-bottom"));
     div.style("height",infoHeight+"px");
     div.style("left",docSize.width+"px").transition().duration(prevPanel?0:500)
       .style("left",infoLeft+"px")
@@ -3737,10 +3794,11 @@ function stopResumeNet(){
       .style("opacity",options.dynamicNodes ? 1 : 0);
 }
 
-function clickHide(items, show) {
+function clickHide(items, show, callback) {
     items.transition()
       .duration(500)
-      .style("opacity", +show);
+      .style("opacity", +show)
+      .on("end",callback ? callback : null)
 }
 
 function displayLegend(){
@@ -4413,9 +4471,9 @@ function getLayoutRange(){
       compHeight = computeHeight();
   if(options.showCoordinates){
       var offsetTop = 50,
-          offsetRight = 200,
+          offsetRight = 240,
           offsetBottom = 50*Math.max(options.cex,1),
-          offsetLeft = 200;
+          offsetLeft = 240;
 
       if(options.note){
         offsetBottom = offsetBottom + divNote.node().clientHeight;
@@ -4475,6 +4533,12 @@ function adaptLayout(){
           xdim = centerDim(d3.extent(nodes,function(d){ return d.fx }));
           ydim = centerDim(d3.extent(nodes,function(d){ return d.fy }));
         }
+        var dx = xdim[1] - xdim[0],
+            dy = ydim[1] - ydim[0];
+        xdim[0] = xdim[0] - dx*0.04;
+        xdim[1] = xdim[1] + dx*0.04;
+        ydim[0] = ydim[0] - dy*0.04;
+        ydim[1] = ydim[1] + dy*0.04;
       }
 
       scaleCoorX = d3.scaleLinear().domain(xdim);
@@ -4655,14 +4719,38 @@ function svg2pdf(){
     displayWindow("The network is not loaded yet!");
 }
 
-function resetZoom(){
-  transform.k = options.zoomScale = options.zoom;
-  transform.x = width/2;
-  transform.y = height/2;
+function movePan(dir){
+  switch(dir){
+    case "ArrowUp":
+      transform.y = transform.y - 10;
+      break;
+    case "ArrowDown":
+      transform.y = transform.y + 10;
+      break;
+    case "ArrowLeft":
+      transform.x = transform.x - 10;
+      break;
+    case "ArrowRight":
+      transform.x = transform.x + 10;
+      break;
+  }
   Sliders.zoom.update(options.zoomScale).brushedValue(false);
 }
 
 function resetPan(){
+  var w = computeWidth(),
+      h = computeHeight(),
+      infopanel = body.select(".infopanel");
+  if(!infopanel.empty()){
+    w = w-infopanel.node().offsetWidth;
+  }
+  transform.x = w/2;
+  transform.y = h/2;
+  Sliders.zoom.update(options.zoomScale).brushedValue(false);
+}
+
+function resetZoom(){
+  transform.k = options.zoomScale = options.zoom;
   transform.x = width/2;
   transform.y = height/2;
   Sliders.zoom.update(options.zoomScale).brushedValue(false);

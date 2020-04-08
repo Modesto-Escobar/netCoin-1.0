@@ -164,16 +164,23 @@ netCoin <- function(nodes, links = NULL, tree = NULL, name = NULL,
       links[,"hidden"] <- links[,"hidden"] | !with(links,eval(parse(text=linkFilter)))
     }
 
-    if (!is.null(degreeFilter) && !is.null(links)){
+    if (!is.null(degreeFilter)){
       degreeFilter <- as.numeric(degreeFilter)
-      if(length(degreeFilter)==1)
+      if(length(degreeFilter)==1){
         degreeFilter <- c(degreeFilter,Inf)
-      nodes[,"degree"] <- rep(0,nrow(nodes))
-      degrees <- table(c(as.character(links[!links[,"hidden"],"Source"]),as.character(links[!links[,"hidden"],"Target"])))
-      nodes[names(degrees),"degree"] <- degrees
-      nodes[,"hidden"] <- nodes[,"hidden"] | !(nodes[,"degree"]>=degreeFilter[1] & nodes[,"degree"]<=degreeFilter[2])
-      nodes[,"degree"] <- NULL
-      hideLinks()
+      }
+      if(is.null(links)){
+        if(min(degreeFilter)>0){
+          nodes[,"hidden"] <- TRUE
+        }
+      }else{
+        nodes[,"degree"] <- rep(0,nrow(nodes))
+        degrees <- table(c(as.character(links[!links[,"hidden"],"Source"]),as.character(links[!links[,"hidden"],"Target"])))
+        nodes[names(degrees),"degree"] <- degrees
+        nodes[,"hidden"] <- nodes[,"hidden"] | !(nodes[,"degree"]>=degreeFilter[1] & nodes[,"degree"]<=degreeFilter[2])
+        nodes[,"degree"] <- NULL
+        hideLinks()
+      }
     }
 
     if(!sum(nodes[,"hidden"]))
@@ -320,9 +327,8 @@ surCoin<-function(data,variables=names(data), commonlabel=NULL,
                   weight=NULL, subsample=FALSE, pairwise=FALSE,
                   minimum=1, maximum=nrow(data), sort=FALSE, decreasing=TRUE,
                   frequency=FALSE, percentages=TRUE,
-                  procedures="Haberman", criteria="Z", Bonferroni=FALSE, support=-Inf,
-                  minL=ifelse(toupper(substr(criteria,1,1))=="H", qt(.95,nrow(data)-1),-Inf),
-                  maxL=ifelse(toupper(substr(criteria,1,1))=="Z", .05 ,-Inf),
+                  procedures="Haberman", criteria="Z", Bonferroni=FALSE,
+                  support=-Inf, minL=-Inf, maxL=Inf,
                   directed=FALSE, diagonal=FALSE, sortL=NULL, decreasingL=TRUE,
                   igraph=FALSE, coin=FALSE, dir=NULL, ...)
 {

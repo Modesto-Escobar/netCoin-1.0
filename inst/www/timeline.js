@@ -5,9 +5,16 @@ function timeline(json){
 
       defaultShape = "Circle", // node shape by default
       symbolTypes = ["Circle","Square","Diamond","Triangle","Cross","Star","Wye"], // list of available shapes
-      infoLeft = 0; // global variable for panel left position
+      infoLeft = 0, // global variable for panel left position
+      selectedGroups, // temporarily selected in checkboxes
+      filter = false; // global filter
 
   var body = d3.select("body");
+
+  if(options.cex)
+    body.style("font-size", 10*options.cex + "px")
+  else
+    options.cex = 1;
 
   // get primary color for user interface;
   var a = body.append("a"),
@@ -23,10 +30,13 @@ function timeline(json){
     body.selectAll(".tooltip.fixed").remove();
   })
 
-  if(options.cex)
-    body.style("font-size", 10*options.cex + "px")
-  else
-    options.cex = 1;
+  body.on("keyup.shortcut",function(){
+    var key = getKey(d3.event);
+    if(key == "Enter"){
+      applyCheckBoxes();
+      return;
+    }
+  })
 
   // default linear scale for events
   options.colorScaleeventColor = "WhBu";
@@ -135,7 +145,7 @@ function timeline(json){
         .attr("class","note")
         .html(options.note)
 
-  function displayGraph(filter){
+  function displayGraph(){
 
     var plot = body.select("div.plot")
 
@@ -147,6 +157,7 @@ function timeline(json){
     }
 
     plot.on("dblclick",function(){
+      filter = false;
       displayGraph();
     });
 
@@ -256,8 +267,9 @@ function timeline(json){
       .attr("stroke", "lightgray");
 
     var defCheckOffset = 26,
-        y = -4,
-        selectedGroups = d3.set();
+        y = -4;
+
+    selectedGroups = d3.set();
 
     var gLaneTexts = mini.append("g");
 
@@ -287,11 +299,7 @@ function timeline(json){
       .text(texts.selectall)
       displayCheck(gSelectAll,1*options.cex*options.cex*options.cex);
 
-      displayBottomButton(mini,margin[3]-gSelectAll.node().getBBox().width,(y-18*options.cex),"filter",function(){
-            var filter = nodes.filter(function(d){ return selectedGroups.has(d[options.group]); })
-                       .map(function(d){ return d[options.name]; });
-            displayGraph(filter);
-      });
+      displayBottomButton(mini,margin[3]-gSelectAll.node().getBBox().width,(y-18*options.cex),"filter",applyCheckBoxes);
       enableBottomButton(false);
 
       displaySeparator(mini,margin[3],y);
@@ -302,7 +310,10 @@ function timeline(json){
         .attr("y",-4*options.cex)
         .style("fill",UIcolor)
         .style("cursor","pointer")
-        .on("click",displayGraph)
+        .on("click",function(){
+          filter = false;
+          displayGraph();
+        })
         .text("‹ "+texts.goback)
     }
 
@@ -750,6 +761,15 @@ function timeline(json){
       var guideHeight = (parseInt(plot.style("height")) - parseInt(plot.select(".plot>svg:first-child").style("height"))) + "px";
       yearGuide.style("height",guideHeight);
 
+    }
+  }
+
+  function applyCheckBoxes(){
+    if(selectedGroups && selectedGroups.size()){
+      filter = nodes
+        .filter(function(d){ return selectedGroups.has(d[options.group]); })
+        .map(function(d){ return d[options.name]; });
+      displayGraph();
     }
   }
 
