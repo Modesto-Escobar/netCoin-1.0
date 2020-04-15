@@ -110,7 +110,10 @@ function timeline(json){
   var topFilterInst = topFilter()
     .data(nodes)
     .attr(options.name)
-    .displayGraph(displayGraph);
+    .displayGraph(function(f){
+      filter = f;
+      displayGraph();
+    });
   topBar.call(topFilterInst);
 
   topBar.append("span").style("padding","0 10px");
@@ -230,6 +233,55 @@ function timeline(json){
       .attr("height", miniHeight + margin[0] + margin[2]*2 + 3*options.cex);
 
     mini.attr("transform", "translate(" + margin[3] + "," + margin[0] + ")");
+
+    //events legends
+    if(options.eventColor || options.eventShape){
+      var legend = mini.append("g")
+        .attr("class","events-legend")
+        .attr("transform","translate(0,-5)");
+      var x = w;
+      if(eventColorScale && dataType(json.events,options.eventColor)!="number"){
+        var lcolor = legend.append("g");
+        eventColorScale.domain().forEach(function(d){
+          var g = lcolor.append("g")
+          g.append("rect")
+            .attr("x",0)
+            .attr("y",-10)
+            .attr("height",8)
+            .attr("width",8)
+            .style("fill",eventColorScale(d))
+          g.append("text")
+            .attr("x",10)
+            .attr("y",-2)
+            .text(d)
+          x = x-g.node().getBBox().width-4;
+          g.attr("transform","translate("+x+",0)")
+        })
+        if(legend.node().getBBox().width>=w-50){
+          lcolor.remove();
+          x = w;
+        }
+      }
+      if(eventShapeScale){
+        x = x-10;
+        var lshape = legend.append("g");
+        eventShapeScale.domain().forEach(function(d){
+          var g = lshape.append("g")
+          g.append("path")
+            .attr("transform","translate(0,-5)")
+            .attr("d",d3.symbol().type(d3["symbol"+eventShapeScale(d)]))
+          g.append("text")
+            .attr("x",10)
+            .attr("y",-2)
+            .text(d)
+          x = x-g.node().getBBox().width-4;
+          g.attr("transform","translate("+x+",0)")
+        })
+        if(legend.node().getBBox().width>=w-50){
+          lshape.remove();
+        }
+      }
+    }
 
     //scales
     var color,

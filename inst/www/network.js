@@ -3622,12 +3622,18 @@ function displayInfoPanel(info){
     div.append("div")
       .attr("class","drag")
       .call(d3.drag()
+        .on("start", function() {
+          contentDiv.style("display","none");
+        })
         .on("drag", function() {
           var left = d3.mouse(body.node())[0]-parseInt(div.style("border-left-width"));
           if(left>(docSize.width*2/4) && left<(docSize.width*3/4)){
             infoLeft = left;
             div.style("left",infoLeft+"px");
           }
+        })
+        .on("end", function() {
+          contentDiv.style("display",null);
         })
       )
     div.append("div")
@@ -3640,7 +3646,7 @@ function displayInfoPanel(info){
                 div.remove();
               })
           });
-    div.append("div").html(info);
+    var contentDiv = div.append("div").html(info);
   }else{
     div.select("div.infopanel > div.close-button").dispatch("click");
   }
