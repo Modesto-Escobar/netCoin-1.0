@@ -460,6 +460,8 @@ function dataType(data,key,deep){
   type = d3.set(type).values();
   if(type.length == 1){
     return type[0];
+  }else if(type.indexOf("object")!=-1){
+    return "object";
   }else{
     return 'undefined';    
   }

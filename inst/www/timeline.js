@@ -240,9 +240,17 @@ function timeline(json){
         .attr("class","events-legend")
         .attr("transform","translate(0,-5)");
       var x = w;
-      if(eventColorScale && dataType(json.events,options.eventColor)!="number"){
-        var lcolor = legend.append("g");
-        eventColorScale.domain().forEach(function(d){
+      if(options.eventColor){
+        var lcolor = legend.append("g"),
+            values = [];
+        items.forEach(function(d){
+          if(d["_events_"]){
+            d["_events_"].forEach(function(dd){
+              values.push(dd[options.eventColor]);
+            })
+          }
+        });
+        d3.set(values).values().sort().forEach(function(d){
           var g = lcolor.append("g")
           g.append("rect")
             .attr("x",0)
@@ -262,10 +270,18 @@ function timeline(json){
           x = w;
         }
       }
-      if(eventShapeScale){
+      if(options.eventShape){
         x = x-10;
-        var lshape = legend.append("g");
-        eventShapeScale.domain().forEach(function(d){
+        var lshape = legend.append("g"),
+            values = [];
+        items.forEach(function(d){
+          if(d["_events_"]){
+            d["_events_"].forEach(function(dd){
+              values.push(dd[options.eventShape]);
+            })
+          }
+        });
+        d3.set(values).values().sort().forEach(function(d){
           var g = lshape.append("g")
           g.append("path")
             .attr("transform","translate(0,-5)")
@@ -736,14 +752,18 @@ function timeline(json){
 
             tooltipActions(pointsEnter,function(d){
               var html = "";
-              for(var s in d){
-                if(d.hasOwnProperty(s)){
-                  if(s==options.eventParent){
-                    continue;
-                  }else if(s==options.eventChild){
-                    html = d[s]+"<br>"+html;
-                  }else{
-                    html += s+": "+d[s]+"<br>";
+              if(options.text && d[options.text]){
+                html = d[options.text];
+              }else{
+                for(var s in d){
+                  if(d.hasOwnProperty(s)){
+                    if(s==options.eventParent){
+                      continue;
+                    }else if(s==options.eventChild){
+                      html = d[s]+"<br>"+html;
+                    }else if(d[s]){
+                      html += s+": "+d[s]+"<br>";
+                    }
                   }
                 }
               }

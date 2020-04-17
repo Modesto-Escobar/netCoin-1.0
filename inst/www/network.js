@@ -1631,7 +1631,7 @@ function drawSVG(sel){
     .call(d3.drag()
           .subject(dragsubject)
           .on("start", dragstarted)
-          .on("drag", dragged)
+          .on("drag", options.constructural ? dragged_constructural : dragged)
           .on("end", dragended))
     .call(zoom)
     .on("dblclick.zoom",null)
@@ -1962,10 +1962,11 @@ function drawSVG(sel){
         }, gap: 5},
         datPyramid = {txt : texts.trianglesquare, key: "heatmapTriangle", tooltip: "ctrl + g", callback: drawNet};
 
-    if(options.heatmap)
+    if(options.heatmap){
       dat = [datPyramid];
-    else
+    }else if(!options.constructural){
       dat = [datStopResume];
+    }
 
     dat.push(datDirectional);
     dat.push(datLegend);
@@ -3350,8 +3351,27 @@ function dragstarted(d) {
 }
 
 function dragged(d) {
-  d3.event.subject.fx = transform.invertX(d3.event.x);
-  d3.event.subject.fy = transform.invertY(d3.event.y);
+    d3.event.subject.fx = transform.invertX(d3.event.x);
+    d3.event.subject.fy = transform.invertY(d3.event.y);
+}
+
+function dragged_constructural(d) {
+    var node = d3.event.subject;
+    if(node.type=="parent"){
+      var dx = node.fx,
+          dy = node.fy;
+    }
+    node.fx = transform.invertX(d3.event.x);
+    node.fy = transform.invertY(d3.event.y);
+    if(node.type=="parent"){
+      dx = node.fx-dx;
+      dy = node.fy-dy;
+      Graph.links.filter(function(link){ return link.Source==node[options.nodeName] && link.Constructural })
+        .forEach(function(link){
+          link.target.fx = link.target.fx + dx;
+          link.target.fy = link.target.fy + dy;
+        })
+    }
 }
 
 function dragended(d) {
@@ -3612,7 +3632,7 @@ function displayInfoPanel(info){
     }
     div = body.append("div")
           .attr("class","infopanel");
-    var infoHeight = (options.showTables ? computeHeight()+panel.select(".tables > .selectButton").node().offsetHeight : docSize.height - 10)
+    var infoHeight = (options.showTables ? 10 + computeHeight() + (options.showButtons2 ? panel.select(".tables > .selectButton").node().offsetHeight : 0) : docSize.height - 10)
       - parseInt(div.style("top"))
       - parseInt(div.style("padding-top"))
       - parseInt(div.style("padding-bottom"));
@@ -3979,7 +3999,7 @@ function displayLegend(){
       }else{
         // select especific nodes
         Graph.nodes.forEach(function(d){
-          if(String(d[key])==value){
+          if(d[key] && (String(d[key])==value || (typeof d[key] == "object" && (d[key].indexOf(value)!=-1 || d[key].join(",")==value)))){
             if(selected && checkSelectable(d)){
               d.selected = true;
             }else{
@@ -4351,24 +4371,22 @@ function checkLegendItemsChecked() {
     if(!legendSelectAll.empty()){
       var items = parent.selectAll("g.legend-item");
       if(!items.empty()){
-        var noSelectedNodes = simulation.nodes().filter(function(d){ return !d.selected; });
+        var selectedNodes = simulation.nodes().filter(function(d){ return d.selected; });
 
-        items.each(function(p){
-          checkInBox(this,true);
-          var selectedValues = {};
-          selectedValues[this.parentNode.key] = [p];
-          var query = selectedValues2str(selectedValues,noSelectedNodes);
-          for(var i = 0; i<noSelectedNodes.length; i++){
-            var d = noSelectedNodes[i];
-            if(eval(query)){
-              checkInBox(this,false);
+        items.each(function(value){
+          checkInBox(this,false);
+          var key = this.parentNode.key;
+          for(var i = 0; i<selectedNodes.length; i++){
+            var d = selectedNodes[i];
+            if(d[key] && (String(d[key])==value || (typeof d[key] == "object" && (d[key].indexOf(value)!=-1 || d[key].join(",")==value)))){
+              checkInBox(this,true);
               break;
             }
           }
         })
 
         var size = parent.selectAll(".legend-item").filter(function(){ return this.selected; }).size(),
-            enable = noSelectedNodes.length && simulation.nodes().length > noSelectedNodes.length;
+            enable = selectedNodes.length && simulation.nodes().length > selectedNodes.length;
         parent.selectAll(".legend-bottom-button > rect")
         .style("fill", enable ? UIcolor : disUIcolor)
         .style("pointer-events", enable ? "all" : null)
