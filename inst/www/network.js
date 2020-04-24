@@ -49,10 +49,6 @@ function network(Graph){
 
   var body = d3.select("body");
 
-  body.on("keydown.shortcut",function(){
-    if(d3.event.ctrlKey) d3.event.preventDefault();
-  });
-
   // get primary color for user interface;
   var a = body.append("a"),
       UIcolor = a.style("color"),
@@ -90,13 +86,10 @@ function network(Graph){
       .attr("class", "plot")
       .style("position","relative")
 
-  body.on("keyup.shortcut",function(){
-    var key = getKey(d3.event);
-    if(key == "Enter"){
-      if(selectedNodesLength()) switchEgoNet();
-      return;
-    }
-    if(d3.event.ctrlKey){
+  body.on("keydown.shortcut",function(){
+    if(d3.event.ctrlKey){ 
+      d3.event.preventDefault();
+      var key = getKey(d3.event);
       switch(key){
         case "+":
           if(d3.event.shiftKey){
@@ -112,6 +105,18 @@ function network(Graph){
             plot.select(".zoombutton.zoomout").dispatch("click");
           }
           return;
+      }
+    }
+  });
+
+  body.on("keyup.shortcut",function(){
+    var key = getKey(d3.event);
+    if(key == "Enter"){
+      if(selectedNodesLength()) switchEgoNet();
+      return;
+    }
+    if(d3.event.ctrlKey){
+      switch(key){
         case "0":
           plot.select(".zoombutton.zoomreset").dispatch("click");
           return;
@@ -185,6 +190,29 @@ function network(Graph){
         case "t": // warning: new tab
           return;
         case "x":
+          if(d3.event.shiftKey){
+            if(options.showExport){
+              options.showExport = false;
+            }
+            if(options.showButtons2){
+              options.showButtons2 = false;
+            }
+            if(options.showTables){
+              options.showTables = false;
+            }
+            if(options.showButtons){
+              options.showButtons = false;
+            }
+            if(options.showSidebar){
+              options.showSidebar = false;
+            }
+            displayBottomPanel();
+            displaySidebar();
+          }else{
+            body.select("div.infopanel div.close-button").dispatch("click");
+          }
+          return;
+        case "y":
           plot.select(".button.showAxes > rect").dispatch("click");
           return;
         case "ArrowUp":
@@ -2937,7 +2965,7 @@ function drawNet(){
           fontSize = 10+fontSize;
         }
         ctx.font = fontSize*options.cex+"px sans-serif";
-        ctx.fillText(node[options.nodeLabel], node.x + checkNodeBigger(node) + 4, node.y + 4);
+        ctx.fillText(node[options.nodeLabel], node.x + checkNodeBigger(node) + 4, node.y - 4);
       });
       ctx.fill();
     }

@@ -121,6 +121,10 @@ function getKey(event){
     if(alt.hasOwnProperty(key))
       key = alt[key];
 
+    if(key.length==1){
+      key = key.toLowerCase()
+    }
+
     return key;
   }else{
     // old browsers

@@ -36,6 +36,11 @@ function timeline(json){
       applyCheckBoxes();
       return;
     }
+    if(d3.event.ctrlKey && key == "x"){
+      body.selectAll(".tooltip.fixed").remove();
+      body.select("div.infopanel div.close-button").dispatch("click");
+      return;
+    }
   })
 
   // default linear scale for events
@@ -250,7 +255,7 @@ function timeline(json){
             })
           }
         });
-        d3.set(values).values().sort().forEach(function(d){
+        d3.set(values).values().sort().reverse().forEach(function(d){
           var g = lcolor.append("g")
           g.append("rect")
             .attr("x",0)
@@ -281,7 +286,7 @@ function timeline(json){
             })
           }
         });
-        d3.set(values).values().sort().forEach(function(d){
+        d3.set(values).values().sort().reverse().forEach(function(d){
           var g = lshape.append("g")
           g.append("path")
             .attr("transform","translate(0,-5)")
