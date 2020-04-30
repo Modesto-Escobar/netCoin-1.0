@@ -8,7 +8,7 @@ netCoin <- function(nodes, links = NULL, tree = NULL, name = NULL,
     orderA = NULL, orderD = NULL, group = NULL, community = NULL,
     lwidth = NULL, lweight = NULL, lcolor = NULL, ltext = NULL,
     nodeFilter = NULL, linkFilter = NULL, degreeFilter = NULL, nodeBipolar = FALSE, linkBipolar = FALSE,
-    defaultColor = "#1f77b4", distance = 10, repulsion = 25, zoom = 1,
+    defaultColor = "#1f77b4", distance = 10, repulsion = 25, zoom = 1, fixed = showCoordinates,
     scenarios = NULL, main = NULL, note = NULL, help = NULL, helpOn = FALSE,
     cex = 1, background = NULL, layout = NULL, limits = NULL, controls = 1:5, mode = c("network","heatmap"),
     showCoordinates = FALSE, showArrows = FALSE, showLegend = TRUE, showAxes = FALSE, axesLabels = NULL,
@@ -100,6 +100,8 @@ netCoin <- function(nodes, links = NULL, tree = NULL, name = NULL,
   if (!is.null(controls)) options[["controls"]] <- as.numeric(controls)
   if (!is.null(mode)) options[["mode"]] <- tolower(substr(as.character(mode),1,1))
   if (!is.null(axesLabels)) options[["axesLabels"]] <- as.character(axesLabels)
+
+  if(fixed) options[["fixed"]] <- TRUE
 
   if(showCoordinates) options[["showCoordinates"]] <- TRUE
   if(showArrows) options[["showArrows"]] <- TRUE
@@ -333,6 +335,7 @@ surCoin<-function(data,variables=names(data), commonlabel=NULL,
                   igraph=FALSE, coin=FALSE, dir=NULL, ...)
 {
   arguments <- list(...)
+  if((criteria=="Z" | criteria=="hyp") & maxL==Inf) maxL=.05
   varOrder  <- variables # To order variables later before coin
   #Check methods. No necessary because edgeList call these routines.
   #procedures<-i.method(c.method(procedures))
@@ -457,19 +460,12 @@ surCoin<-function(data,variables=names(data), commonlabel=NULL,
         else if(!is.null(metric)) arguments$layout<-NULL # There is metric information and not MCA or PCA
       }
     }
-    
-    arguments$nodes <- O
-    arguments$links <- E
-    xNx <- do.call(netCoin,arguments)
-  }
-  else warning("Input is not a dichotomous matrix of incidences")
-  
-  if(exists("xNx")){
+
     if(!is.null(metric)) {
       #Metric nodes elaboration
-      if(percentages) xNx$nodes$mean<-xNx$nodes$`%`/100
-      xNx$nodes$min<-0
-      xNx$nodes$max<-1
+      if(percentages) O$mean<-O$`%`/100
+      O$min<-0
+      O$max<-1
       means<-sapply(na.omit(data[,metric, drop=F]),mean)
       mins<-sapply(na.omit(data[,metric, drop=F]),min)
       maxs<-sapply(na.omit(data[,metric, drop=F]),max)
@@ -482,7 +478,7 @@ surCoin<-function(data,variables=names(data), commonlabel=NULL,
         for(col in as.character(O2[[name]]))
           O2[as.character(O2[[name]])==col,colnames(nodes)] <- nodes[as.character(nodes[[name]])==col,]
       }
-      xNx$nodes<-rbind.all.columns(xNx$nodes,O2)
+      O<-rbind.all.columns(O,O2)
 
       #Metric links elaboration
       methods<-union(procedures,criteria)
@@ -509,39 +505,46 @@ surCoin<-function(data,variables=names(data), commonlabel=NULL,
       D<-D[,c("Source","Target",methods)]
       D<-D[D[criteria] > minL & D[criteria] < maxL,]
       colnames(D)<-sub("^Z$","p(Z)",colnames(D))
-      if(is.null(xNx$links))xNx$links<-D
-      else xNx$links<-rbind.all.columns(arguments$links,D)
+      if(is.null(E))E<-D
+      else E<-rbind.all.columns(E,D)
 
       #Layout
       if (inherits(layout,"matrix")){
         if (!is.null(nodes)){
           if(nrow(layout2)==nrow(nodes)){
-            Oxy <- matrix(NA,nrow(xNx$nodes),2)
-            rownames(Oxy) <- as.character(xNx$nodes[,name])
+            Oxy <- matrix(NA,nrow(O),2)
+            rownames(Oxy) <- as.character(O[,name])
             rownames(layout2) <- as.character(nodes[,name])
             layoutnames <- intersect(rownames(Oxy),rownames(layout2))
             Oxy[layoutnames,] <- layout2[layoutnames,]
             layout2 <- Oxy
           } else warning("layout must have a coordinate per node")
         } else warning("layout must be applied to the nodes variable")
-        xNx<-netAddLayout(xNx,layout2)
+        arguments$layout <- layout2
       }
     }
     if (!is.null(exogenous)) {
       exogenous2<-intersect(exogenous,c(metric,dichotomies))
-      xNx$links$chaine<-ifelse(((substr(xNx$links$Source,1,regexpr("\\:",xNx$links$Source)-1) %in% exogenous) |
-                                  (xNx$links$Source %in% exogenous2))  &
-                                 ((substr(xNx$links$Target,1,regexpr("\\:",xNx$links$Target)-1) %in% exogenous) |
-                                    (xNx$links$Target %in% exogenous2)),"No","Yes")
+      E$chaine<-ifelse(((substr(E$Source,1,regexpr("\\:",E$Source)-1) %in% exogenous) |
+                                  (E$Source %in% exogenous2))  &
+                                 ((substr(E$Target,1,regexpr("\\:",E$Target)-1) %in% exogenous) |
+                                    (E$Target %in% exogenous2)),"No","Yes")
       arguments$linkFilter<-paste(ifelse(is.null(arguments$linkFilter),"",paste(arguments$linkFilter,"&")),"chaine=='Yes'")
-      xNx$links[,"hidden"]<-with(xNx$links,!eval(parse(text=arguments$linkFilter)))
     }
-    if ("showArrows" %in% names(xNx$options) & exists("nodes")) xNx$links<-orderEdges(xNx$links,nodes[[name]])
+    if ("showArrows" %in% names(arguments$options) & exists("nodes")) E<-orderEdges(E,nodes[[name]])
 
-    if(!is.null(dir)) netCreate(xNx,dir)
-    if (igraph) return(toIgraph(xNx))
-    else return(xNx)
-  }
+    if(!is.null(dir)){
+      arguments$dir <- dir
+    }
+    arguments$nodes <- O
+    arguments$links <- E
+    xNx <- do.call(netCoin,arguments)
+    if (igraph) {
+      return(toIgraph(xNx))
+    } else {
+      return(xNx)
+    }
+  } else warning("Input is not a dichotomous matrix of incidences")
 }
 
 # Elaborate a netCoin object from a lavaan object.
