@@ -8,7 +8,7 @@ netCoin <- function(nodes, links = NULL, tree = NULL, name = NULL,
     orderA = NULL, orderD = NULL, group = NULL, community = NULL,
     lwidth = NULL, lweight = NULL, lcolor = NULL, ltext = NULL,
     nodeFilter = NULL, linkFilter = NULL, degreeFilter = NULL, nodeBipolar = FALSE, linkBipolar = FALSE,
-    defaultColor = "#1f77b4", distance = 10, repulsion = 25, zoom = 1,
+    defaultColor = "#1f77b4", distance = 10, repulsion = 25, zoom = 1, fixed = showCoordinates,
     scenarios = NULL, main = NULL, note = NULL, help = NULL, helpOn = FALSE,
     cex = 1, background = NULL, layout = NULL, limits = NULL, controls = 1:5, mode = c("network","heatmap"),
     showCoordinates = FALSE, showArrows = FALSE, showLegend = TRUE, showAxes = FALSE, axesLabels = NULL,
@@ -100,6 +100,8 @@ netCoin <- function(nodes, links = NULL, tree = NULL, name = NULL,
   if (!is.null(controls)) options[["controls"]] <- as.numeric(controls)
   if (!is.null(mode)) options[["mode"]] <- tolower(substr(as.character(mode),1,1))
   if (!is.null(axesLabels)) options[["axesLabels"]] <- as.character(axesLabels)
+
+  if(fixed) options[["fixed"]] <- TRUE
 
   if(showCoordinates) options[["showCoordinates"]] <- TRUE
   if(showArrows) options[["showArrows"]] <- TRUE

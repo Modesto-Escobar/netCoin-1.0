@@ -105,6 +105,12 @@ function network(Graph){
             plot.select(".zoombutton.zoomout").dispatch("click");
           }
           return;
+        case "ArrowUp":
+        case "ArrowLeft":
+        case "ArrowDown":
+        case "ArrowRight":
+          movePan(key);
+          return;
       }
     }
   });
@@ -214,12 +220,6 @@ function network(Graph){
           return;
         case "y":
           plot.select(".button.showAxes > rect").dispatch("click");
-          return;
-        case "ArrowUp":
-        case "ArrowLeft":
-        case "ArrowDown":
-        case "ArrowRight":
-          movePan(key);
           return;
       }
     }
@@ -1648,21 +1648,24 @@ function drawSVG(sel){
     .attr("pointer-events","all")
     .style("fill","none")
     .on("click",clickNet)
-    .on("dblclick",dblClickNet)
     .on("mousemove",hoverNet)
-    .on("mousedown.grabbing",function(){
-      d3.select(this).style("cursor","grabbing");
-    })
-    .on("mouseup.grabbing",function(){
-      d3.select(this).style("cursor","grab");
-    })
-    .call(d3.drag()
+
+  if(!options.fixed){
+    rect.on("mousedown.grabbing",function(){
+          d3.select(this).style("cursor","grabbing");
+        })
+        .on("mouseup.grabbing",function(){
+          d3.select(this).style("cursor","grab");
+        })
+    rect.call(d3.drag()
           .subject(dragsubject)
           .on("start", dragstarted)
           .on("drag", options.constructural ? dragged_constructural : dragged)
           .on("end", dragended))
-    .call(zoom)
-    .on("dblclick.zoom",null)
+  }
+
+  rect.call(zoom)
+    .on("dblclick.zoom",dblClickNet)
 
   if(typeof options.zoomScale != "undefined"){
     rect.call(zoom.transform,transform);
@@ -1773,8 +1776,10 @@ function drawSVG(sel){
           transform.k = options.zoomScale;
           net.attr("transform", transform);
           if(!options.heatmap){
-            if(options.showCoordinates){
+            if(gxaxis){
               gxaxis.call(xAxis.scale(transform.rescaleX(xAxisScale)));
+            }
+            if(gyaxis){
               gyaxis.call(yAxis.scale(transform.rescaleY(yAxisScale)));
             }
             simulation.restart();
@@ -1956,7 +1961,9 @@ function drawSVG(sel){
         brushg.style("display",null);
       }
     }else{
-      brushg.style("display","none");
+      if(brushg){
+        brushg.style("display","none");
+      }
     }
   }
 

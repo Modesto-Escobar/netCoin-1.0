@@ -17,7 +17,7 @@ netCoin(nodes, links = NULL, tree = NULL, name = NULL, label = NULL,
         lwidth = NULL, lweight = NULL, lcolor = NULL, ltext = NULL,
         nodeFilter = NULL, linkFilter = NULL, degreeFilter = NULL,
         nodeBipolar = FALSE, linkBipolar = FALSE, defaultColor = "#1f77b4",
-        distance = 10, repulsion = 25, zoom = 1,
+        distance = 10, repulsion = 25, zoom = 1, fixed = showCoordinates,
         scenarios = NULL, main = NULL, note = NULL, help = NULL,
         helpOn = FALSE, cex = 1, background = NULL, layout = NULL,
         limits = NULL, controls = 1:5, mode = c("network","heatmap"),
@@ -55,6 +55,7 @@ netCoin(nodes, links = NULL, tree = NULL, name = NULL, label = NULL,
 \item{repulsion}{a percentage for repulsion between nodes.}
 \item{distance}{a percentage for distance of links.}
 \item{zoom}{a number between 0.1 and 10 to start displaying zoom.}
+\item{fixed}{prevent nodes from being dragged.}
 \item{scenarios}{a note showing number of scenarios.}
 \item{main}{upper title of the graph.}
 \item{note}{lower title of the graph.}
