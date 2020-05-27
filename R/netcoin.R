@@ -284,6 +284,7 @@ allNet<-function(incidences, weight = NULL, subsample = FALSE, pairwise = FALSE,
 {
   arguments <- list(...)
   arguments$dir<-dir
+  if((criteria=="Z" | criteria=="hyp") & maxL==Inf) maxL=.05
   if(!("language" %in% names(arguments))) arguments$language <- "en"
   arguments$name <- nameByLanguage(arguments$name,arguments$language,arguments$nodes)
   if (!("size" %in% names(arguments)))
@@ -297,6 +298,15 @@ allNet<-function(incidences, weight = NULL, subsample = FALSE, pairwise = FALSE,
     O<-asNodes(C,frequency,percentages,arguments$language)
     names(O)[1]<-arguments$name
     if (is.null(arguments$nodes)){
+      if(any(sapply(incidences,function(X) {"label" %in% names(attributes(X))}))) {
+        label <- "label"
+        if(arguments$language %in% c("es","ca")){
+          label <- "etiqueta"
+        }
+        O[[label]] <- "NULL"
+        O[[label]] <- ifelse(sapply(incidences, attr, "label")=="NULL", O[[arguments$name]], sapply(incidences, attr, "label"))
+        arguments$label <- label
+      }
       arguments$nodes<-O
     }else{
       nodesOrder<-as.character(arguments$nodes[[arguments$name]])
@@ -1082,7 +1092,8 @@ printNet <- function(x){
 }
 
 tempDir <- function(){
-  return(paste(tempdir(),round(as.numeric(Sys.time())),sep="/"))
+  dir.create("temp", showWarnings = FALSE)
+  return(paste("temp",round(as.numeric(Sys.time())),sep="/"))
 }
 
 plot.coin <- function(x, dir=tempDir(), language=c("en","es","ca"), ...){
