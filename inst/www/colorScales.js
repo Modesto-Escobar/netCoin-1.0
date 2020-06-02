@@ -22,14 +22,14 @@ var categoryColors = [
 ];
 
 var colorScales = {
-  "WhBu": [
+  "WhGn": [
       "#ffffff",
-      "#8fbbd9",
-      "#1f77b4"
+      "#96d096",
+      "#2ca02c"
     ],
-  "BuWh": [
-      "#1f77b4",
-      "#8fbbd9",
+  "GnWh": [
+      "#2ca02c",
+      "#96d096",
       "#ffffff"
     ],
   "WhRd": [
@@ -42,16 +42,6 @@ var colorScales = {
       "#ea9394",
       "#ffffff"
     ],
-  "WhGn": [
-      "#ffffff",
-      "#96d096",
-      "#2ca02c"
-    ],
-  "GnWh": [
-      "#2ca02c",
-      "#96d096",
-      "#ffffff"
-    ],
   "WhBk": [
       "#ffffff",
       "#808080",
@@ -61,6 +51,26 @@ var colorScales = {
       "#000000",
       "#808080",
       "#ffffff"
+    ],
+  "WhBu": [
+      "#ffffff",
+      "#8fbbd9",
+      "#1f77b4"
+    ],
+  "BuWh": [
+      "#1f77b4",
+      "#8fbbd9",
+      "#ffffff"
+    ],
+  "GnWhRd": [
+      "#2ca02c",
+      "#ffffff",
+      "#d62728"
+    ],
+  "RdWhGn": [
+      "#d62728",
+      "#ffffff",
+      "#2ca02c"
     ],
   "BkWhRd": [
       "#000000",
@@ -72,15 +82,25 @@ var colorScales = {
       "#ffffff",
       "#000000"
     ],
-  "GnWhRd": [
-      "#2ca02c",
+  "BuWhRd": [
+      "#1f77b4",
       "#ffffff",
       "#d62728"
     ],
-  "RdWhGn": [
+  "RdWhBu": [
       "#d62728",
       "#ffffff",
-      "#2ca02c"
+      "#1f77b4"
+    ],
+  "YlWhBu": [
+      "#bcbd22",
+      "#ffffff",
+      "#1f77b4"
+    ],
+  "BuWhYl": [
+      "#1f77b4",
+      "#ffffff",
+      "#bcbd22"
     ],
   "GnBkRd": [
       "#2ca02c",

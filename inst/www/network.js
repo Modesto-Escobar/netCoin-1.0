@@ -31,11 +31,10 @@ function network(Graph){
       linkDistanceRange = [0,500], // link distance range
       timeRange = [5000,500], // speed range for dynamic net
       axisExtension = 50, // pixels to increase the axes size
-      sliderWidth = 100, // width of the sliders
-      sidebarOffset = options.help ? 240 : 220, // initial sidebar width (will increase with cex)
+      sidebarWidth = 220, // sidebar width (will increase with cex)
       infoLeft = 0, // global variable for panel left position
+      plotHeight = 0, // global variable for plot height
       findNodeRadius = 20, // radius in which to find a node in the canvas
-      legendControls = true, // display legend checkboxes and buttons
       hiddenFields = ["Source","Target","x","y","source","target","fx","fy","hidden","childNodes","parentNode","_frame_"]; // not to show in sidebar controllers or tables
 
   var simulation = d3.forceSimulation()
@@ -48,12 +47,6 @@ function network(Graph){
       scaleCoorY;
 
   var body = d3.select("body");
-
-  // get primary color for user interface;
-  var a = body.append("a"),
-      UIcolor = a.style("color"),
-      disUIcolor = applyOpacity(d3.rgb(UIcolor),0.4);
-  a.remove();
 
   var zoom = d3.zoom()
     .scaleExtent(zoomRange)
@@ -68,23 +61,28 @@ function network(Graph){
 
   checkGraphData();
 
-  // main title
-  if(options.main){
-    body.append("div")
-      .attr("class", "main")
-      .html(typeof options.main == "string" ? options.main : options.main[0]);
-  }
+  width = computeWidth();
+
+  // main bar
+  var main = body.append("div")
+        .attr("class", "main")
+  displayMain();
 
   // panel
   var panel = body.append("div")
       .attr("class", "panel");
 
-  if(options.main)
-    panel.style("top",(body.select("div.main").node().offsetHeight+8) + "px")
-
   var plot = panel.append("div")
       .attr("class", "plot")
       .style("position","relative")
+
+  var sidebar = panel.append("div")
+      .attr("class", "sidebar")
+      .style("width", (sidebarWidth) + "px")
+
+  var legendPanel = panel.append("div")
+      .attr("class", "legend-panel")
+      .style("width", (sidebarWidth) + "px")
 
   body.on("keydown.shortcut",function(){
     if(d3.event.ctrlKey){ 
@@ -117,35 +115,37 @@ function network(Graph){
 
   body.on("keyup.shortcut",function(){
     var key = getKey(d3.event);
-    if(key == "Enter"){
-      if(selectedNodesLength()) switchEgoNet();
-      return;
-    }
     if(d3.event.ctrlKey){
       switch(key){
         case "0":
           plot.select(".zoombutton.zoomreset").dispatch("click");
           return;
         case "1":
-          body.select("div.search > button.burger-box").dispatch("click");
+          if(typeof options.showSidebar != "undefined"){
+            options.showSidebar = !options.showSidebar;
+            displaySidebar();
+          }
           return;
         case "2":
-          plot.select(".showhideArrow.showButtons2").dispatch("click");
+          panel.select(".showhideArrow.showButtons2").dispatch("click");
           return;
         case "3":
-          plot.select(".showhideArrow.showTables").dispatch("click");
-          return;
-        case "4":
-          plot.select(".showhideArrow.showButtons").dispatch("click");
+          panel.select(".showhideArrow.showTables").dispatch("click");
           return;
         case "5":
           if(typeof options.showExport != "undefined"){
             options.showExport = !options.showExport;
-            displayBottomPanel();
+            displayMain();
           }
           return;
         case "a":
-          plot.select(".button.showArrows > rect").dispatch("click");
+          options.showArrows = !options.showArrows;
+          if(options.heatmap){
+            drawNet();
+          }else{
+            simulation.restart();
+          }
+          displaySidebar();
           return;
         case "b":
           if(selectedNodesLength()) addNeighbors();
@@ -154,7 +154,8 @@ function network(Graph){
           resetPan();
           return;
         case "d":
-          plot.select(".button.dynamicNodes > rect").dispatch("click");
+          options.dynamicNodes = !options.dynamicNodes;
+          stopResumeNet();
           return;
         case "e":
           if(selectedNodesLength()) switchEgoNet();
@@ -163,7 +164,9 @@ function network(Graph){
           if(selectedNodesLength()) filterSelection();
           return;
         case "g":
-          plot.select(".button.heatmapTriangle > rect").dispatch("click");
+          options.heatmapTriangle = !options.heatmapTriangle;
+          drawNet();
+          displaySidebar();
           return;
         case "h":
           if(options.help){
@@ -174,10 +177,14 @@ function network(Graph){
           applyInitialFilter();
           return;
         case "l":
-          plot.select(".button.showLegend > rect").dispatch("click");
+          options.showLegend = !options.showLegend;
+          drawNet();
+          displaySidebar();
           return;
         case "m":
-          plot.select(".button.heatmap > rect").dispatch("click");
+          options.heatmap = !options.heatmap;
+          drawSVG();
+          displaySidebar();
           return;
         case "n": // warning: new window
           return;
@@ -206,12 +213,10 @@ function network(Graph){
             if(options.showTables){
               options.showTables = false;
             }
-            if(options.showButtons){
-              options.showButtons = false;
-            }
             if(options.showSidebar){
               options.showSidebar = false;
             }
+            displayMain();
             displayBottomPanel();
             displaySidebar();
           }else{
@@ -219,8 +224,15 @@ function network(Graph){
           }
           return;
         case "y":
-          plot.select(".button.showAxes > rect").dispatch("click");
+          options.showAxes = !options.showAxes;
+          showAxesFunction();
+          displaySidebar();
           return;
+      }
+    }else{
+      if(key == "Enter"){
+        if(selectedNodesLength()) switchEgoNet();
+        return;
       }
     }
   })
@@ -228,15 +240,29 @@ function network(Graph){
   if(options.note){
     var divNote = plot.append("div")
       .attr("class", "note")
+      .style("padding-left",sidebarWidth + "px")
+      .style("padding-right",sidebarWidth + "px")
       .html(typeof options.note == "string" ? options.note : "");
   }
 
-  plot.style("width",computeWidth()+"px")
+  var poweredby = plot.append("div")
+      .attr("class", "poweredby")
+  poweredby.append("img")
+    .attr("width",20)
+    .attr("height",15)
+    .attr("src",b64Icons.netcoin)
+  poweredby.append("span")
+        .text(texts.poweredby+" ")
+  poweredby.append("a")
+    .attr("target","_blank")
+    .attr("href","https://sociocav.usal.es/blog/nca/")
+    .text("netCoin")
 
   adaptLayout();
 
   displayArrows();
   displayBottomPanel();
+  drawSVG();
   displaySidebar();
   applyInitialFilter();
 
@@ -407,7 +433,7 @@ function network(Graph){
 
     if(options.cex){
       body.style("font-size", 10*options.cex + "px")
-      sidebarOffset = sidebarOffset * Math.sqrt(options.cex);
+      sidebarWidth = sidebarWidth * Math.sqrt(options.cex);
     }else{
       options.cex = 1;
     }
@@ -448,7 +474,6 @@ function network(Graph){
     options.showSidebar = showControls(1);
     options.showButtons2 = showControls(2);
     options.showTables = showControls(3);
-    options.showButtons = showControls(4);
     options.showExport = showControls(5);
 
     if(Array.isArray(options.axesLabels)){
@@ -532,18 +557,8 @@ function network(Graph){
 
 function displayArrows(){
 
-  var buttonsArrow = visArrow()
-    .item("showButtons")
-    .top("10px")
-    .left("0px")
-    .title(texts.showhidebuttons)
-    .callback(function(){ plot.call(drawSVG); })
-
-  panel.call(buttonsArrow);
-
   var tablesArrow = visArrow()
     .item("showTables")
-    .vertical(true)
     .bottom("5px")
     .left("0px")
     .title(texts.showhidetables)
@@ -553,7 +568,6 @@ function displayArrows(){
 
   var buttons2Arrow = visArrow()
     .item("showButtons2")
-    .vertical(true)
     .bottom("5px")
     .left("24px")
     .title(texts.showhidebuttons)
@@ -562,21 +576,87 @@ function displayArrows(){
   panel.call(buttons2Arrow);
 }
 
-function displayBottomPanel(){
+function displayMain(){
+  main.selectAll("*").remove();
+  if(options.main || typeof multiGraph != 'undefined' || options.showExport){
+    main.style("display",null);
+    if(options.main){
+      main.append("span").attr("class", "title").html(typeof options.main == "string" ? options.main : options.main[0]);
+    }else{
+      main.append("span").attr("class", "title").html("&nbsp;")
+    }
+    if(options.main && typeof multiGraph != 'undefined'){
+      main.append("span").attr("class","separator").text("/");
+    }
+    if(typeof multiGraph != 'undefined'){
+      multiGraph.graphSelect(main.append("span"));
+    }
+    if(options.showExport){
 
-  panel.select("div.panel-dragbar").remove();
-  panel.select("div.tables").remove();
+      if(options.help){
+        main.call(iconButton()
+        .alt("help")
+        .src(b64Icons.help)
+        .title("Show help")
+        .job(function(){ displayInfoPanel(options.help); }));
+      }
+
+      main.call(iconButton()
+        .alt("pdf")
+        .src(b64Icons.pdf)
+        .title(texts.pdfexport)
+        .job(function(){ embedImages(svg2pdf); }));
+
+      main.call(iconButton()
+      .alt("png")
+      .src(b64Icons.png)
+      .title(texts.pngexport)
+      .job(function(){
+        if(options.heatmap){
+          svg2png(getFile);
+        }else{
+          plot.select("canvas").node().toBlob(getFile)
+        }
+
+        function getFile(blob){
+          fileDownload(blob, d3.select("head>title").text()+'.png');
+        }
+      }));
+
+/*
+      if(inIframe()){
+      main.call(iconButton()
+        .alt("newTab")
+        .src(b64Icons.newtab)
+        .title(texts.newtab)
+        .job(function(){
+          window.open(window.location);
+        }));
+      }
+*/
+    }
+  }else{
+    main.style("display","none")
+  }
 
   height = computeHeight();
-  plot.style("height",height+"px");
+}
 
-  if(!plot.selectAll("svg, canvas").empty())
-    plot.call(drawSVG);
+
+function displayBottomPanel(){
+
+  body.select("div.panel-dragbar").remove();
+  body.select("div.tables").remove();
+
+  if(!plot.selectAll("svg, canvas").empty()){
+    height = computeHeight();
+    drawSVG();
+  }
 
   if(options.showButtons2 || options.showTables){
 
     // panel dragbar
-    var dragbar = panel.append("div")
+    var dragbar = body.append("div")
       .attr("class","panel-dragbar")
 
     var dragOffset;
@@ -596,13 +676,14 @@ function displayBottomPanel(){
         }
       })
       .on("end", function() {
+        plotHeight = height;
         body.style("cursor",null);
-        plot.call(drawSVG);
+        drawSVG();
       })
     );
 
     // tables
-    var tables = panel.append("div")
+    var tables = body.append("div")
       .attr("class", "tables")
 
   if(options.showTables){
@@ -631,172 +712,6 @@ function displayBottomPanel(){
     tables.select("div.switchNodeLink > div")
       .style("background","#f5f5f5")
       .style("border-bottom-color","#f5f5f5")
-  }
-
-  if(options.showExport){
-
-    if(options.showTables){
-      tables.call(iconButton()
-        .alt("xlsx")
-        .src(b64Icons.xlsx)
-        .title(texts.downloadtable)
-        .job(tables2xlsx));
-    }
-
-    tables.call(iconButton()
-        .alt("pdf")
-        .src(b64Icons.pdf)
-        .title(texts.pdfexport)
-        .job(function(){ embedImages(svg2pdf); }));
-
-    tables.call(iconButton()
-      .alt("png")
-      .src(b64Icons.png)
-      .title(texts.pngexport)
-      .job(function(){
-        if(options.heatmap){
-          svg2png(getFile);
-        }else{
-          plot.select("canvas").node().toBlob(getFile)
-        }
-
-        function getFile(blob){
-          fileDownload(blob, d3.select("head>title").text()+'.png');
-        }
-      }));
-
-/*
-    if(inIframe()){
-      tables.call(iconButton()
-        .alt("png")
-        .src(b64Icons.newtab)
-        .title(texts.newtab)
-        .job(function(){
-          window.open(window.location);
-        }));
-    }
-*/
-  }
-
-  if(frameControls){
-    var divFrameCtrl = tables.append("div")
-      .attr("class", "divFrameCtrl")
-
-    var buttonBackColor = "#888";
-
-    divFrameCtrl.append("select")
-      .attr("class","selectFrame")
-      .on("change",function(){
-        frameControls.play = false;
-        clickThis();
-        handleFrames(+(this.value));
-      })
-      .selectAll("option")
-        .data(frameControls.frames)
-      .enter().append("option")
-        .property("value",function(d,i){ return i; })
-        .text(function(d,i){
-          if(Array.isArray(options.main))
-            return options.main[i];
-          else
-            return d;
-        })
-
-    divFrameCtrl.append("button") // prev
-      .call(getSVG().d(d4paths.prev))
-      .on("click",function(){
-        var val = frameControls.frame-1;
-        if(val < 0)
-          val = frameControls.frames.length+val;
-        frameControls.play = false;
-        clickThis();
-        handleFrames(val);
-      })
-    divFrameCtrl.append("button") // loop
-      .call(getSVG().d(d4paths.loop))
-      .on("click",function(){
-        frameControls.loop = !frameControls.loop;
-        d3.select(this).style("background-color",frameControls.loop?buttonBackColor:null)
-          .selectAll("path").style("fill",frameControls.loop?"#f5f5f5":null);
-      })
-    var stopRecord = function(){
-          frameControls.recorder.stop();
-          frameControls.recorder.save(Math.round((new Date()).getTime() / 1000)+'record.webm');
-          delete frameControls.recorder;
-          divFrameCtrl.select("button.rec").style("background-color",null)
-            .select("path").style("fill",null);
-    }
-    divFrameCtrl.append("button") // rec
-      .attr("class","rec")
-      .call(getSVG().d(d4paths.rec))
-      .on("click",function(){
-        if(options.heatmap){
-          displayWindow(texts.alertrecordheatmap);
-        }else{
-          if(frameControls.recorder){
-            stopRecord();
-          }else{
-            frameControls.recorder = new CanvasRecorder(d3.select("div.plot > canvas").node());
-            simulation.restart();
-            if(frameControls.recorder.start && frameControls.recorder.start()){
-              d3.select(this).style("background-color",buttonBackColor)
-                .select("path").style("fill","Red");
-            }else{
-              delete frameControls.recorder;
-            }
-          }
-        }
-      }).style("background-color", frameControls.recorder ? buttonBackColor : null)
-      .select("path").style("fill", frameControls.recorder ? "#d62728" : null);
-    divFrameCtrl.append("button") // stop
-      .call(getSVG().d(d4paths.stop))
-      .on("click",function(){
-        frameControls.play = false;
-        clickThis();
-        handleFrames(0);
-        if(frameControls.recorder){
-          stopRecord();
-        }
-      })
-    divFrameCtrl.append("button") // pause
-      .attr("class","pause")
-      .call(getSVG().d(d4paths.pause))
-      .on("click",function(){
-        frameControls.play = false;
-        clickThis();
-        clearInterval(frameControls.frameInterval);
-      })
-    divFrameCtrl.append("button") // play
-      .attr("class","play")
-      .call(getSVG().d(d4paths.play))
-      .on("click",function(){
-        frameControls.play = true;
-        clickThis(true);
-        handleFrames(frameControls.frame+1);
-      })
-    divFrameCtrl.append("button") // next
-      .call(getSVG().d(d4paths.next))
-      .on("click",function(){
-        frameControls.play = false;
-        clickThis();
-        handleFrames(frameControls.frame+1);
-      })
-
-    clickThis(frameControls.play);
-
-    function clickThis(play){
-      divFrameCtrl.selectAll("button.pause, button.play")
-        .style("background-color",null)
-        .selectAll("path").style("fill",null);
-      if(play)
-        divFrameCtrl.select("button.play")
-          .style("background-color",buttonBackColor)
-          .selectAll("path").style("fill","LawnGreen");
-      else
-        divFrameCtrl.select("button.pause")
-          .style("background-color",buttonBackColor)
-          .selectAll("path").style("fill","#f5f5f5");
-    }
   }
 
   if(options.showButtons2){
@@ -842,7 +757,7 @@ function displayBottomPanel(){
     selectButton("egonet",switchEgoNet,"ctrl + e");
     if(Graph.tree)
       selectButton("expandcollapse",treeAction,"ctrl + p",true);
-    selectButton("resetfilter",showHidden,"ctrl + r",(simulation.nodes().length!=GraphNodesLength) || (simulation.force("link").links().length!=GraphLinksLength));
+    selectButton("resetfilter",showHidden,"ctrl + r",false);
   }
 
     if(options.showTables){
@@ -853,46 +768,28 @@ function displayBottomPanel(){
       showTables();
     }
   }
+
+  if(options.showSidebar){
+    sidebar.select(".nav li.active").dispatch("click");
+  }
+
+  height = computeHeight();
 }
 
 function displaySidebar(){
-  var sidebar = body.select("div.sidebar"),
-      dragbar = body.select("body>div.dragbar");
 
-  if(sidebar.empty()){
+  if(sidebar.select(".subSearch").empty()){
 
-    sidebar = body.append("div")
-      .attr("class", "sidebar")
-      .style("width", (sidebarOffset-15) + "px")
-
-    var subFixed = sidebar.append("div").attr("class","fixed");
-
-    if(typeof multiGraph != 'undefined'){
-      var multiSel = subFixed.append("div")
-        .attr("class","multigraph");
-      multiSel.append("div").append("h3").text(texts.netselection+":");
-      multiGraph.graphSelect(multiSel.append("div"));
-    }
-
-    var searchSel = subFixed.append("div")
-      .attr("class","search");
-    searchSel.append("button")
-      .attr("class","burger-box")
-      .style("display", typeof options.showSidebar=="undefined" ? "none" : null)
-      .call(getSVG()
-        .d(d4paths.burger)
-        .width(20).height(20))
-      .on("click",typeof options.showSidebar=="undefined" ? null : function(){
-          options.showSidebar = !options.showSidebar;
-          displaySidebar();
-        })
+    var searchSel = sidebar.append("div")
+      .attr("class","subSearch")
+      .append("div")
+        .attr("class","search");
 
     var searchBox = searchSel.append("div")
       .attr("class","search-box")
     searchBox.append("div")
       .append("input")
         .attr("type","text")
-        .attr("placeholder",texts.search)
         .on("focus",function(){
           searchBox.classed("shadowed",true);
         })
@@ -934,7 +831,7 @@ function displaySidebar(){
               column = options.nodeLabel ? options.nodeLabel : options.nodeName;
           dropdownList.selectAll("*").remove();
           if(searchBox.value.length>1){
-            simulation.nodes().forEach(function(node){
+            Graph.nodes.filter(checkSelectable).forEach(function(node){
               if(String(node[column]).toLowerCase().search(searchBox.value.toLowerCase())!=-1){
                 dropdownList
                   .append("li")
@@ -962,26 +859,12 @@ function displaySidebar(){
 
     var searchIcon = searchSel.append("button")
       .attr("class","search-icon disabled")
-      .style("right",options.help ? "40px" : null)
       .call(getSVG()
         .d(d4paths.search)
-        .width(20).height(20))
+        .width(16).height(16))
       .on("click",function(){
           dropdownList.select("li.active").dispatch("click");
       })
-
-    if(options.help){
-      var helpIcon = searchSel.append("button")
-      .attr("class","help-icon")
-      .call(getSVG()
-        .d(d4paths.info)
-        .width(20).height(20))
-      .on("click",function(){
-        displayInfoPanel(options.help);
-      })
-      .attr("title","info")
-      helpIcon.select("path").style("fill",UIcolor);
-    }
 
     var dropdownList = searchSel.append("ul")
       .attr("class","dropdown-list");
@@ -990,149 +873,508 @@ function displaySidebar(){
       dropdownList.style("display","none").selectAll("*").remove();
     })
 
-  // dragbar
-  if(dragbar.empty()){
-    dragbar = body.append("div")
-      .attr("class","dragbar")
-      .style("width","5px")
-      .style("cursor","col-resize")
-      .style("position","absolute")
-      .style("top","0px")
-      .style("left",(sidebarOffset-15) + "px")
-      .style("z-index",1);
-
-    dragbar.call(d3.drag()
-      .on("start", function() {
-        body.style("cursor","col-resize");
-        if(options.showSidebar){
-          plot.select("canvas").remove();
-          plot.select("svg").remove();
-          sidebar.selectAll(".sidebar > div").style("visibility","hidden");
-        }
-      })
-      .on("drag", function() {
-        var value = d3.mouse(body.node())[0];
-        if(value > 177 && value < 400){
-          dragbar.style("left", value + "px")
-          sidebar.style("width", (value) + "px")
-          if(options.showSidebar){
-            sidebarOffset = value+15;
-            panel.style("left", sidebarOffset + "px")
-            width = computeWidth();
-            plot.style("width",width+"px");
-          }
-        }
-      })
-      .on("end", function() {
-        body.style("cursor",null);
-        if(Controllers.nodeFilter){
-          Controllers.nodeFilter.update();
-        }
-        if(Controllers.linkFilter){
-          Controllers.linkFilter.update();
-        }
-        sidebar.selectAll(".sidebar > div").style("visibility",null);
-        if(options.showSidebar)
-          plot.call(drawSVG);
-      })
-    );
-  }
-
   }else{
-    sidebar.selectAll("div.sidebar>div:not(.fixed)").remove();
+    sidebar.selectAll("div.sidebar>div:not(.subSearch)").remove();
   }
 
   if(options.showSidebar){
-
-    sidebarOffset = parseInt(sidebar.style("width"))+15;
-    panel.style("left", sidebarOffset + "px");
-
-  var divControl, applyFuncObject = {}, visData;
-    
-// sidebar nodes
-  var sideNodes = sidebar.append("div")
-    .attr("class","subSidebar nodes")
-
-  sideNodes.append("h3").text(texts.nodes);
-
-  if(options.heatmap){
-    visData = ["Label","Color","Shape","Legend","OrderA","OrderD"];
-  }else{
-    visData = ["Label","Size","LabelSize","Color","Shape","Legend","Group"];
+    showSidebar();
+  }else if(typeof options.showSidebar!="undefined"){
+    displayShowSidebarButton();
   }
-  divControl = sideNodes.append("div")
+
+  function displayShowSidebarButton(){
+    var showSidebarButton = sidebar.append("div")
+      .attr("class","show-sidebar-button")
+      .on("click",function(){
+          options.showSidebar = true;
+          displaySidebar();
+      })
+    showSidebarButton.append("span");
+    showSidebarButton.append("span");
+    showSidebarButton.append("span");
+  }
+
+  function showSidebar(){
+    var divControl, applyFuncObject = {}, visData;
+
+    var subSidebar = sidebar.append("div")
+      .attr("class","subSidebar")
+
+    var nav = subSidebar.append("div")
+      .attr("class","nav")
+
+    nav.append("div")
+        .attr("class","close-button")
+        .on("click",function(){
+          options.showSidebar = false;
+          displaySidebar();
+        })
+
+    var navs = nav.append("ul");
+
+    navs.append("li").text(texts.graph).on("click",function(){
+      navClick(this,"graph");
+    }).classed("active",true);
+    navs.append("li").text(texts.nodes).on("click",function(){
+      navClick(this,"nodes");
+    })
+    navs.append("li").text(texts.links).on("click",function(){
+      navClick(this,"links");
+    })
+
+    function navClick(thiz,tab){
+      subSidebar.selectAll(".tab").style("display",null);
+      subSidebar.select(".tab."+tab).style("display","block");
+      nav.selectAll("li").classed("active",false);
+      d3.select(thiz).classed("active",true);
+      // update sidebar filters
+      if(Controllers.nodeFilter){
+        Controllers.nodeFilter.update();
+      }
+      if(Controllers.linkFilter){
+        Controllers.linkFilter.update();
+      }
+      subSidebarHeight(subSidebar.select(".tab."+tab));
+    }
+
+    // sidebar graph
+    var sideGraph = subSidebar.append("div")
+      .attr("class","tab graph")
+      .style("display","block")
+
+    SVGcontrols(sideGraph);
+    displayFrameControls(sideGraph);
+    
+    // sidebar nodes
+    var sideNodes = subSidebar.append("div")
+      .attr("class","tab nodes")
+
+    sideNodes.append("h4").text(texts.configure);
+
+    if(options.heatmap){
+      visData = ["Label","Color","Shape","Legend","OrderA","OrderD"];
+    }else{
+      visData = ["Label","Size","LabelSize","Color","Shape","Legend","Group"];
+    }
+    divControl = sideNodes.append("div")
       .attr("class", "nodeAuto")
 
-  Controllers.nodeVisual = addVisualController()
-    .item("nodes")
-    .visual(visData);
-  divControl.call(Controllers.nodeVisual); // nodes visualization
+    Controllers.nodeVisual = addVisualController()
+      .item("nodes")
+      .visual(visData);
+    divControl.call(Controllers.nodeVisual); // nodes visualization
 
-  applyFuncObject[texts.select] = applySelection;
-  applyFuncObject[texts.egonet] = function(query,data){
+    applyFuncObject["select"] = applySelection;
+    applyFuncObject["egonet"] = function(query,data){
         applySelection(query,data);
         switchEgoNet();
     };
 
-  divControl = sideNodes.append("div")
+    divControl = sideNodes.append("div")
       .attr("class","nodeFilter");
 
-  Controllers.nodeFilter = addFilterController()
-    .item("nodes")
-    .functions(applyFuncObject);
-  divControl.call(Controllers.nodeFilter); // nodes filter
+    Controllers.nodeFilter = addFilterController()
+      .item("nodes")
+      .functions(applyFuncObject);
+    divControl.call(Controllers.nodeFilter); // nodes filter
 
-// sidebar links
-  var sideLinks = sidebar.append("div")
-      .attr("class", "subSidebar links")
+    // sidebar links
+    var sideLinks = subSidebar.append("div")
+      .attr("class", "tab links")
 
-  sideLinks.append("h3").text(texts.links);
+    sideLinks.append("h4").text(texts.configure);
 
-  if(options.heatmap){
-    visData = ["Intensity","Color","Text"];
-  }else{
-    visData = ["Width","Weight","Color","Text"];
-  }
-  divControl = sideLinks.append("div")
+    if(options.heatmap){
+      visData = ["Intensity","Color","Text"];
+    }else{
+      visData = ["Width","Weight","Color","Text"];
+    }
+    divControl = sideLinks.append("div")
       .attr("class", "linkAuto");
 
-  Controllers.linkVisual = addVisualController()
-    .item("links")
-    .visual(visData);
-  divControl.call(Controllers.linkVisual); // links visualization
+    Controllers.linkVisual = addVisualController()
+      .item("links")
+      .visual(visData);
+    divControl.call(Controllers.linkVisual); // links visualization
 
-  divControl = sideLinks.append("div")
+    divControl = sideLinks.append("div")
       .attr("class","linkFilter");
 
-  Controllers.linkFilter = addFilterController()
-    .item("links")
-  divControl.call(Controllers.linkFilter); // links filter
+    Controllers.linkFilter = addFilterController()
+      .item("links")
+    divControl.call(Controllers.linkFilter); // links filter
 
-  }else{
-    sidebarOffset = 0;
-    panel.style("left", null);
+    subSidebarHeight(sideGraph);
+
+    function subSidebarHeight(tab){
+      subSidebar.selectAll(".tab").style("height",null);
+      var maxHeight = height
+      - sidebar.select(".sidebar > .subSearch").node().offsetHeight
+      - nav.node().offsetHeight
+      - 60;
+      if(!body.select(".switchNodeLink").empty()){
+        maxHeight = maxHeight - body.select(".switchNodeLink > div").node().offsetHeight;
+      }else{
+        maxHeight = maxHeight - 20;
+      }
+      if(parseInt(tab.node().offsetHeight)>maxHeight){
+        tab.style("height",maxHeight+"px");
+      }
+    }
+
+    function SVGcontrols(sel){
+      var dynamicNodes = {txt: texts.stopresume, key: "dynamicNodes", tooltip: "ctrl + d", callback: stopResumeNet},
+          showArrows = {txt: texts.directional, key: "showArrows", tooltip: "ctrl + a", callback: function(){
+          if(options.heatmap){
+            drawNet();
+          }else{
+            simulation.restart();
+          }
+        }},
+          showLegend = {txt: texts.showhidelegend, key: "showLegend", tooltip: "ctrl + l", callback: drawNet},
+          showAxes = {txt: texts.showhideaxes, key: "showAxes", tooltip: "ctrl + x", callback: showAxesFunction},
+          heatmap = {txt: texts.netheatmap, key: "heatmap", tooltip: "ctrl + m", callback: function(){
+          drawSVG();
+          displaySidebar();
+        }},
+          heatmapTriangle = {txt : texts.trianglesquare, key: "heatmapTriangle", tooltip: "ctrl + g", callback: drawNet};
+
+      var sliders = sel.append("div")
+        .attr("class","sliders")
+
+      if(!options.heatmap && options.dynamicNodes){
+        sliders.call(Sliders.distance);
+        Sliders.distance.update(options['linkDistance']);
+
+        sliders.call(Sliders.repulsion);
+        Sliders.repulsion.update(options['charge']);
+      }
+
+      sliders.call(Sliders.zoom);
+      Sliders.zoom.update(options.zoomScale);
+
+      if(frameControls){
+        sliders.call(Sliders.frame);
+        Sliders.frame.update(frameControls.frame);
+
+        sliders.call(Sliders.time);
+        Sliders.time.update(frameControls.time);
+      }
+
+      var countY = 8,
+          secondCol = sidebarWidth/2 - 20,
+          svg = sel.append("div")
+            .attr("class","buttons")
+      .append("svg")
+        .attr("width",sidebarWidth-24)
+        .attr("heigth",0)
+
+      var buttons = svg.append("g")
+        .attr("class","buttons")
+        .attr("transform","translate(5,0)")
+
+      if(!options.heatmap && !options.constructural){
+        buttons.append("g")
+        .attr("class",function(d){ return "checkbox dynamicNodes"; })
+        .attr("transform","translate(0,"+countY*options.cex+")")
+        .datum(dynamicNodes)
+      }
+
+      var resetButton = buttons.append("g")
+          .attr("class","reset-button")
+          .attr("transform","translate("+secondCol+","+(countY*options.cex-5)+")"),
+        resetButtonSize = 20*options.cex,
+        resetButtonPathScale = 1.4,
+        resetButtonPad = (resetButtonSize-8*resetButtonPathScale)/2;
+
+      resetButton.append("rect")
+      .attr("x",0)
+      .attr("y",0)
+      .attr("rx",5)
+      .attr("ry",5)
+      .attr("width",resetButtonSize*4)
+      .attr("height",resetButtonSize)
+      .style("cursor","pointer")
+      .on("click",function(){
+        location.reload();
+      })
+      .append("title")
+        .text("F5")
+
+      resetButton.append("text")
+      .style("fill","#fff")
+      .attr("pointer-events","none")
+      .attr("x",10)
+      .attr("y",10*options.cex + (resetButtonSize-13*options.cex)/2)
+      .text(texts.reset);
+
+      resetButton.append("path")
+      .style("fill","#fff")
+      .attr("pointer-events","none")
+      .attr("transform","translate("+(resetButtonSize*4-resetButtonSize)+","+resetButtonPad+")scale("+resetButtonPathScale+")")
+      .attr("d",d4paths.loop)
+
+      countY = countY+30;
+
+      buttons.append("g")
+      .attr("class",function(d){ return "button showArrows"; })
+      .attr("transform","translate(0,"+countY*options.cex+")")
+      .datum(showArrows)
+
+      buttons.append("g")
+      .attr("class",function(d){ return "button showLegend"; })
+      .attr("transform","translate("+secondCol+","+countY*options.cex+")")
+      .datum(showLegend)
+
+      countY = countY+30;
+
+      if(options.heatmap){
+        buttons.append("g")
+      .attr("class",function(d){ return "button heatmapTriangle"; })
+      .attr("transform","translate(0,"+countY*options.cex+")")
+      .datum(heatmapTriangle)
+      }else{
+        buttons.append("g")
+      .attr("class",function(d){ return "button showAxes"; })
+      .attr("transform","translate(0,"+countY*options.cex+")")
+      .datum(showAxes)
+      }
+
+      if(Array.isArray(options.mode)){
+        buttons.append("g")
+      .attr("class",function(d){ return "button heatmap"; })
+      .attr("transform","translate("+secondCol+","+countY*options.cex+")")
+      .datum(heatmap)
+      }
+
+      buttons.selectAll(".checkbox").each(function(d){
+        var self = d3.select(this);
+
+        self.classed("checked",options[d.key])
+
+        self.append("rect")
+      .attr("x",0)
+      .attr("y",5*(options.cex-1))
+      .attr("rx",2)
+      .attr("ry",2)
+      .attr("width",10)
+      .attr("height",10)
+      .on("click",function(){
+        options[d.key] = !options[d.key];
+        d.callback();
+      }).append("title")
+        .text(function(d){
+          return d.tooltip;
+        });
+
+        self.append("path")
+      .attr("transform","translate(0,"+5*(options.cex-1)+")")
+      .attr("d","M1,3L4,6L9,1L10,2L4,8L0,4Z");
+
+        self.append("text")
+        .attr("x",20)
+        .attr("y",9*options.cex)
+        .text(d.txt);
+      })
+
+      buttons.selectAll(".button").each(function(d){
+
+        var self = d3.select(this);
+
+        self.append("rect")
+      .attr("x",0)
+      .attr("y",5*(options.cex-1))
+      .attr("rx",5)
+      .attr("ry",5)
+      .attr("width",20)
+      .attr("height",10)
+      .on("click",function(){
+        options[d.key] = !options[d.key];
+        activeButton(250);
+        d.callback();
+      }).append("title")
+        .text(function(d){
+          return d.tooltip;
+        })
+
+        self.append("circle")
+      .attr("cx",5)
+      .attr("cy",5*(options.cex-1)+5)
+      .attr("r",5)
+
+        self.append("text")
+        .attr("x",30)
+        .attr("y",9*options.cex)
+        .text(d.txt);
+
+        activeButton(0);
+
+        function activeButton(time){
+          var circle = self.select("circle");
+          if(time){
+            circle = circle.transition()
+            .duration(time)
+            .on("end",function(){
+              self.classed("disabled",!options[d.key])
+            });
+          }else{
+            self.classed("disabled",!options[d.key])
+          }
+          circle.attr("cx",options[d.key] ? 15 : 5);
+        }
+
+      })
+
+      svg.attr("height",buttons.node().getBBox().height+5)
+    }
+
+    function displayFrameControls(sel){
+      if(!frameControls){
+        return;
+      }
+
+      var divFrameCtrl = sel.append("div")
+        .attr("class", "divFrameCtrl")
+
+      var buttonBackColor = "#888";
+
+      divFrameCtrl.append("div")
+        .attr("class","select-wrapper")
+      .append("select")
+      .attr("class","selectFrame")
+      .on("change",function(){
+        frameControls.play = false;
+        clickThis();
+        handleFrames(+(this.value));
+      })
+      .selectAll("option")
+        .data(frameControls.frames)
+      .enter().append("option")
+        .property("value",function(d,i){ return i; })
+        .text(function(d,i){
+          if(Array.isArray(options.main))
+            return options.main[i];
+          else
+            return d;
+        })
+
+      var frameButons = divFrameCtrl.append("div")
+        .attr("class","frame-buttons")
+
+      frameButons.append("button") // prev
+      .call(getSVG().d(d4paths.prev))
+      .on("click",function(){
+        var val = frameControls.frame-1;
+        if(val < 0)
+          val = frameControls.frames.length+val;
+        frameControls.play = false;
+        clickThis();
+        handleFrames(val);
+      })
+      frameButons.append("button") // loop
+      .call(getSVG().d(d4paths.loop))
+      .on("click",function(){
+        frameControls.loop = !frameControls.loop;
+        d3.select(this).style("background-color",frameControls.loop?buttonBackColor:null)
+          .selectAll("path").style("fill",frameControls.loop?"#f5f5f5":null);
+      })
+      var stopRecord = function(){
+          frameControls.recorder.stop();
+          frameControls.recorder.save(Math.round((new Date()).getTime() / 1000)+'record.webm');
+          delete frameControls.recorder;
+          divFrameCtrl.select("button.rec").style("background-color",null)
+            .select("path").style("fill",null);
+      }
+      frameButons.append("button") // rec
+      .attr("class","rec")
+      .call(getSVG().d(d4paths.rec))
+      .on("click",function(){
+        if(options.heatmap){
+          displayWindow(texts.alertrecordheatmap);
+        }else{
+          if(frameControls.recorder){
+            stopRecord();
+          }else{
+            frameControls.recorder = new CanvasRecorder(d3.select("div.plot > canvas").node());
+            simulation.restart();
+            if(frameControls.recorder.start && frameControls.recorder.start()){
+              d3.select(this).style("background-color",buttonBackColor)
+                .select("path").style("fill","Red");
+            }else{
+              delete frameControls.recorder;
+            }
+          }
+        }
+      }).style("background-color", frameControls.recorder ? buttonBackColor : null)
+      .select("path").style("fill", frameControls.recorder ? "#d62728" : null);
+      frameButons.append("button") // stop
+      .call(getSVG().d(d4paths.stop))
+      .on("click",function(){
+        frameControls.play = false;
+        clickThis();
+        handleFrames(0);
+        if(frameControls.recorder){
+          stopRecord();
+        }
+      })
+      frameButons.append("button") // pause
+      .attr("class","pause")
+      .call(getSVG().d(d4paths.pause))
+      .on("click",function(){
+        frameControls.play = false;
+        clickThis();
+        clearInterval(frameControls.frameInterval);
+      })
+      frameButons.append("button") // play
+      .attr("class","play")
+      .call(getSVG().d(d4paths.play))
+      .on("click",function(){
+        frameControls.play = true;
+        clickThis(true);
+        handleFrames(frameControls.frame+1);
+      })
+      frameButons.append("button") // next
+      .call(getSVG().d(d4paths.next))
+      .on("click",function(){
+        frameControls.play = false;
+        clickThis();
+        handleFrames(frameControls.frame+1);
+      })
+
+      clickThis(frameControls.play);
+
+      function clickThis(play){
+        divFrameCtrl.selectAll("button.pause, button.play")
+          .style("background-color",null)
+          .selectAll("path").style("fill",null);
+        if(play){
+          divFrameCtrl.select("button.play")
+            .style("background-color",buttonBackColor)
+            .selectAll("path").style("fill","LawnGreen");
+        }else{
+          divFrameCtrl.select("button.pause")
+            .style("background-color",buttonBackColor)
+            .selectAll("path").style("fill","#f5f5f5");
+        }
+      }
+    }
   }
-  sidebar.classed("expanded",options.showSidebar);
-  dragbar.style("height",(8 + parseInt(sidebar.style("height"))) + "px");
-  plot.call(drawSVG);
-}
+} // end display sidebar function
 
 // arrows to hide/show controls
 function visArrow(){
     var item,
-        vertical = false,
-        top = null,
         left = null,
         bottom = null,
         title = null,
         callback = false,
-        arrows = ["&#9666;","&#9656;"];
+        arrows = ["&#9662;","&#9652;"];
 
     function exports(panel){
       if(typeof options[item]!="undefined"){
-        plot.append("div")
+        panel.append("div")
           .attr("class","showhideArrow "+item)
-          .style("top",top)
           .style("left",left)
           .style("bottom",bottom)
           .attr("title",title)
@@ -1153,19 +1395,6 @@ function visArrow(){
     exports.item = function(x) {
       if (!arguments.length) return item;
       item = x;
-      return exports;
-    };
-
-    exports.vertical = function(x) {
-      if (!arguments.length) return vertical;
-      vertical = x;
-      arrows = vertical?["&#9662;","&#9652;"]:["&#9666;","&#9656;"];
-      return exports;
-    };
-
-    exports.top = function(x) {
-      if (!arguments.length) return top;
-      top = x;
       return exports;
     };
 
@@ -1231,15 +1460,13 @@ function addVisualController(){
       tmpData.unshift("-"+texts.none+"-");
 
       d3.select(this).append("div")
+        .attr("class","select-wrapper")
         .append("select")
       .on("change", function(){
         var attr = this.value;
         applyAuto(visual,attr);
         if((visual=="Color"|| visual=="Group") && dataType(data,attr) == "number"){
-          displayPicker(attr,function(val){
-            options["colorScale"+item+visual] = val;
-            drawNet();
-          });
+          displayPicker(options,item+visual,drawNet);
         }
       })
       .selectAll("option")
@@ -1296,34 +1523,24 @@ function addFilterController(){
       data = [],
       applyFunc = {},
       attrData = [],
-      show = false,
       selectedValues = {},
       appliedFilters = {},
       itemFilter,
       attrSelect,
       valSelector,
-      filterTags,
-      expandCtrl;
+      filterTags;
 
   function exports(sel){
 
-    expandCtrl = sel.append("div")
-      .attr("class","filter-switch")
-      .append("h4")
+    itemFilter = sel.append("div")
+        .attr("class","filter-controls")
+
+    itemFilter.append("h4")
       .text(texts.filter)
-      .on("click", function(){
-        showFilter(true);
-        expandCtrlSwitch();
-      })
-    expandCtrlSwitch();
 
-    itemFilter = sel.append("div");
-
-    if(!show){
-      itemFilter.style("display", "none");
-    }
-
-    attrSelect = itemFilter.append("select")
+    attrSelect = itemFilter.append("div")
+        .attr("class","select-wrapper")
+      .append("select")
       .attr("class","attrSel");
 
     attrSelect.selectAll("option")
@@ -1341,6 +1558,7 @@ function addFilterController(){
       .style("margin-bottom",0);
 
     itemFilter.append("button")
+      .attr("class","primary")
       .text(texts.filter)
       .on("click", function(){
         updateAppliedFilters();
@@ -1348,7 +1566,31 @@ function addFilterController(){
         applyFilter(selectedValues2str(appliedFilters,data));
       })
 
+    if(d3.keys(applyFunc).length){
+      if(applyFunc["select"]){
+        itemFilter.append("button")
+        .attr("class","primary")
+        .text(texts["select"])
+        .on("click", function(){
+          applyFunc["select"](prepareQuery(),data);
+        });
+      }
+
+      filterTags = itemFilter.append("div")
+        .attr("class","filter-tags")
+
+      if(applyFunc["egonet"]){
+        itemFilter.append("button")
+        .attr("class","primary")
+        .text(["egonet"])
+        .on("click", function(){
+          applyFunc["egonet"](prepareQuery(),data);
+        });
+      }
+    }
+
     itemFilter.append("button")
+      .attr("class","primary-outline")
       .text(texts.clear)
       .on("click", function(){
         selectedValues = {};
@@ -1359,34 +1601,10 @@ function addFilterController(){
         applyInitialFilter();
       });
 
-    filterTags = itemFilter.append("div")
-      .attr("class","filter-tags")
-
-    if(typeof applyFunc == 'object'){
-      for(var i in applyFunc){
-        itemFilter.append("button")
-          .text(i)
-          .on("click", function(){
-            applyFunc[this.textContent](prepareQuery(),data);
-          });
-      }
+    if(!d3.keys(applyFunc).length){
+      filterTags = itemFilter.append("div")
+        .attr("class","filter-tags")
     }
-
-    itemFilter.append("div")
-      .attr("class","collapse-ctrl")
-      .style("transform","rotate(90deg)")
-      .html("&#x2039;")
-      .on("click",function(){
-        showFilter(false);
-        expandCtrlSwitch();
-      })
-  }
-
-  function expandCtrlSwitch(){
-    expandCtrl
-      .style("cursor",show ? null : "pointer")
-      .style("pointer-events",show ? "none" : "all")
-      .classed("expanded", show)
   }
 
   function applyFilter(query){
@@ -1446,7 +1664,7 @@ function addFilterController(){
 
   function changeAttrSel(val){
       valSelector.selectAll("*").remove();
-      var tmpData = items=="nodes" ? simulation.nodes() : simulation.force("link").links();
+      var tmpData = items=="nodes" ? Graph.nodes.filter(checkSelectable) : Graph.links.filter(checkSelectableLink);
       var type = dataType(tmpData,val);
       if(type == 'number'){
         var extent = d3.extent(tmpData, function(d){ return d[val]; }),
@@ -1474,6 +1692,7 @@ function addFilterController(){
         valSelector.style("height",null);
         valSelector.append("select")
           .attr("multiple","multiple")
+          .attr("size",8)
           .on("blur",loadSelValues)
           .selectAll("option")
         .data(d3.set(dat).values().sort())
@@ -1589,15 +1808,12 @@ function applySelection(query,data){
 }
 
 // draw canvas and svg environment for plot
-function drawSVG(sel){
+function drawSVG(){
 
   adaptLayout();
 
-  sel.select("canvas").remove();
-  sel.select("svg").remove();
-
-  width = computeWidth();
-  sel.style("width",width+"px");
+  plot.select("canvas").remove();
+  plot.select("svg").remove();
 
   var size = Math.min(width,height);
 
@@ -1609,7 +1825,7 @@ function drawSVG(sel){
     .on("keydown.viewbrush", keyflip)
     .on("keyup.viewbrush", keyflip)
   
-  var svg = sel.insert("svg",":first-child")
+  var svg = plot.insert("svg",":first-child")
       .attr("xmlns","http://www.w3.org/2000/svg")
       .attr("width", width)
       .attr("height", height)
@@ -1617,7 +1833,7 @@ function drawSVG(sel){
     .style("top",0)
     .style("left",0)
 
-  var canvas = sel.insert("canvas",":first-child")
+  var canvas = plot.insert("canvas",":first-child")
     .attr("width", width)
     .attr("height", height)
 
@@ -1756,9 +1972,6 @@ function drawSVG(sel){
 
   brushg.style("display","none");
 
-  svg.append("g").attr("class","scale")
-    .attr("transform", "translate("+(width-20)+",20)");
-
   chargeRange = [0,-(size*2)];
   linkDistanceRange = [0,size*3/4];
 
@@ -1788,7 +2001,6 @@ function drawSVG(sel){
 
   resetZoom();
 
-
   if(frameControls){
       Sliders.frame = displaySlider()
       .domain([0,frameControls.frames.length-1])
@@ -1810,22 +2022,7 @@ function drawSVG(sel){
       });
   }
 
-  var top = !options.showSidebar && !d3.select(".sidebar").empty() ? parseInt(body.select(".sidebar .fixed").style("height"))+30 - (options.main ? parseInt(body.select("div.main").style("height")) : 0) : 10;
-
-  sel.select(".showhideArrow.showButtons").style("top",top+"px");
-
-  var buttons = svg.append("g")
-        .attr("class", "buttons")
-        .style("display",options.showButtons ? null : "none")
-        .attr("transform", "translate(30,"+(10 + top)+")")
-
-  var sliders = buttons.append("g")
-        .attr("class","sliders")
-
-  var countY = 8;
-
   Sliders.distance = displaySlider()
-      .y(countY*options.cex)
       .domain(linkDistanceRange)
       .domain2([0,100])
       .text(texts.distance)
@@ -1834,13 +2031,8 @@ function drawSVG(sel){
         options['linkDistance'] = value;
         update_forces();
       })
-  sliders.call(Sliders.distance);
-  Sliders.distance.update(options['linkDistance']);
-
-  countY += 18;
 
   Sliders.repulsion = displaySlider()
-      .y(countY*options.cex)
       .domain(chargeRange)
       .domain2([0,100])
       .text(texts.repulsion)
@@ -1849,33 +2041,6 @@ function drawSVG(sel){
         options['charge'] = value;
         update_forces();
       })
-  sliders.call(Sliders.repulsion);
-  Sliders.repulsion.update(options['charge']);
-
-  countY += 18;
-
-  Sliders.zoom.y(countY*options.cex)
-  sliders.call(Sliders.zoom);
-
-  countY += 18;
-
-  if(frameControls){
-      Sliders.frame.y(countY*options.cex)
-      sliders.call(Sliders.frame);
-      Sliders.frame.update(frameControls.frame);
-
-      countY += 18;
-
-      Sliders.time.y(countY*options.cex)
-      sliders.call(Sliders.time);
-      Sliders.time.update(frameControls.time);
-
-      countY += 18;
-  }
-
-  countY += 8;
-
-  loadSVGbuttons(countY);
 
   var makeZoomButton = function(y,n){
     var zoombutton = svg.append("g")
@@ -1894,7 +2059,7 @@ function drawSVG(sel){
   }
 
   // zoom in
-  var zoomin = makeZoomButton(110,"zoomin");
+  var zoomin = makeZoomButton(130,"zoomin");
   zoomin.on("click",function(){
         transform.k = transform.k + 0.1;
         if(transform.k>zoomRange[1]){
@@ -1917,20 +2082,18 @@ function drawSVG(sel){
   zoomin.append("title").text(texts.zoomin + " (ctrl + '+')")
 
   // reset zoom
-  var zoomreset = makeZoomButton(75,"zoomreset");
+  var zoomreset = makeZoomButton(95,"zoomreset");
   zoomreset.on("click",function(){
         resetZoom();
       })
   zoomreset.append("title").text(texts.resetzoom + " (ctrl + 0)")
-  zoomreset.select("rect")
-      .style("fill",UIcolor)
   zoomreset.append("path")
       .attr("transform","translate(7,6)")
       .style("fill","#fff")
       .attr("d",d4paths.resetzoom)
 
   // zoom out
-  var zoomout = makeZoomButton(40,"zoomout");
+  var zoomout = makeZoomButton(60,"zoomout");
   zoomout.on("click",function(){
         transform.k = transform.k - 0.1;
         if(transform.k<zoomRange[0]){
@@ -1946,8 +2109,6 @@ function drawSVG(sel){
       .attr("width",16)
       .attr("height",6)
   zoomout.append("title").text(texts.zoomout + " (ctrl + '-')")
-
-  Sliders.zoom.update(options.zoomScale);
 
   if(frameControls){
     handleFrames(frameControls.frame);
@@ -1967,160 +2128,11 @@ function drawSVG(sel){
     }
   }
 
-  function loadSVGbuttons(count){
-    var dat = [],
-        datStopResume = {txt: texts.stopresume, key: "dynamicNodes", tooltip: "ctrl + d", callback: stopResumeNet},
-        datDirectional = {txt: texts.directional, key: "showArrows", tooltip: "ctrl + a", callback: function(){
-          if(options.heatmap)
-            drawNet();
-          else
-            simulation.restart();
-        }, gap: 5},
-        datLegend = {txt: texts.showhidelegend, key: "showLegend", tooltip: "ctrl + l", callback: function(){
-          if(options.showLegend){
-            drawNet();
-            d3.selectAll(".scale").style("opacity", 0)
-            clickHide(d3.selectAll(".scale"), true);
-          }else{
-            clickHide(d3.selectAll(".scale"), false, drawNet);
-          }
-        }},
-        datAxes = {txt: texts.showhideaxes, key: "showAxes", tooltip: "ctrl + x", callback: function(){
-          if(!options.showCoordinates){
-            clickHide(d3.selectAll(".net .axis, .net .axisLabel"), options.showAxes);
-          }else{
-            clickHide(d3.selectAll(".plot > svg > .axis, .plot > svg > .axisLabel"), options.showAxes);
-          }
-        }},
-        datMode = {txt: texts.netheatmap, key: "heatmap", tooltip: "ctrl + m", callback: function(){
-          displaySidebar();
-        }, gap: 5},
-        datPyramid = {txt : texts.trianglesquare, key: "heatmapTriangle", tooltip: "ctrl + g", callback: drawNet};
-
-    if(options.heatmap){
-      dat = [datPyramid];
-    }else if(!options.constructural){
-      dat = [datStopResume];
-    }
-
-    dat.push(datDirectional);
-    dat.push(datLegend);
-    if(!options.heatmap)
-      dat.push(datAxes);
-
-    if(Array.isArray(options.mode))
-      dat.push(datMode);
-  
-    var gButton = buttons.selectAll(".button")
-        .data(dat, function(d){ return d.key; })
-
-    gButton.exit().remove();
-
-    gButton.enter().append("g")
-    .attr("class",function(d){ return "button "+d.key; })
-    .each(function(d,i){
-
-      var self = d3.select(this);
-
-      self.append("rect")
-      .attr("x",0)
-      .attr("y",5*(options.cex-1))
-      .attr("rx",5)
-      .attr("ry",5)
-      .attr("width",20)
-      .attr("height",10)
-      .on("click",function(){
-        options[d.key] = !options[d.key];
-        activeButton(250);
-        d.callback();
-      }).append("title")
-        .text(function(d){
-          return d.tooltip;
-        })
-
-      self.append("circle")
-      .attr("cx",5)
-      .attr("cy",5*(options.cex-1)+5)
-      .attr("r",5)
-      .attr("pointer-events","none")
-
-      self.append("text")
-        .attr("x",30)
-      .attr("y",9*options.cex)
-      .text(d.txt);
-
-      activeButton(0);
-
-      function activeButton(time){
-        var circle = self.select("circle");
-        if(time){
-          circle = circle.transition()
-            .duration(time)
-            .on("end",function(){
-              changeColor();
-            });
-        }else{
-          changeColor();
-        }
-        circle.attr("cx",options[d.key] ? 15 : 5);
-
-        function changeColor(){
-          self.select("circle").style("fill",options[d.key] ? UIcolor : null);
-          self.select("rect").style("fill",options[d.key] ? disUIcolor : null);
-        }
-      }
-
-    })
-    .merge(gButton)
-    .attr("transform",function(d){
-      if(d.gap)
-        count += d.gap;
-      var val = "translate(0,"+(count*options.cex)+")";
-      count += 15;
-      return val;
-    })
-
-    count += 10;
-
-    var resetButton = buttons.append("g")
-          .attr("transform","translate(0,"+(count*options.cex)+")"),
-        resetButtonSize = 20,
-        resetButtonPathScale = 1.4,
-        resetButtonPad = (resetButtonSize-8*resetButtonPathScale)/2;
-
-    resetButton.append("rect")
-      .attr("x",0)
-      .attr("y",0)
-      .attr("rx",5)
-      .attr("ry",5)
-      .attr("width",resetButtonSize)
-      .attr("height",resetButtonSize)
-      .style("cursor","pointer")
-      .style("fill",UIcolor)
-      .on("click",function(){
-        location.reload();
-      })
-      .append("title")
-        .text("F5")
-
-    resetButton.append("text")
-      .attr("x",30)
-      .attr("y",10*options.cex + (resetButtonSize-13*options.cex)/2)
-      .text(texts.reset);
-
-    resetButton.append("path")
-      .style("fill","#fff")
-      .attr("pointer-events","none")
-      .attr("transform","translate("+resetButtonPad+","+resetButtonPad+")scale("+resetButtonPathScale+")")
-      .attr("d",d4paths.loop)
-  }
-
   function displaySlider(){
     var scale,
         brush,
         slider,
         bubble,
-        y = 0,
         domain = [1,0],
         domain2 = false,
         scale2 = false,
@@ -2129,9 +2141,10 @@ function drawSVG(sel){
         callback = null,
         rounded = false,
         brushedValue = false,
-        handleRadius = 5;
+        handleRadius = 5,
+        sliderWidth = sidebarWidth-50;
 
-    function exports(sliders){
+    function exports(sel){
       scale = d3.scaleLinear()
         .clamp(true)
         .domain(domain)
@@ -2144,14 +2157,17 @@ function drawSVG(sel){
 
       brush = d3.brushX().extent([[-handleRadius,0], [sliderWidth + handleRadius, handleRadius*2]]);
 
-      sliders = sliders.append("g")
-            .attr("class","slider "+prop)
+      var svg = sel.append("svg")
+        .attr("class","slider "+prop)
+        .attr("width",sidebarWidth)
 
-      var x = 0;
+      var sliders = svg.append("g")
+
+      var x = 5, y = 10 + 10*options.cex;
 
       sliders.append("text")
-        .attr("x", x + sliderWidth + 10)
-        .attr("y", y + 3*options.cex)
+        .attr("x", x)
+        .attr("y", y - 10)
         .text(text);
 
       slider = sliders.append("g")
@@ -2181,9 +2197,19 @@ function drawSVG(sel){
       .on("mouseover",function(){ bubble.style("visibility","visible"); })
       .on("mouseleave",function(){ bubble.style("visibility","hidden"); })
 
-      bubble = slider.append("text")
-        .attr("text-anchor","start")
+      bubble = slider.append("g")
         .style("visibility","hidden");
+      bubble.append("rect")
+        .attr("y",-12)
+        .attr("x",-4)
+        .attr("width",20)
+        .attr("height",16)
+        .attr("rx",2)
+        .style("stroke","#888")
+        .style("fill","#fff")
+      bubble.append("text")
+        .attr("text-anchor","start")
+        .attr("fill","#333")
 
       brush.on("brush", brushed)
            .on("start",function(){
@@ -2194,20 +2220,23 @@ function drawSVG(sel){
              bubble.style("visibility","hidden");
              slider.selectAll('rect.selection').on("mouseleave",function(){ bubble.style("visibility","hidden"); });
            })
+
+      svg.attr("height",sliders.node().getBBox().height+(y/2))
     }
 
     function innerBrushed(brValue,value) {
       var renderedValue = scale2.invert(brValue);
       renderedValue = rounded ? Math.round(renderedValue) : formatter(renderedValue);
-      bubble.text(renderedValue);
+      bubble.select("text").text(renderedValue);
+      var bubbleWidth = bubble.select("text").node().getBoundingClientRect().width+6;
+      bubble.select("rect").attr("width",bubbleWidth);
+      var tomove = brValue;
       if(rounded){
         value = Math.round(value);
-        var tomove = scale2(renderedValue);
+        tomove = scale2(renderedValue);
         slider.call(brush.move,[tomove-handleRadius,tomove+handleRadius]);
-        bubble.attr("x",tomove+7);
-      }else{
-        bubble.attr("x",brValue+7);
       }
+      bubble.attr("transform","translate("+(tomove+5)+",-2)");
       return value;
     }
 
@@ -2223,20 +2252,18 @@ function drawSVG(sel){
     }
 
     exports.update = function(value) {
-      if(slider && (value >= d3.min(domain) && value <= d3.max(domain))){
-        brush.on("brush", null);
-        slider.call(brush.move,[scale(value)-handleRadius,scale(value)+handleRadius]);
-        callback(innerBrushed(scale(value),value));
-        brush.on("brush", brushed);
+      if(value >= d3.min(domain) && value <= d3.max(domain)){
+        if(slider){
+          brush.on("brush", null);
+          slider.call(brush.move,[scale(value)-handleRadius,scale(value)+handleRadius]);
+          callback(innerBrushed(scale(value),value));
+          brush.on("brush", brushed);
+        }else{
+          callback(value);
+        }
       }
       return exports;
     }
-
-    exports.y = function(x) {
-      if (!arguments.length) return y;
-      y = x;
-      return exports;
-    };
 
     exports.domain = function(x) {
       if (!arguments.length) return domain;
@@ -2323,7 +2350,7 @@ function frameStep(value){
         loadFrameData(frameControls.frame);
 
         if(Array.isArray(options.main))
-          body.select("div.main").html(options.main[frameControls.frame]);
+          main.select("span.title").html(options.main[frameControls.frame]);
         if(Array.isArray(options.note))
           body.select("div.note").html(options.note[frameControls.frame]);
 
@@ -2370,16 +2397,12 @@ function frameStep(value){
           d3.select(".divFrameCtrl .pause").dispatch("click");
 }
 
-function drawNet(){
-  d3.selectAll(".slider.charge, .slider.linkDistance")
-    .style("opacity",options.heatmap||!options.dynamicNodes?0:1);
-  
+function drawNet(){  
   var svg = d3.select(".plot svg g.net");
 
   var ctx = d3.select(".plot canvas").node().getContext("2d");
 
-  var gScale = d3.select(".plot svg g.scale")
-  gScale.selectAll("*").remove();
+  legendPanel.selectAll("*").remove();
 
   if(Graph.tree){
     var hideChildren = function(d){
@@ -2728,7 +2751,7 @@ function drawNet(){
     d3.select(".slider.charge").style("display",nodes.length<2?"none":null)
     d3.select(".slider.linkDistance").style("display",!links.length || options.linkWeight?"none":null)
 
-    simulation.nodes(nodes)
+    simulation.nodes(nodes);
 
     simulation.force("link")
       .links(links)
@@ -2787,6 +2810,7 @@ function drawNet(){
       data = data.reduce(function(a,b) { return a.concat(b); }, []);
     data = d3.set(data).values();
     Legends.legend = displayLegend()
+      .type("Legend")
       .key(options.nodeLegend)
       .data(data.sort(sortAsc));
   }
@@ -2795,6 +2819,7 @@ function drawNet(){
     if(options.nodeColor && dataType(nodes,options.nodeColor)!='number'){
       data = d3.map(nodes.filter(function(d){ return d[options.nodeColor]!==null; }), function(d){ return d[options.nodeColor]; }).keys();
       Legends.color = displayLegend()
+        .type("Color")
         .key(options.nodeColor)
         .data(data.sort(sortAsc))
         .color(colorNodesScale);
@@ -2803,6 +2828,7 @@ function drawNet(){
     if(options.nodeShape){
       data = d3.map(nodes, function(d){ return d[options.nodeShape]; }).keys();
       Legends.shape = displayLegend()
+        .type("Shape")
         .key(options.nodeShape)
         .data(data.sort(sortAsc))
         .shape(symbolList)
@@ -2824,6 +2850,7 @@ function drawNet(){
         textFunc = getImageName;
       }
       Legends.image = displayLegend()
+        .type("Image")
         .key(options.imageItem)
         .data(data)
         .title(title)
@@ -2832,8 +2859,31 @@ function drawNet(){
     }
   }
 
-    for(var k in Legends){
-      gScale.call(Legends[k]);
+    if(d3.keys(Legends).length){
+      var legendsHeight = height - 220;
+      if(!legendPanel.select(".legend-panel > .scale").empty()){
+        legendsHeight = legendsHeight-legendPanel.select(".legend-panel > .scale").node().offsetHeight-10;
+      }
+      var divLegends = legendPanel.append("div")
+        .attr("class","legends")
+      var div = divLegends.append("div")
+          .style("height",legendsHeight+"px")
+
+      for(var k in Legends){
+        div.call(Legends[k]);
+      }
+
+      divLegends.append("hr")
+        .attr("class","legend-separator")
+
+      var gSelectAll = divLegends.append("div")
+        .attr("class","legend-selectall")
+      displaycheck(gSelectAll);
+      gSelectAll.append("span")
+        .text(texts.selectall)
+
+      displayBottomButton(divLegends,"egonet","ctrl + e",switchEgoNet);
+      displayBottomButton(divLegends,"filter","ctrl + f",filterSelection);
     }
   } // end legends
 
@@ -3166,7 +3216,7 @@ function drawNet(){
 
     doc.setTextColor("#333");
 
-    d3.selectAll("div.main").each(function(){
+    d3.selectAll("div.main span.title").each(function(){
       doc.setFontSize(parseInt(d3.select(this).style("font-size")));
       doc.setFontType("bold");
       doc.text(12, 28, this.textContent);
@@ -3179,79 +3229,15 @@ function drawNet(){
       doc.text(12, height-12, this.textContent);
     })
 
-    var gScale = d3.select(".scale");
-    if(gScale.style("opacity")!=0){
+    if(!legendPanel.empty()){
       // scale
-      if(!gScale.select(".scale>rect").empty()) {
-          var colors = colorScales[d3.select(".scale rect").attr("fill").replace(/(url\()|(\))/g, "").replace("#","")];
-          var canvas = document.createElement("canvas");
-          canvas.width = 300;
-          canvas.height = 10;
-          var ctx = canvas.getContext("2d");
-          var grd = ctx.createLinearGradient(0,0,300,0);
-          grd.addColorStop(0,colors[0]);
-          grd.addColorStop(0.5,colors[1]);
-          grd.addColorStop(1,colors[2]);
-          ctx.fillStyle = grd;
-          ctx.fillRect(0,0,300,10);
-          var uri = canvas.toDataURL();
-          doc.addImage(uri, 'PNG', (width-320), 40, 300, 10);
-          gScale.selectAll(".scale>text").each(function(){
-            var self = d3.select(this),
-                x = +(self.attr("x"))+(width-20),
-                y = +(self.attr("y"))+20,
-                t = self.text();
-
-            doc.setFontSize(parseInt(self.style("font-size")));
-            doc.text(x, y, t, { align: "center" });
-          });
+      if(!legendPanel.select(".scale").empty()) {
+        //TODO
       }
 
       // legend
-      if(!gScale.select(".legend").empty()) {
-        legendControls = false;
-        drawNet();
-        gScale.selectAll(".legend").each(function(){
-          var sel = d3.select(this),
-              y = getTranslation(sel.attr("transform"))[1]+10,
-              fontSize = parseInt(sel.select(".title").style("font-size")),
-              t = sel.select(".title").text();
-          doc.setFontSize(fontSize);
-          doc.text(width-60, y+10, t, { align: "right" });
-          fontSize = parseInt(sel.selectAll("g>text").style("font-size"));
-          doc.setFontSize(fontSize);
-          doc.setDrawColor(170, 170, 170);
-          sel.selectAll(".legend-separator").each(function(){
-            var self = d3.select(this),
-                x1 = width-60 + (+self.attr("x2")),
-                y1 = +self.attr("y1")+y,
-                x2 = width-60 + (+self.attr("x1")),
-                y2 = +self.attr("y2")+y;
-
-            doc.line(x1, y1, x2, y2);
-          })
-          sel.selectAll("g.legend-item").each(function(d,i){
-            var el = d3.select(this),
-                gy = getTranslation(el.attr("transform"))[1],
-                x = width-60,
-                t = el.select("text").text();
-            if(el.select("image").empty()){
-              var color = d3.rgb(el.select("path").style("fill")),
-                  d = el.select("path").attr("d");
-              doc.setFillColor(color.r,color.g,color.b);
-              doc.polygon(d,x,y+gy,[1,1],"F");
-            }else{
-              var imgSrc = el.select("image").attr("href");
-              if(images64[imgSrc]){
-                var imgHeight = images[imgSrc].height*10/images[imgSrc].width;
-                doc.addImage(images64[imgSrc], 'PNG', x, y+gy-4, 10, imgHeight);
-              }
-            }
-            doc.text(x-10, y+gy+4, t, { align: "right" });
-          });
-        })
-        legendControls = true;
-        drawNet();
+      if(!legendPanel.select(".legends").empty()) {
+        //TODO
       }
     }
 
@@ -3667,7 +3653,7 @@ function displayInfoPanel(info){
     }
     div = body.append("div")
           .attr("class","infopanel");
-    var infoHeight = (options.showTables ? 10 + computeHeight() + (options.showButtons2 ? panel.select(".tables > .selectButton").node().offsetHeight : 0) : docSize.height - 10)
+    var infoHeight = (options.showTables ? 10 + height + (options.showButtons2 ? body.select(".tables > .selectButton").node().offsetHeight : 0) : docSize.height - 10)
       - parseInt(div.style("top"))
       - parseInt(div.style("padding-top"))
       - parseInt(div.style("padding-bottom"));
@@ -3693,7 +3679,6 @@ function displayInfoPanel(info){
       )
     div.append("div")
           .attr("class","close-button")
-          .html("&#x2716;")
           .on("click", function(){
             div.transition().duration(500)
               .style("left",docSize.width+"px")
@@ -3851,8 +3836,7 @@ function stopResumeNet(){
     });
     simulation.stop();
   }
-  d3.selectAll(".slider.charge, .slider.linkDistance")
-      .style("opacity",options.dynamicNodes ? 1 : 0);
+  displaySidebar();
 }
 
 function clickHide(items, show, callback) {
@@ -3862,216 +3846,88 @@ function clickHide(items, show, callback) {
       .on("end",callback ? callback : null)
 }
 
+function showAxesFunction(){
+  if(!options.showCoordinates){
+    clickHide(d3.selectAll(".net .axis, .net .axisLabel"), options.showAxes);
+  }else{
+    clickHide(d3.selectAll(".plot > svg > .axis, .plot > svg > .axisLabel"), options.showAxes);
+  }
+}
+
 function displayLegend(){
   var parent,
       legend,
+      type,
       key,
       title,
       text = stripTags,
       color = "#000000",
       shape = defaultShape,
       data = [],
-      y = 0,
-      defCheckOffset = 26,
-      checkOffset = 0,
       legendWidth = 120;
 
-  function exports(sel){
+  function exports(parent){
 
     if(!data.length)
       return 0;
 
-    parent = d3.select(sel.node().parentNode);
-    parent.selectAll(".legend-bottom-button").remove();
-    y = sel.node().getBBox().height;
-    if(y!=0)
-      y = y + 40*options.cex;
-    else
-      y = y + 20*options.cex;
-
-    if(data.length > (height-y-100)/(30*options.cex))
-      return 0;
-
-    checkOffset = (data.length==1 || !legendControls) ? 0 : defCheckOffset;
-
-    legend = sel.append("g")
+    legend = parent.append("div")
     .attr("class","legend")
-    .attr("transform", "translate(0,"+y+")")
     .property("key",key)
 
-    y = 5*options.cex;
-    var textTitle = legend.append("text")
-    .attr("class","title")
-    .attr("x", 0)
-    .attr("y", y)
-    .text(typeof title == "undefined" ? key : title)
+    var headerDiv = legend.append("div")
+    headerDiv.append("span")
+        .attr("class","title")
+        .text(type + " / " + (typeof title == "undefined" ? key : title))
 
-    if(legendControls && parent.select(".goback").empty() && (!checkInitialFilters() || egoNet)){
-      var lineApart = textTitle.node().getBBox().width>=legendWidth;
-      if(lineApart){
-        y = 25*options.cex;
+    if(parent.select(".goback").empty() && (!checkInitialFilters() || egoNet)){
+      var goback;
+      if(headerDiv.select(".title").node().offsetWidth>=legendWidth){
+        goback = legend.append("span");
+      }else{
+        goback = headerDiv.append("span");
       }
-      legend.append("text")
-        .attr("class","goback")
-        .attr("x",-legendWidth)
-        .attr("y",y)
-        .style("text-anchor",lineApart ? "start" : "end")
-        .style("fill",UIcolor)
-        .style("cursor","pointer")
-        .on("click",applyInitialFilter)
-        .text("‹ "+texts.goback)
-        .append("title")
-          .text("ctrl + i")
+      goback.attr("class","goback")
+          .on("click",applyInitialFilter)
+          .text("‹ "+texts.goback)
+          .append("title")
+            .text("ctrl + i")
     }
-    y = y + 10*options.cex;
 
-    if(checkOffset && parent.select(".legend-selectall").empty()){
-      var gSelectAll = legend.append("g")
-      .attr("class","legend-selectall")
-      .attr("transform", "translate(0,"+y+")");
-      gSelectAll.append("text")
-      .attr("x", -20)
-      .attr("y", 10*options.cex)
-      .style("text-anchor", "end")
-      .text(texts.selectall)
-      displaycheck(gSelectAll,0);
+    legend.append("hr")
+    .attr("class","legend-separator")
 
-      y = y + 18*options.cex;
-    }
-    displaySeparator(legend,y);
-
-    var g = legend.selectAll("g.legend-item")
+    var row = legend.selectAll("div.legend-item")
       .data(data)
-    .enter().append("g")
+    .enter().append("div")
       .attr("class","legend-item")
-      .attr("transform", function(d, i){
-        y = y + 20*options.cex;
-        return "translate(0," + y + ")";
-      });
 
-    if(color == "image"){
-      g.append("image")
-        .attr("xlink:href", String)
-        .attr("x",-checkOffset-6)
-        .attr("y",-8)
+    displaycheck(row,true,key);
+
+    if(type == "Image"){
+      row.append("img")
+        .attr("src", String)
         .attr("width",16)
         .attr("height",16)
     }else{
-      g.append("path")
-      .attr("transform", "translate(-"+checkOffset+",0)")
+      row.append("svg")
+        .attr("width",16)
+        .attr("height",16)
+      .append("path")
+      .attr("transform","translate(8,8)")
       .attr("d", d3.symbol().type(typeof shape=="function" ? function(d){ return d3["symbol"+shape(d)]; } : d3["symbol"+shape]))
       .style("fill", color)
     }
 
-    g.append("text")
-      .attr("x", -checkOffset-10)
-      .attr("y", 4*options.cex)
-      .style("text-anchor", "end")
+    row.append("span")
       .text(text)
-
-    if(checkOffset){
-      displaycheck(g,-5,true);
-
-      y = y + 20*options.cex;
-      displaySeparator(legend,y);
-
-      y = y + 10*options.cex;
-
-      displayBottomButton(legend,1,y,"egonet","ctrl + e",switchEgoNet);
-      displayBottomButton(legend,2,y,"filter","ctrl + f",filterSelection);
-    }
-
-    sel.transition()
-      .duration(500)
-      .style("opacity",+options.showLegend);
-
   }
 
-  function displaySeparator(sel,y){
-    sel.append("line")
-    .attr("class","legend-separator")
-    .attr("x1",0)
-    .attr("y1",y)
-    .attr("x2",-legendWidth)
-    .attr("y2",y)
-  }
-
-  // render checkbox
-  function displaycheck(sel,y,item){
-
-    if(item)
-      sel.property("item",true);
-
-    sel.append("rect")
-    .attr("x",-105)
-    .attr("y",y-5)
-    .attr("width",110)
-    .attr("height",20)
-    .attr("pointer-events","all")
-    .style("fill","none")
-
-    sel.append("rect")
-    .attr("class","legend-check-box")
-    .attr("x",-10)
-    .attr("y",y)
-    .attr("width",10)
-    .attr("height",10)
-    .attr("rx",2)
-
-    sel.style("cursor","pointer")
-    .on("click",function(){
-      var value = String(d3.select(this).datum()),
-          selected = this.selected = !this.selected;
-      if(!this.item){
-        // select all/none nodes
-        Graph.nodes.forEach(function(d){
-            if(selected && checkSelectable(d)){
-              d.selected = true;
-            }else{
-              delete d.selected;
-            }
-        });
-      }else{
-        // select especific nodes
-        Graph.nodes.forEach(function(d){
-          if(d[key] && (String(d[key])==value || (typeof d[key] == "object" && (d[key].indexOf(value)!=-1 || d[key].join(",")==value)))){
-            if(selected && checkSelectable(d)){
-              d.selected = true;
-            }else{
-              delete d.selected;
-            }
-          }
-        });
-      }
-      showTables();
-    })
-
-    sel.append("path")
-      .attr("class","legend-check-path")
-      .attr("transform","translate("+(-10)+","+y+")")
-      .attr("d",item ? "M1,3L4,6L9,1L10,2L4,8L0,4Z" : "M2,4L8,4L8,6L2,6z")
-  }
-
-  function displayBottomButton(sel,x,y,text,tooltip,callback){
-      var w = 50;
-      x = -w*x;
-      var g = sel.append("g")
-      .attr("class","legend-bottom-button "+text)
-      .attr("transform","translate("+x+","+y+")")
-      g.append("rect")
-      .attr("x",3)
-      .attr("y",0)
-      .attr("width",w-6)
-      .attr("height",15)
-      .attr("rx",2)
-      .on("click",callback)
-      .append("title")
-        .text(tooltip)
-      g.append("text")
-      .attr("x",w/2)
-      .attr("y",10)
-      .text(texts[text])
-  }
+  exports.type = function(x) {
+      if (!arguments.length) return type;
+      type = x;
+      return exports;
+  };
 
   exports.key = function(x) {
       if (!arguments.length) return key;
@@ -4112,6 +3968,53 @@ function displayLegend(){
   return exports;
 }
 
+// render checkbox
+function displaycheck(sel,item,key){
+
+    if(item)
+      sel.property("item",true);
+
+    sel.append("div")
+    .attr("class","legend-check-box")
+
+    sel.style("cursor","pointer")
+    .on("click",function(){
+      var value = String(d3.select(this).datum()),
+          selected = this.selected = !this.selected;
+      if(!this.item){
+        // select all/none nodes
+        Graph.nodes.forEach(function(d){
+            if(selected && checkSelectable(d)){
+              d.selected = true;
+            }else{
+              delete d.selected;
+            }
+        });
+      }else{
+        // select especific nodes
+        Graph.nodes.forEach(function(d){
+          if(d[key] && (String(d[key])==value || (typeof d[key] == "object" && (d[key].indexOf(value)!=-1 || d[key].join(",")==value)))){
+            if(selected && checkSelectable(d)){
+              d.selected = true;
+            }else{
+              delete d.selected;
+            }
+          }
+        });
+      }
+      showTables();
+    })
+}
+
+function displayBottomButton(sel,text,tooltip,callback){
+      sel.append("button")
+        .attr("class","legend-bottom-button primary disabled "+text)
+        .text(texts[text])
+        .on("click",callback)
+        .append("title")
+          .text(tooltip)
+}
+
 function getImageName(path){
   var name = path.split("/");
   name = name.pop().split(".");
@@ -4128,35 +4031,49 @@ function stripTags(text){
 }
 
 function displayScale(domain, fill, title){
-    var scale = d3.select(".plot svg .scale");
+    if(!options.showLegend){
+      return;
+    }
 
-    scale.style("opacity",0);
+    var div = legendPanel.append("div")
+      .attr("class","scale")
 
-    scale.append("text")
-    .attr("class","title")
-    .attr("x",-150)
-    .attr("y",10)
-    .text(title);
+    div.append("img")
+        .attr("width","24")
+        .attr("height","24")
+        .attr("src",b64Icons.edit)
+        .on("click",function(){
+          var itemColor = options.heatmap ? "linkColor" : "nodeColor";
+          displayPicker(options,itemColor,drawNet);
+        })
 
-    scale.append("rect")
-    .attr("x",-300)
-    .attr("y",20)
+    div = div.append("div");
+
+    div.append("div")
+      .attr("class","title")
+      .text(title);
+
+    var scaleWidth = sidebarWidth - 54;
+
+    div.append("svg")
+      .attr("width", scaleWidth)
+      .attr("height",10)
+      .append("rect")
+    .attr("x",0)
+    .attr("y",0)
     .attr("height",10)
-    .attr("width",300)
+    .attr("width",scaleWidth)
     .attr("rx",2)
     .attr("fill", fill);
-    scale.append("text")
-    .attr("x",-300)
-    .attr("y",12*options.cex + 32)
-    .text(formatter(domain[0]));
-    scale.append("text")
-    .attr("x",0)
-    .attr("y",12*options.cex + 32)
-    .attr("text-anchor", "end")
-    .text(formatter(domain[domain.length-1]));
-    scale.transition()
-    .duration(500)
-    .style("opacity",+options.showLegend);
+
+    div.append("span")
+      .attr("class","domain1")
+      .text(formatter(domain[0]));
+
+    div.append("span")
+      .attr("class","domain2")
+      .text(formatter(domain[domain.length-1]));
+
 }
 
 function showTables() {
@@ -4168,11 +4085,17 @@ function showTables() {
   });
 
   var tableWrapper = function(dat, name, columns){
-    var currentData;
+    var currentData,
+        columnAlign = columns.map(function(col){
+          if(dataType(dat,col) == 'number'){
+            return "right";
+          }
+          return null;
+        });
     if(name=="nodes")
-      currentData = simulation.nodes();
+      currentData = Graph.nodes.filter(checkSelectable);
     else
-      currentData = simulation.force("link").links();
+      currentData = Graph.links.filter(checkSelectableLink);
     var table = d3.select("div.tables div."+name),
         last = -1,
     drawTable = function(d){
@@ -4181,9 +4104,8 @@ function showTables() {
         .classed("selected",function(dd){
           return currentData[dd]._selected;
         });
-      columns.forEach(function(col){
-          var txt = d[col],
-              textAlign = null;
+      columns.forEach(function(col,i){
+          var txt = d[col];
           if(txt == null)
             txt = "";
           if(typeof txt == 'object'){
@@ -4194,10 +4116,9 @@ function showTables() {
           }
           if(typeof txt == 'number'){
             txt = formatter(txt);
-            textAlign = "right";
           }
           tr.append("td").html(txt)
-              .style("text-align",textAlign)
+              .style("text-align",columnAlign[i])
               .on("mousedown",function(){ d3.event.preventDefault(); });
       });
       tr.on("click",function(origin,j){
@@ -4254,12 +4175,8 @@ function showTables() {
                 if(b[d]==null) return rv[1];
                 a = a[d][options.nodeName]?a[d][options.nodeName]:a[d];
                 b = b[d][options.nodeName]?b[d][options.nodeName]:b[d];
-                if(typeof a == "number" && typeof b == "number"){
-                  if(!desc[i])
-                    rv = rv.reverse();
-                }else{
-                  if(desc[i])
-                    rv = rv.reverse();
+                if(desc[i]){
+                  rv = rv.reverse();
                 }
                 if (a > b) {
                   return rv[0];
@@ -4272,6 +4189,7 @@ function showTables() {
           thead.append("th")
             .attr("class","sorting")
             .text(d)
+            .style("text-align",columnAlign[i])
             .on("click",function(){
               tbody.html("");
               dat.sort(sort1);
@@ -4289,7 +4207,17 @@ function showTables() {
     table.html("");
     table.append("div")
       .attr("class","title")
-      .html("<span>"+texts[name+"attributes"] + "</span> ("+dat.length+" "+texts.outof+" "+totalItems[name]+")");
+      .html("<span>"+texts[name+"attributes"] + "</span> ("+dat.length+" "+texts.outof+" "+totalItems[name]+")")
+      .call(iconButton()
+        .alt("xlsx")
+        .src(b64Icons.xlsx)
+        .title(texts.downloadtable)
+        .job(tables2xlsx))
+      .select("img")
+        .style("float","none")
+        .style("margin","0")
+        .style("margin-left","6px")
+        .style("margin-bottom","-2px")
     table = table.append("div");
     if(dat.length==0){
       table.style("cursor",null);
@@ -4301,7 +4229,14 @@ function showTables() {
       table = drawHeader();
       dat.forEach(drawTable);
       table.each(function(){
-        var twidth = this.parentNode.offsetWidth;
+        var twidth = this.parentNode.offsetWidth,
+            itemDiv = d3.select(this.parentNode.parentNode.parentNode),
+            thidden = itemDiv.style("display") == "none";
+        if(thidden){
+          itemDiv.style("display",null);
+          twidth = this.parentNode.offsetWidth;
+          itemDiv.style("display","none");
+        }
         d3.select(this.parentNode.parentNode)
             .style("width",(twidth+8)+"px")
             .style("cursor","col-resize")
@@ -4348,8 +4283,8 @@ function showTables() {
     nodeColumns = d3.merge([nodeColumns,["x","y"]]);
 
     nodesData.forEach(function(d){
-      d["x"] = scaleCoorX.invert(d["x"]).toFixed(2);
-      d["y"] = scaleCoorY.invert(d["y"]).toFixed(2);
+      d["x"] = parseFloat(scaleCoorX.invert(d["x"]).toFixed(2));
+      d["y"] = parseFloat(scaleCoorY.invert(d["y"]).toFixed(2));
     });
   }
 
@@ -4401,12 +4336,12 @@ function showTables() {
 
 // check checkboxes after node selections
 function checkLegendItemsChecked() {
-    var parent = plot.select("svg > .scale"),
-        legendSelectAll = parent.select(".legend-selectall");
+    var parent = legendPanel.select(".legends > div"),
+        legendSelectAll = legendPanel.select(".legend-selectall");
     if(!legendSelectAll.empty()){
-      var items = parent.selectAll("g.legend-item");
+      var items = parent.selectAll(".legend-item");
       if(!items.empty()){
-        var selectedNodes = simulation.nodes().filter(function(d){ return d.selected; });
+        var selectedNodes = Graph.nodes.filter(checkSelectable).filter(function(d){ return d.selected; });
 
         items.each(function(value){
           checkInBox(this,false);
@@ -4421,10 +4356,9 @@ function checkLegendItemsChecked() {
         })
 
         var size = parent.selectAll(".legend-item").filter(function(){ return this.selected; }).size(),
-            enable = selectedNodes.length && simulation.nodes().length > selectedNodes.length;
-        parent.selectAll(".legend-bottom-button > rect")
-        .style("fill", enable ? UIcolor : disUIcolor)
-        .style("pointer-events", enable ? "all" : null)
+            enable = selectedNodes.length && Graph.nodes.filter(checkSelectable).length > selectedNodes.length;
+        legendPanel.selectAll(".legend-bottom-button")
+          .classed("disabled",!enable)
         checkInBox(legendSelectAll.node(), size ? true : false);
       }
     }
@@ -4432,23 +4366,14 @@ function checkLegendItemsChecked() {
     // visually mark/unmark checkbox
     function checkInBox(thiz,select){
         var checkBox = d3.select(thiz).select(".legend-check-box");
-        if(select){
-          thiz.selected = true;
-          checkBox
-            .style("fill",UIcolor)
-            .style("stroke","none")
-        }else{
-          thiz.selected = false;
-          checkBox
-            .style("fill",null)
-            .style("stroke",null)
-        }
+        thiz.selected = select;
+        checkBox.classed("checked",select)
     }
 }
 
 function enableSelectButtons(buttons,enable){
-    panel.select(".selectButton").selectAll(buttons)
-      .attr("class",enable?"":"disabled")
+    d3.select(".tables .selectButton").selectAll(buttons)
+      .classed("disabled",!enable)
 }
 
 function tables2xlsx(){
@@ -4525,31 +4450,32 @@ function selectNodesFromTable(){
 }
 
 function getLayoutRange(){
-  var xrange, yrange,
-      compWidth = computeWidth(),
-      compHeight = computeHeight();
+  var xrange, yrange;
   if(options.showCoordinates){
       var offsetTop = 50,
-          offsetRight = 240,
+          offsetRight = sidebarWidth + 40,
           offsetBottom = 50*Math.max(options.cex,1),
-          offsetLeft = 240;
+          offsetLeft = sidebarWidth + 40;
 
       if(options.note){
         offsetBottom = offsetBottom + divNote.node().clientHeight;
       }
 
-      xrange = [offsetLeft,compWidth-offsetRight],
-      yrange = [offsetTop,compHeight-offsetBottom];
+      xrange = [offsetLeft,width-offsetRight],
+      yrange = [offsetTop,height-offsetBottom];
   }else{
-      var size = Math.min(compWidth,compHeight) / 1.2;
+      var size = Math.min(width,height) / 1.2;
 
-      xrange = [0,size].map(function(d){ return ((compWidth-size)/2)+d; });
-      yrange = [0,size].map(function(d){ return ((compHeight-size)/2)+d; });
+      xrange = [0,size].map(function(d){ return ((width-size)/2)+d; });
+      yrange = [0,size].map(function(d){ return ((height-size)/2)+d; });
   }
   return { x: xrange, y: yrange };
 }
 
 function adaptLayout(){
+  plot.style("width",width+"px");
+  plot.style("height",height+"px");
+
   var initialize = false;
   if(typeof options.dynamicNodes == "undefined"){
     initialize = true;
@@ -4628,8 +4554,8 @@ function adaptLayout(){
         dx = range.x[1]-range.x[0],
         dy = range.y[1]-range.y[0];
 
-    range.x = range.x.map(function(d){ return d-(computeWidth()/2); });
-    range.y = range.y.map(function(d){ return d-(computeHeight()/2); });
+    range.x = range.x.map(function(d){ return d-(width/2); });
+    range.y = range.y.map(function(d){ return d-(height/2); });
 
     range.y.reverse();
 
@@ -4665,21 +4591,18 @@ function adaptLayout(){
       });
     }
   }else{
-    var compWidth = computeWidth(),
-        compHeight = computeHeight();
-
     if(initialize){
-      var size = Math.min(compWidth,compHeight);
+      var size = Math.min(width,height);
 
       scaleCoorX = d3.scaleLinear()
-        .domain([0,2*compWidth/size])
+        .domain([0,2*width/size])
 
       scaleCoorY = d3.scaleLinear()
-        .domain([0,-2*compHeight/size])
+        .domain([0,-2*height/size])
     }
 
-    scaleCoorX.range([0,compWidth]);
-    scaleCoorY.range([0,compHeight]);
+    scaleCoorX.range([0,width]);
+    scaleCoorY.range([0,height]);
   }
 }
 
@@ -4742,13 +4665,13 @@ function svg2png(callback){
   ctx.fillStyle = "#ffffff";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  svg.selectAll(".buttons, .zoombutton, .scale").style("display","none");
+  svg.selectAll(".zoombutton").style("display","none");
   if(options.main){
     svg.append("text")
       .attr("class","main")
       .attr({"x":+svg.attr("width")/2, "y":30})
       .style("text-anchor","middle")
-      .style("font-size",d3.select("div.main").style("font-size"))
+      .style("font-size",d3.select("div.main span.title").style("font-size"))
       .text(options.main);
   }
   if(options.note){
@@ -4771,7 +4694,7 @@ function svg2png(callback){
 
   svg.select("svg>text.main").remove()
   svg.select("svg>text.note").remove()
-  svg.selectAll(".buttons, .zoombutton, .scale").style("display",null);
+  svg.selectAll(".zoombutton").style("display",null);
 }
 
 function svg2pdf(){
@@ -4797,8 +4720,8 @@ function movePan(dir){
 }
 
 function resetPan(){
-  var w = computeWidth(),
-      h = computeHeight(),
+  var w = width,
+      h = height,
       infopanel = body.select(".infopanel");
   if(!infopanel.empty()){
     w = w-infopanel.node().offsetWidth;
@@ -4817,32 +4740,31 @@ function resetZoom(){
 
 function computeWidth(){
   var w = docSize.width - 20;
-  if(options.showSidebar){
-    w = w - sidebarOffset;
-  }
   return w;
 }
 
 function computeHeight(){
-  var h = docSize.height - 2;
-  if(options.main){
-    h = h-parseInt(body.select("div.panel").style("top"));
+  if(plotHeight){
+    return plotHeight;
+  }else{
+    var h = docSize.height - 2;
+    if(main){
+      h = h-main.node().offsetHeight;
+    }
+    if(options.showTables){
+      h = h - 165;
+    }else if(options.showButtons2){
+      h = h - (35 + 12*options.cex);
+    }  
+    return h;
   }
-  if(options.showTables){
-    h = h - 165;
-  }else if(options.showButtons2){
-    h = h - (35 + 12*options.cex);
-  }  
-  return h;
 }
 
 window.onresize = function(){
+  docSize = viewport();
   width = computeWidth();
   height = computeHeight();
-
-  plot.style("width",width+"px");
-  plot.style("height",height+"px");
-  plot.call(drawSVG);
+  drawSVG();
 }
 
 } // network function end

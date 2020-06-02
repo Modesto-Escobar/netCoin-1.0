@@ -16,12 +16,6 @@ function timeline(json){
   else
     options.cex = 1;
 
-  // get primary color for user interface;
-  var a = body.append("a"),
-      UIcolor = a.style("color"),
-      disUIcolor = applyOpacity(d3.rgb(UIcolor),0.4);
-  a.remove();
-
   var tooltip = body.append("div")
         .attr("class","tooltip")
         .style("display","none")
@@ -96,10 +90,9 @@ function timeline(json){
 
   // multigraph
   if(typeof multiGraph != 'undefined'){
-      topBar.append("h3").text(texts.netselection + ":")
+      topBar.append("h3").text(texts.graph + ":")
       multiGraph.graphSelect(topBar);
-  }else
-      topBar.append("select").style("visibility","hidden");
+  }
 
   // groups selection in topBar
   topBarVisual(topBar,"Group","group",getOptions(nodes));
@@ -132,7 +125,7 @@ function timeline(json){
 
   if(options.main)
     body.append("div")
-        .attr("class","main")
+        .attr("class","main-title")
         .html(options.main)
 
   // styles
@@ -381,8 +374,6 @@ function timeline(json){
         .attr("class","goback")
         .attr("x",(-margin[3]+8))
         .attr("y",-4*options.cex)
-        .style("fill",UIcolor)
-        .style("cursor","pointer")
         .on("click",function(){
           filter = false;
           displayGraph();
@@ -473,15 +464,13 @@ function timeline(json){
     }
 
     function enableBottomButton(enable){
-      mini.select(".legend-bottom-button > rect")
-        .style("fill", enable ? UIcolor : disUIcolor)
-        .style("pointer-events", enable ? "all" : null)
+      mini.select(".legend-bottom-button")
+        .classed("disabled",!enable)
     }
 
     function checkBox(sel,check){
       sel.select(".legend-check-box")
-              .style("fill",check ? UIcolor : null)
-              .style("stroke",check ? "none" : null)
+        .classed("checked",check)
     }
 
     //mini axis
@@ -926,17 +915,16 @@ function timeline(json){
   function topBarVisual(sel, visual, option, opt, picker){
     sel.append("h3").text(texts[visual] + ":")
 
-    var visualSelect = sel.append("select")
+    var visualSelect = sel.append("div")
+      .attr("class","select-wrapper")
+    .append("select")
     .on("change",function(){
       options[option] = this.value;
       if(options[option]=="-"+texts.none+"-")
         options[option] = false;
       displayGraph();
       if(picker && dataType(json.events,options[option])=='number'){
-        picker(options[option], function(val){
-          options["colorScaleeventColor"] = val;
-          displayGraph();
-        });
+        picker(options, option, displayGraph);
       }
     })
     opt.unshift("-"+texts.none+"-");
@@ -1034,7 +1022,7 @@ function svg2pdf(){
     heights.push(tHeight);
   });
 
-  if(!d3.select("div.main").empty()){
+  if(!d3.select("div.main-title").empty()){
     margin[1] = margin[1] + 30;
     tHeight = tHeight + 30;
   }
@@ -1054,7 +1042,7 @@ function svg2pdf(){
   doc.setTextColor(0);
   doc.setLineWidth(1);
 
-  d3.select("div.main").each(function(){
+  d3.select("div.main-title").each(function(){
       var self = d3.select(this),
           txt = self.text(),
           fontsize = parseInt(self.style("font-size")),
@@ -1092,11 +1080,10 @@ function svg2pdf(){
     })
     svg.selectAll(".laneText").each(function(){
       var self = d3.select(this),
-          y = +self.attr("y") + margin[1] + svgY,
+          y = (self.attr("transform") ? getTranslation(self.attr("transform"))[1] : +self.attr("y")) + margin[1] + svgY,
           txt = self.text(),
           fontsize = parseInt(self.style("font-size")),
-          txtWidth = self.attr("text-anchor")=="end" ? doc.getStringUnitWidth(txt) * fontsize : 0,
-          x = +self.attr("x") + margin[0] - txtWidth;
+          x = self.attr("transform") ? 10 : margin[0];
       doc.setFontSize(fontsize);
       doc.setTextColor(0);
       doc.text(x, y+3, txt);

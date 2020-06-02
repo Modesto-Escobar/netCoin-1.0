@@ -1,6 +1,6 @@
 // texts to translate
 var texts = {
-    netselection : "Grafo",
+    graph : "gràfic",
     nodes : "Nodes",
     general: "General",
     links: "Enllaços",
@@ -20,6 +20,7 @@ var texts = {
     pdfexport: "PDF exportació",
     svgexport: "SVG exportació",
     pngexport: "PNG exportació",
+    showHelp: "Mostrar ajuda",
     showhidelegend: "Llegenda",
     showhideaxes: "Eixos",
     showhidesidebar: "Mostra/oculta barra lateral",
@@ -97,5 +98,7 @@ var texts = {
     speed: "Velocitat",
     search: "Cerca...",
     goback: "Tornar",
-    newtab: "Obriu a la pestanya nova"
+    newtab: "Obriu a la pestanya nova",
+    configure: "Configurar",
+    poweredby: "Fet amb"
   };

@@ -14,8 +14,9 @@ function MultiGraph(input){
 MultiGraph.prototype = {
   graphSelect: function(sel){
     var current = this.current;
-    sel = sel.append("select")
-    sel.selectAll("option")
+    sel = sel.append("div").attr("class","multi-select")
+    var select = sel.append("select")
+    select.selectAll("option")
       .data(this.items)
       .enter().append("option")
         .property("value",function(d,i){ return i; })
@@ -24,7 +25,9 @@ MultiGraph.prototype = {
           if(i==current)
             this.selected = true; 
         })
-    sel.on("change",function(){ window.location.href = "?"+this.value; })
+    select.on("change",function(){ window.location.href = "?"+this.value; })
+    sel.append("span")
+      .html(this.items[current])
   },
   getJSON: function(){
     return this.json;

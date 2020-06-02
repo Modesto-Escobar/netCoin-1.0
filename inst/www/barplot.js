@@ -105,14 +105,16 @@ function barplot(json){
 
   // multigraph
   if(typeof multiGraph != 'undefined'){
-    topBar.append("h3").text(texts.netselection + ":")
+    topBar.append("h3").text(texts.graph + ":")
     multiGraph.graphSelect(topBar);
   }
 
   // events
   topBar.append("h3").text(texts.subjectselect + ":")
 
-  var eventSelect = topBar.append("select")
+  var eventSelect = topBar.append("div")
+      .attr("class","select-wrapper")
+    .append("select")
     .on("change",function(){
       subject = this.value;
       if(subject=="-default-"){
@@ -143,7 +145,9 @@ function barplot(json){
   // colors
   topBar.append("h3").text(texts.Color + ":")
 
-  var colorSelect = topBar.append("select")
+  var colorSelect = topBar.append("div")
+      .attr("class","select-wrapper")
+    .append("select")
     .on("change",function(){
       options.color = this.value;
       if(options.color=="-"+texts.none+"-")
@@ -659,7 +663,9 @@ function topOrder(topBar,data,displayGraph){
 
   topBar.append("h3").text(texts.Order + ":")
 
-  var selOrder = topBar.append("select")
+  var selOrder = topBar.append("div")
+      .attr("class","select-wrapper")
+    .append("select")
     .on("change",function(){
       options.order = this.value;
       if(options.order=="-default-")

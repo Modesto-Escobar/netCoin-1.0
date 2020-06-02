@@ -1,6 +1,6 @@
 // texts to translate
 var texts = {
-    netselection : "Gráfico",
+    graph : "Gráfico",
     nodes : "Nodos",
     general: "General",
     links: "Enlaces",
@@ -20,6 +20,7 @@ var texts = {
     pdfexport: "Exportación PDF",
     svgexport: "Exportación SVG",
     pngexport: "Exportación PNG",
+    showHelp: "Mostrar ayuda",
     showhidelegend: "Leyenda",
     showhideaxes: "Ejes",
     showhidesidebar: "Mostrar/ocultar control lateral",
@@ -97,5 +98,7 @@ var texts = {
     speed: "Velocidad",
     search: "Buscar...",
     goback: "Volver",
-    newtab: "Abrir en nueva pestaña"
+    newtab: "Abrir en nueva pestaña",
+    configure: "Configurar",
+    poweredby: "Hecho con"
   };
