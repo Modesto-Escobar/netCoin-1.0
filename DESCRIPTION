@@ -1,10 +1,10 @@
 Package: netCoin
 Type: Package
-Version: 1.2.0
-Date: 2020-06-02
+Version: 1.2.1
+Date: 2020-06-11
 Title: Interactive Analytic Networks
-Description: Create interactive analytic networks. It joins the data analysis power of R to obtain coincidences, co-occurrences and correlations, and the visualization libraries of 'JavaScript' in one package. The methods are described in Escobar and Martinez-Uribe (2020) <doi:10.18637/jss.v093.i11>.
-License: GPL-2 | GPL-3
+Description: Create interactive analytic networks. It joins the data analysis power of R to obtain coincidences, co-occurrences and correlations, and the visualization libraries of 'JavaScript' in one package.
+License: CC BY-NC-SA 4.0
 Depends: R (>= 3.0.0)
 Imports: igraph (>= 1.0.1), Matrix (>= 1.2-4), haven (>= 1.1.0)
 Suggests: knitr, rmarkdown, lavaan, shiny

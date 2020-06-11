@@ -63,7 +63,7 @@ netCoin(nodes, links = NULL, tree = NULL, name = NULL, label = NULL,
 \item{helpOn}{Should the help be shown at the beginning?}
 \item{background}{background color or image of the graph.}
 \item{layout}{a matrix with two columns or an algorithm to elaborate the coordinates: davidson.harel
-drl("da"), circle("ci"), fruchterman.reingold("fr"), gem("ge"), grid("gr"), kamada.kawai("ka"), lgl("lg"), mds("md"), random("ra"), reingold.tilford("re"), star("sta"), sugiyama("sug")}
+drl("da"), circle("ci"), Force-Atlas-2("fo"), fruchterman.reingold("fr"), gem("ge"), grid("gr"), kamada.kawai("ka"), lgl("lg"), mds("md"), random("ra"), reingold.tilford("re"), star("sta"), sugiyama("sug")}
 \item{limits}{vector indicating size references to display layout, must be a numeric vector of length 4: x1, y1, x2, y2.}
 \item{cex}{number indicating the amount by which plotting text should be scaled relative to the default. Default = 1.}
 \item{controls}{a numeric vector indicating which controls will be shown. 1 = sidebar, 2 = selection buttons, 3 = tables, 4 = sliders & buttons, 5 = export buttons. NULL hide all controls, negative values deny each control and 0 deny all.}
