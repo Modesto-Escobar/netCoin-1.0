@@ -1206,7 +1206,7 @@ toColorScale <- function(items){
   if(is.numeric(items)){
     return(hsv(1,1,rescale(items)))
   }else{
-	colors <- c(
+    colors <- c(
   "#1f77b4", # blue
   "#2ca02c", # green
   "#d62728", # red
@@ -1228,9 +1228,9 @@ toColorScale <- function(items){
   "#dbdb8d", # light lime
   "#9edae5" # light cyan
      )
-	items <- as.numeric(as.factor(items))
+    items <- as.numeric(as.factor(items))
         items <- ((items-1) %% length(colors))+1
-	return(colors[items])
+    return(colors[items])
   }
 }
 
@@ -1291,26 +1291,33 @@ toIgraph <- function(net){
   if (inherits(net,"netCoin")){
     nodes <- net$nodes
     links <- net$links
-    if(is.null(links)) links <- data.frame(Source=character(), Target=character())
-        options <- net$options
+    if(is.null(links)){
+      links <- data.frame(Source=character(), Target=character())
+    }
+    options <- net$options
 
     #network direction
-    if(exists("showArrows",net$options))
+    if(exists("showArrows",net$options)){
       directed <- net$show$Arrows
-    else
+    }else{
       directed <- FALSE
+    }
 
     #nodes
     nargs <- c(name="nodeName", label="nodeLabel", label.cex="nodeLabelSize", size="nodeSize", color="nodeColor", shape="nodeShape")
     for(n in names(nargs)){
       col <- options[[nargs[[n]]]]
-      if(!is.null(col) && col %in% colnames(nodes))
+      if(!is.null(col) && col %in% colnames(nodes)){
         nodes[[n]] <- nodes[[col]]
+      }
     }
-    if("fx" %in% colnames(nodes))
+    if("fx" %in% colnames(nodes)){
       colnames(nodes)[which(colnames(nodes)=="fx")] <- "x"
-    if("fy" %in% colnames(nodes))
+    }
+    if("fy" %in% colnames(nodes)){
       colnames(nodes)[which(colnames(nodes)=="fy")] <- "y"
+    }
+    nodes <- nodes[,c("name",setdiff(colnames(nodes),"name"))]
 
     #links
     links <- links[,union(c("Source","Target"),colnames(links))]
@@ -1323,15 +1330,18 @@ toIgraph <- function(net){
     }
 
     #handle colors
-    if("color" %in% colnames(nodes))
+    if("color" %in% colnames(nodes)){
       nodes[,"color"] <- toColorScale(nodes[,"color"])
-    if("color" %in% colnames(links))
+    }
+    if("color" %in% colnames(links)){
       links[,"color"] <- toColorScale(links[,"color"])
+    }
 
     #igraph network
     return(igraph::graph_from_data_frame(links, directed=directed, vertices=nodes))
-  }else
+  }else{
     warning("Is not a netCoin object")
+  }
 }
 
 savePajek<-function(net, file="file.net", arcs=NULL, edges=NULL, partitions= NULL, vectors=NULL){
@@ -1581,7 +1591,7 @@ layoutCircle <- function(N,nodes,deg=0,name=NULL){
     N[nodes,"y"] <- 0
   }else{
     angle <- (seq_along(nodes) / (length(nodes)/2)) * pi
-	angle <- angle - angle[1] + (deg * pi / 180)
+    angle <- angle - angle[1] + (deg * pi / 180)
     N[nodes,"x"] <- round(cos(angle),3)
     N[nodes,"y"] <- round(sin(angle),3)
   }
@@ -1598,36 +1608,36 @@ layoutGrid <- function(N,string,name=NULL){
   if(!is.null(name)) rownames(N) <- N[[name]]
   if(is.character(string)){
     Levels <- as.list(unlist(strsplit(string,"\\.")))
-	xlen <- length(Levels)
-	ylen <- 0
-	for(i in seq_len(xlen)){
-	  a <- gsub("\\*","",Levels[[i]])
-	  a <- gsub(";",",,",a)
-      addToEnd <- substr(a,nchar(a),nchar(a))==","
-	  a <- as.list(unlist(strsplit(a,"\\,")))
-      if(addToEnd) a[[length(a)+1]] <- ""
-	  len <- length(a)
-	  if(len>ylen)
-	    ylen <- len
-	  for(j in seq_len(len)){
-	    index <- a[[j]]
-	    if(index!=""){
-	      N[index,"x"] <- i - 1
-		  N[index,"y"] <- j - 1
-		}
-	  }
-      Levels[[i]] <- a
-	}
+    xlen <- length(Levels)
+    ylen <- 0
     for(i in seq_len(xlen)){
-	  len <- length(Levels[[i]])
-	  indices <- unlist(Levels[[i]])
-	  indices <- indices[indices!=""]
-	  if(len!=ylen){
+      a <- gsub("\\*","",Levels[[i]])
+      a <- gsub(";",",,",a)
+      addToEnd <- substr(a,nchar(a),nchar(a))==","
+      a <- as.list(unlist(strsplit(a,"\\,")))
+      if(addToEnd) a[[length(a)+1]] <- ""
+      len <- length(a)
+      if(len>ylen)
+        ylen <- len
+      for(j in seq_len(len)){
+        index <- a[[j]]
+        if(index!=""){
+          N[index,"x"] <- i - 1
+          N[index,"y"] <- j - 1
+        }
+      }
+      Levels[[i]] <- a
+    }
+    for(i in seq_len(xlen)){
+      len <- length(Levels[[i]])
+      indices <- unlist(Levels[[i]])
+      indices <- indices[indices!=""]
+      if(len!=ylen){
         N[indices,"y"] <- N[indices,"y"] + ((ylen - len)/2)
-	  }
+      }
     }
     N[,"x"] <- N[,"x"]/(xlen-1)
-	N[,"y"] <- 1 - (N[,"y"]/(ylen-1))
+    N[,"y"] <- 1 - (N[,"y"]/(ylen-1))
   }else
     warning("string: must be character")
 

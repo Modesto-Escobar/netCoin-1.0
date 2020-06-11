@@ -97,6 +97,7 @@ var texts = {
     alertrecordheatmap: "El mapa de color no puede ser grabado.",
     speed: "Velocidad",
     search: "Buscar...",
+    searchanode: "Busca un nodo",
     goback: "Volver",
     newtab: "Abrir en nueva pestaña",
     configure: "Configurar",

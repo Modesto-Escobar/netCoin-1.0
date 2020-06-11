@@ -97,6 +97,7 @@ var texts = {
     alertrecordheatmap: "el mapa de calor no es pot gravar.",
     speed: "Velocitat",
     search: "Cerca...",
+    searchanode: "Cerqueu un node",
     goback: "Tornar",
     newtab: "Obriu a la pestanya nova",
     configure: "Configurar",

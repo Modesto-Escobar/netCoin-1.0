@@ -93,12 +93,16 @@ function barplot(json){
 
   topBar.call(iconButton()
         .alt("pdf")
+        .width(24)
+        .height(24)
         .src(b64Icons.pdf)
         .title(texts.pdfexport)
         .job(svg2pdf));
 
   topBar.call(iconButton()
         .alt("svg")
+        .width(24)
+        .height(24)
         .src(b64Icons.svg)
         .title(texts.svgexport)
         .job(svgDownload));

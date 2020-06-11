@@ -97,6 +97,7 @@ var texts = {
     alertrecordheatmap: "Heatmap cannot be recorded.",
     speed: "Speed",
     search: "Search...",
+    searchanode: "Search a node",
     goback: "Return",
     newtab: "Open in new tab",
     configure: "Configure",

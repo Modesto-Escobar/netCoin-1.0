@@ -31,7 +31,8 @@ function network(Graph){
       linkDistanceRange = [0,500], // link distance range
       timeRange = [5000,500], // speed range for dynamic net
       axisExtension = 50, // pixels to increase the axes size
-      sidebarWidth = 220, // sidebar width (will increase with cex)
+      sidebarWidth = 240, // sidebar width (will increase with cex)
+      primaryBtnWidth = 70, // primary button width (will increase with cex)
       infoLeft = 0, // global variable for panel left position
       plotHeight = 0, // global variable for plot height
       findNodeRadius = 20, // radius in which to find a node in the canvas
@@ -434,9 +435,13 @@ function network(Graph){
     if(options.cex){
       body.style("font-size", 10*options.cex + "px")
       sidebarWidth = sidebarWidth * Math.sqrt(options.cex);
+      primaryBtnWidth = primaryBtnWidth * Math.sqrt(options.cex);
     }else{
       options.cex = 1;
     }
+
+    // add fixed width to primary buttons
+    d3.select("head").append("style").text("button.primary, button.primary-outline { width: "+primaryBtnWidth+"px }")
 
     if(!options.hasOwnProperty("zoom"))
       options.zoom = 1;
@@ -596,6 +601,8 @@ function displayMain(){
       if(options.help){
         main.call(iconButton()
         .alt("help")
+        .width(24)
+        .height(24)
         .src(b64Icons.help)
         .title("Show help")
         .job(function(){ displayInfoPanel(options.help); }));
@@ -603,37 +610,29 @@ function displayMain(){
 
       main.call(iconButton()
         .alt("pdf")
+        .width(24)
+        .height(24)
         .src(b64Icons.pdf)
         .title(texts.pdfexport)
         .job(function(){ embedImages(svg2pdf); }));
 
       main.call(iconButton()
-      .alt("png")
-      .src(b64Icons.png)
-      .title(texts.pngexport)
-      .job(function(){
-        if(options.heatmap){
-          svg2png(getFile);
-        }else{
-          plot.select("canvas").node().toBlob(getFile)
-        }
-
-        function getFile(blob){
-          fileDownload(blob, d3.select("head>title").text()+'.png');
-        }
-      }));
-
-/*
-      if(inIframe()){
-      main.call(iconButton()
-        .alt("newTab")
-        .src(b64Icons.newtab)
-        .title(texts.newtab)
+        .alt("png")
+        .width(24)
+        .height(24)
+        .src(b64Icons.png)
+        .title(texts.pngexport)
         .job(function(){
-          window.open(window.location);
+          if(options.heatmap){
+            svg2png(getFile);
+          }else{
+            plot.select("canvas").node().toBlob(getFile)
+          }
+
+          function getFile(blob){
+            fileDownload(blob, d3.select("head>title").text()+'.png');
+          }
         }));
-      }
-*/
     }
   }else{
     main.style("display","none")
@@ -699,19 +698,16 @@ function displayBottomPanel(){
           .style("top","-"+ tablesoffset +"px")
           .on("click",function(d){
               tables.selectAll("div.switchNodeLink > div")
-                .style("background",null)
-                .style("border-bottom-color",null)
+                .classed("active",false)
               d3.select(this)
-                .style("background","#f5f5f5")
-                .style("border-bottom-color","#f5f5f5")
+                .classed("active",true)
               tables.selectAll("div.nodes,div.links").style("display","none")
               tables.select("div."+d).style("display",null)
           })
           .append("h3")
             .text(function(d){ return texts[d]; })
     tables.select("div.switchNodeLink > div")
-      .style("background","#f5f5f5")
-      .style("border-bottom-color","#f5f5f5")
+      .classed("active",true)
   }
 
   if(options.showButtons2){
@@ -790,6 +786,7 @@ function displaySidebar(){
     searchBox.append("div")
       .append("input")
         .attr("type","text")
+        .attr("placeholder",texts.searchanode)
         .on("focus",function(){
           searchBox.classed("shadowed",true);
         })
@@ -803,9 +800,28 @@ function displaySidebar(){
           }
         })
         .on("keyup",function(){
-          var key = getKey(d3.event);
+          var key = getKey(d3.event),
+              searchBox = this,
+              column = options.nodeLabel ? options.nodeLabel : options.nodeName,
+              searchNodes = function(callback){
+                if(searchBox.value.length>1){
+                  Graph.nodes.filter(checkSelectable).forEach(function(node){
+                    if(String(node[column]).toLowerCase().search(searchBox.value.toLowerCase())!=-1){
+                      callback(node);
+                    }
+                  });
+                }
+              };
+
           if(key == "Enter" && !dropdownList.selectAll("li").empty()){
-            dropdownList.select("li.active").dispatch("click");
+            if(d3.event.shiftKey){
+              searchNodes(function(node){
+                node.selected = true;
+              });
+              showTables();
+            }else{
+              dropdownList.select("li.active").dispatch("click");
+            }
             d3.event.stopPropagation();
             return;
           }
@@ -827,12 +843,8 @@ function displaySidebar(){
             return;
           }
 
-          var searchBox = this,
-              column = options.nodeLabel ? options.nodeLabel : options.nodeName;
           dropdownList.selectAll("*").remove();
-          if(searchBox.value.length>1){
-            Graph.nodes.filter(checkSelectable).forEach(function(node){
-              if(String(node[column]).toLowerCase().search(searchBox.value.toLowerCase())!=-1){
+          searchNodes(function(node){
                 dropdownList
                   .append("li")
                   .text(node[column])
@@ -849,9 +861,7 @@ function displaySidebar(){
                     }
                     showTables();
                   });
-              }
-            })
-          }
+          })
           dropdownList.select("li").classed("active","true");
           dropdownList.style("display",dropdownList.selectAll("li").empty()?"none":"block");
           searchIcon.classed("disabled",dropdownList.selectAll("li").empty())
@@ -1091,8 +1101,8 @@ function displaySidebar(){
       resetButton.append("rect")
       .attr("x",0)
       .attr("y",0)
-      .attr("rx",5)
-      .attr("ry",5)
+      .attr("rx",3)
+      .attr("ry",3)
       .attr("width",resetButtonSize*4)
       .attr("height",resetButtonSize)
       .style("cursor","pointer")
@@ -1237,7 +1247,7 @@ function displaySidebar(){
       var divFrameCtrl = sel.append("div")
         .attr("class", "divFrameCtrl")
 
-      var buttonBackColor = "#888";
+      var buttonBackColor = "#777777";
 
       divFrameCtrl.append("div")
         .attr("class","select-wrapper")
@@ -1445,9 +1455,9 @@ function addVisualController(){
       .append("span")
           .text(function(d){ return texts[d]+" "; })
           .append("img")
-            .attr("width","10")
-            .attr("height","10")
-            .attr("src",b64Icons.info)
+            .attr("width","12")
+            .attr("height","12")
+            .attr("src",b64Icons.help)
             .attr("title",function(d){ return texts[d+"Info"]; });
 
     sels.each(function(visual){
@@ -1582,7 +1592,7 @@ function addFilterController(){
       if(applyFunc["egonet"]){
         itemFilter.append("button")
         .attr("class","primary")
-        .text(["egonet"])
+        .text(texts["egonet"])
         .on("click", function(){
           applyFunc["egonet"](prepareQuery(),data);
         });
@@ -1642,7 +1652,7 @@ function addFilterController(){
     tags.enter().append("div")
       .text(String)
       .append("span")
-        .html("&#x2716;")
+        .html("&times;")
         .on("click",function(k){
           delete appliedFilters[k];
           updateTags();
@@ -1810,6 +1820,8 @@ function applySelection(query,data){
 // draw canvas and svg environment for plot
 function drawSVG(){
 
+  legendPanel.style("left",(width - sidebarWidth + 10) + "px")
+
   adaptLayout();
 
   plot.select("canvas").remove();
@@ -1836,14 +1848,6 @@ function drawSVG(){
   var canvas = plot.insert("canvas",":first-child")
     .attr("width", width)
     .attr("height", height)
-
-    svg.append("style")
-     .text("text { font-family: sans-serif; font-size: "+body.style("font-size")+"; } "+
-".axisLabel { stroke-width: 0.5px; font-size: 100%; fill: #999; } "+
-".label { font-size: 100%; fill: #444; } "+
-"line.axis { stroke: #aaa; }"+
-"g.heatmap path.cluster { stroke: #666; fill: none; }"+
-".cellText { font-weight: bold; fill: #fff; }");
 
   var defs = svg.append("defs");
   d3.keys(colorScales).forEach(function(d){ addGradient(defs,d,colorScales[d]); });
@@ -2142,7 +2146,7 @@ function drawSVG(){
         rounded = false,
         brushedValue = false,
         handleRadius = 5,
-        sliderWidth = sidebarWidth-50;
+        sliderWidth = sidebarWidth-70;
 
     function exports(sel){
       scale = d3.scaleLinear()
@@ -2205,11 +2209,11 @@ function drawSVG(){
         .attr("width",20)
         .attr("height",16)
         .attr("rx",2)
-        .style("stroke","#888")
+        .style("stroke","#777777")
         .style("fill","#fff")
       bubble.append("text")
         .attr("text-anchor","start")
-        .attr("fill","#333")
+        .attr("fill","#000000")
 
       brush.on("brush", brushed)
            .on("start",function(){
@@ -2587,6 +2591,8 @@ function drawNet(){
         .data(d3.values(lines))
       .enter().append("path")
         .attr("class","cluster")
+        .style("stroke", "#777777")
+        .style("fill", "none")
         .attr("d",function(d){
             var x1 = d[0]*x.bandwidth() + x.bandwidth()/2,
                 x2 = d[1]*x.bandwidth() + x.bandwidth()/2;
@@ -2695,6 +2701,8 @@ function drawNet(){
         .attr("y", x.bandwidth()/2)
         .attr("dy", ".32em")
         .attr("text-anchor", "middle")
+        .style("font-weight", "bold")
+        .style("fill", "#ffffff")
         .style("font-size", x.bandwidth()*2/5 + "px")
         .on("mouseover", mouseover)
         .text(function(d){
@@ -2866,11 +2874,14 @@ function drawNet(){
       }
       var divLegends = legendPanel.append("div")
         .attr("class","legends")
-      var div = divLegends.append("div")
-          .style("height",legendsHeight+"px")
+      var div = divLegends.append("div");
 
       for(var k in Legends){
         div.call(Legends[k]);
+      }
+
+      if(div.node().offsetHeight>legendsHeight){
+        div.style("height",legendsHeight+"px")
       }
 
       divLegends.append("hr")
@@ -2902,7 +2913,7 @@ function drawNet(){
         text = options.main[frameControls.frame];
       ctx.font = 10*options.cex+"px sans-serif";
       ctx.textAlign = "right";
-      ctx.fillStyle = "#333";
+      ctx.fillStyle = "#000000";
       ctx.fillText(text,width-10,height-10);
     }
 
@@ -3008,7 +3019,7 @@ function drawNet(){
     // write labels
     if(options.nodeLabel){
       ctx.textAlign = "left";
-      ctx.fillStyle = "#444";
+      ctx.fillStyle = "#000000";
       ctx.beginPath();
       ctx.font = 10*options.cex+"px sans-serif";
       nodes.forEach(function(node) {
@@ -3203,7 +3214,7 @@ function drawNet(){
 
       if(options.nodeLabel){
         doc.setFontSize(10*options.cex*scale);
-        doc.setTextColor("#444");
+        doc.setTextColor("#000000");
         nodes.forEach(function(node){
           var x = ((node.x + node.nodeSize + 8)*scale)+translate[0],
               y = ((node.y + 4)*scale)+translate[1],
@@ -3214,7 +3225,7 @@ function drawNet(){
       }
     }
 
-    doc.setTextColor("#333");
+    doc.setTextColor("#000000");
 
     d3.selectAll("div.main span.title").each(function(){
       doc.setFontSize(parseInt(d3.select(this).style("font-size")));
@@ -3863,8 +3874,7 @@ function displayLegend(){
       text = stripTags,
       color = "#000000",
       shape = defaultShape,
-      data = [],
-      legendWidth = 120;
+      data = [];
 
   function exports(parent){
 
@@ -3875,24 +3885,18 @@ function displayLegend(){
     .attr("class","legend")
     .property("key",key)
 
-    var headerDiv = legend.append("div")
-    headerDiv.append("span")
-        .attr("class","title")
-        .text(type + " / " + (typeof title == "undefined" ? key : title))
-
     if(parent.select(".goback").empty() && (!checkInitialFilters() || egoNet)){
-      var goback;
-      if(headerDiv.select(".title").node().offsetWidth>=legendWidth){
-        goback = legend.append("span");
-      }else{
-        goback = headerDiv.append("span");
-      }
-      goback.attr("class","goback")
+      legend.append("div")
+          .attr("class","goback")
           .on("click",applyInitialFilter)
           .text("‹ "+texts.goback)
           .append("title")
             .text("ctrl + i")
     }
+
+    legend.append("div")
+        .attr("class","title")
+        .text(type + " / " + (typeof title == "undefined" ? key : title))
 
     legend.append("hr")
     .attr("class","legend-separator")
@@ -3993,6 +3997,9 @@ function displaycheck(sel,item,key){
       }else{
         // select especific nodes
         Graph.nodes.forEach(function(d){
+          if(d3.event.ctrlKey){
+            delete d.selected;
+          }
           if(d[key] && (String(d[key])==value || (typeof d[key] == "object" && (d[key].indexOf(value)!=-1 || d[key].join(",")==value)))){
             if(selected && checkSelectable(d)){
               d.selected = true;
@@ -4053,7 +4060,7 @@ function displayScale(domain, fill, title){
       .attr("class","title")
       .text(title);
 
-    var scaleWidth = sidebarWidth - 54;
+    var scaleWidth = div.node().offsetWidth - parseInt(div.style("padding-right"));
 
     div.append("svg")
       .attr("width", scaleWidth)
@@ -4210,6 +4217,8 @@ function showTables() {
       .html("<span>"+texts[name+"attributes"] + "</span> ("+dat.length+" "+texts.outof+" "+totalItems[name]+")")
       .call(iconButton()
         .alt("xlsx")
+        .width(14)
+        .height(14)
         .src(b64Icons.xlsx)
         .title(texts.downloadtable)
         .job(tables2xlsx))
@@ -4290,6 +4299,11 @@ function showTables() {
 
   tableWrapper(nodesData,"nodes",nodeColumns);
   tableWrapper(linksData,"links",linkColumns);
+
+  // hide infopanel
+  if(!body.select("div.infopanel").empty() && nodesData.length==0){
+    body.select("div.infopanel > div.close-button").dispatch("click");
+  }
 
   // highlight egonet of selection
   if(!options.heatmap){
