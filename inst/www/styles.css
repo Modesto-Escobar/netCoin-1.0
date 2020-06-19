@@ -1,5 +1,12 @@
+@font-face {
+  font-family: 'Roboto';
+  font-style: normal;
+  font-weight: 400;
+  src: url(Roboto-Regular.ttf) format('truetype');
+}
+
 body {
-  font-family: sans-serif;
+  font-family: 'Roboto', sans-serif;
   font-size: 10px;
   color: #000000;
   -webkit-touch-callout: none; /* iOS Safari */
@@ -22,7 +29,7 @@ button, input, select {
   -moz-appearance: none;
   appearance: none;
   border: solid 1px #c6c6c6;
-  font-family: sans-serif;
+  font-family: 'Roboto', sans-serif;
   font-size: 100%;
   color: #000000;
   background-color: #ffffff;
@@ -744,7 +751,7 @@ svg .button circle {
   fill: #2f7bee;
   pointer-events: none;
 }
-svg .button.disabled circle {
+svg .button.off circle {
   fill: #777777;
 }
 svg .button rect {
@@ -752,8 +759,12 @@ svg .button rect {
   opacity: 0.5;
   cursor: pointer;
 }
-svg .button.disabled rect {
+svg .button.off rect {
   fill: #777777;
+}
+svg .button.disabled {
+  opacity: 0.5;
+  pointer-events: none;
 }
 svg .slider .selection {
   fill: #2f7bee;
@@ -922,6 +933,18 @@ svg .zoombutton.zoomreset rect {
 .legend-item {
   position: relative;
   margin: 4px 0;
+  overflow: hidden;
+  white-space: nowrap;
+  content: "";
+}
+.legend-item:after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width:100%;
+  height:100%; 
+  background:linear-gradient(to right, transparent 90%, white);
 }
 .legend-item img,
 .legend-item svg {

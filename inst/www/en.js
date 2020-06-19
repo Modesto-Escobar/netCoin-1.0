@@ -60,6 +60,7 @@ var texts = {
     Color: "Color",
     Shape: "Shape",
     Legend: "Legend",
+    Image: "Image",
     Width: "Width",
     Weight: "Weight",
     Intensity: "Intensity",

@@ -19,9 +19,11 @@ function network(Graph){
   delete Graph.options;
 
   var defaultColor = categoryColors[0], // nodes and areas default color
-      defaultLinkColor = "#999", // links default color
+      defaultLinkColor = "#999999", // links default color
       defaultShape = "Circle", // node shape by default
       symbolTypes = ["Circle","Square","Diamond","Triangle","Cross","Star","Wye"], // list of available shapes
+      darkGrey = "#777777", // dark grey
+      lightGrey = "#f5f5f5", // light grey
       nodeSizeRange = [0.5,4], // node size range
       nodeLabelSizeRange = [8,20], // node label size range
       linkWeightRange = [200,40], // link weight range (link distance)
@@ -48,6 +50,8 @@ function network(Graph){
       scaleCoorY;
 
   var body = d3.select("body");
+
+  var fontFamily = body.style("font-family");
 
   var zoom = d3.zoom()
     .scaleExtent(zoomRange)
@@ -108,7 +112,11 @@ function network(Graph){
         case "ArrowLeft":
         case "ArrowDown":
         case "ArrowRight":
-          movePan(key);
+          if(d3.event.shiftKey){
+            moveShift(key);
+          }else{
+            movePan(key);
+          }
           return;
       }
     }
@@ -118,6 +126,16 @@ function network(Graph){
     var key = getKey(d3.event);
     if(d3.event.ctrlKey){
       switch(key){
+        case "Enter":
+          if(frameControls.play){
+            frameControls.play = false;
+            clearInterval(frameControls.frameInterval);
+          }else{
+            frameControls.play = true;
+            handleFrames(frameControls.frame+1);
+          }
+          clickFrameCtrlBtn();
+          return;
         case "0":
           plot.select(".zoombutton.zoomreset").dispatch("click");
           return;
@@ -133,7 +151,7 @@ function network(Graph){
         case "3":
           panel.select(".showhideArrow.showTables").dispatch("click");
           return;
-        case "5":
+        case "4":
           if(typeof options.showExport != "undefined"){
             options.showExport = !options.showExport;
             displayMain();
@@ -390,6 +408,7 @@ function network(Graph){
 
     options.colorScalenodeColor = "RdWhGn"; // default linear scale for nodes
     options.colorScalelinkColor = "RdBkGn"; // default linear scale for links
+    options.colorScalenodeGroup = "RdBkGn"; // default linear scale for groups
 
     if(options.nodeBipolar){
       switch(defaultColor) {
@@ -479,7 +498,7 @@ function network(Graph){
     options.showSidebar = showControls(1);
     options.showButtons2 = showControls(2);
     options.showTables = showControls(3);
-    options.showExport = showControls(5);
+    options.showExport = showControls(4);
 
     if(Array.isArray(options.axesLabels)){
       if(options.axesLabels.length>4)
@@ -596,18 +615,16 @@ function displayMain(){
     if(typeof multiGraph != 'undefined'){
       multiGraph.graphSelect(main.append("span"));
     }
-    if(options.showExport){
-
-      if(options.help){
+    if(options.help){
         main.call(iconButton()
         .alt("help")
         .width(24)
         .height(24)
         .src(b64Icons.help)
-        .title("Show help")
+        .title(texts.showHelp+" (ctrl+h)")
         .job(function(){ displayInfoPanel(options.help); }));
-      }
-
+    }
+    if(options.showExport){
       main.call(iconButton()
         .alt("pdf")
         .width(24)
@@ -801,12 +818,12 @@ function displaySidebar(){
         })
         .on("keyup",function(){
           var key = getKey(d3.event),
-              searchBox = this,
+              searchBoxInput = this,
               column = options.nodeLabel ? options.nodeLabel : options.nodeName,
               searchNodes = function(callback){
-                if(searchBox.value.length>1){
+                if(searchBoxInput.value.length>1){
                   Graph.nodes.filter(checkSelectable).forEach(function(node){
-                    if(String(node[column]).toLowerCase().search(searchBox.value.toLowerCase())!=-1){
+                    if(String(node[column]).toLowerCase().search(searchBoxInput.value.toLowerCase())!=-1){
                       callback(node);
                     }
                   });
@@ -818,6 +835,7 @@ function displaySidebar(){
               searchNodes(function(node){
                 node.selected = true;
               });
+              closeDropDownList();
               showTables();
             }else{
               dropdownList.select("li.active").dispatch("click");
@@ -849,9 +867,7 @@ function displaySidebar(){
                   .append("li")
                   .text(node[column])
                   .on("click",function(){
-                    searchBox.value = "";
-                    searchIcon.classed("disabled",true);
-                    dropdownList.style("display","none").selectAll("*").remove();
+                    closeDropDownList();
                     Graph.nodes.forEach(function(node){
                       delete node.selected;
                     })
@@ -876,11 +892,15 @@ function displaySidebar(){
           dropdownList.select("li.active").dispatch("click");
       })
 
-    var dropdownList = searchSel.append("ul")
-      .attr("class","dropdown-list");
+    var dropdownList = searchSel.append("ul").attr("class","dropdown-list"),
+        closeDropDownList = function(){
+          searchBox.select("input").property("value","");
+          searchIcon.classed("disabled",true);
+          dropdownList.style("display","none").selectAll("*").remove();
+        };
 
     body.on("click.dropdownlist",function(){
-      dropdownList.style("display","none").selectAll("*").remove();
+      closeDropDownList();
     })
 
   }else{
@@ -1226,10 +1246,10 @@ function displaySidebar(){
             circle = circle.transition()
             .duration(time)
             .on("end",function(){
-              self.classed("disabled",!options[d.key])
+              self.classed("off",!options[d.key])
             });
           }else{
-            self.classed("disabled",!options[d.key])
+            self.classed("off",!options[d.key])
           }
           circle.attr("cx",options[d.key] ? 15 : 5);
         }
@@ -1247,16 +1267,14 @@ function displaySidebar(){
       var divFrameCtrl = sel.append("div")
         .attr("class", "divFrameCtrl")
 
-      var buttonBackColor = "#777777";
-
       divFrameCtrl.append("div")
         .attr("class","select-wrapper")
       .append("select")
       .attr("class","selectFrame")
       .on("change",function(){
         frameControls.play = false;
-        clickThis();
         handleFrames(+(this.value));
+        clickFrameCtrlBtn();
       })
       .selectAll("option")
         .data(frameControls.frames)
@@ -1279,15 +1297,15 @@ function displaySidebar(){
         if(val < 0)
           val = frameControls.frames.length+val;
         frameControls.play = false;
-        clickThis();
         handleFrames(val);
+        clickFrameCtrlBtn();
       })
       frameButons.append("button") // loop
       .call(getSVG().d(d4paths.loop))
       .on("click",function(){
         frameControls.loop = !frameControls.loop;
-        d3.select(this).style("background-color",frameControls.loop?buttonBackColor:null)
-          .selectAll("path").style("fill",frameControls.loop?"#f5f5f5":null);
+        d3.select(this).style("background-color",frameControls.loop?darkGrey:null)
+          .selectAll("path").style("fill",frameControls.loop?lightGrey:null);
       })
       var stopRecord = function(){
           frameControls.recorder.stop();
@@ -1309,65 +1327,50 @@ function displaySidebar(){
             frameControls.recorder = new CanvasRecorder(d3.select("div.plot > canvas").node());
             simulation.restart();
             if(frameControls.recorder.start && frameControls.recorder.start()){
-              d3.select(this).style("background-color",buttonBackColor)
+              d3.select(this).style("background-color",darkGrey)
                 .select("path").style("fill","Red");
             }else{
               delete frameControls.recorder;
             }
           }
         }
-      }).style("background-color", frameControls.recorder ? buttonBackColor : null)
+      }).style("background-color", frameControls.recorder ? darkGrey : null)
       .select("path").style("fill", frameControls.recorder ? "#d62728" : null);
       frameButons.append("button") // stop
       .call(getSVG().d(d4paths.stop))
       .on("click",function(){
         frameControls.play = false;
-        clickThis();
         handleFrames(0);
         if(frameControls.recorder){
           stopRecord();
         }
+        clickFrameCtrlBtn();
       })
       frameButons.append("button") // pause
       .attr("class","pause")
       .call(getSVG().d(d4paths.pause))
       .on("click",function(){
         frameControls.play = false;
-        clickThis();
         clearInterval(frameControls.frameInterval);
+        clickFrameCtrlBtn();
       })
       frameButons.append("button") // play
       .attr("class","play")
       .call(getSVG().d(d4paths.play))
       .on("click",function(){
         frameControls.play = true;
-        clickThis(true);
         handleFrames(frameControls.frame+1);
+        clickFrameCtrlBtn();
       })
       frameButons.append("button") // next
       .call(getSVG().d(d4paths.next))
       .on("click",function(){
         frameControls.play = false;
-        clickThis();
         handleFrames(frameControls.frame+1);
+        clickFrameCtrlBtn();
       })
 
-      clickThis(frameControls.play);
-
-      function clickThis(play){
-        divFrameCtrl.selectAll("button.pause, button.play")
-          .style("background-color",null)
-          .selectAll("path").style("fill",null);
-        if(play){
-          divFrameCtrl.select("button.play")
-            .style("background-color",buttonBackColor)
-            .selectAll("path").style("fill","LawnGreen");
-        }else{
-          divFrameCtrl.select("button.pause")
-            .style("background-color",buttonBackColor)
-            .selectAll("path").style("fill","#f5f5f5");
-        }
-      }
+      clickFrameCtrlBtn();
     }
   }
 } // end display sidebar function
@@ -2209,7 +2212,7 @@ function drawSVG(){
         .attr("width",20)
         .attr("height",16)
         .attr("rx",2)
-        .style("stroke","#777777")
+        .style("stroke",darkGrey)
         .style("fill","#fff")
       bubble.append("text")
         .attr("text-anchor","start")
@@ -2343,6 +2346,24 @@ function handleFrames(value){
           return 0; 
         return value;
       }
+}
+
+function clickFrameCtrlBtn(){
+        var divFrameCtrl = sidebar.select(".divFrameCtrl");
+        if(!divFrameCtrl.empty()){
+          divFrameCtrl.selectAll("button.pause, button.play")
+            .style("background-color",null)
+            .selectAll("path").style("fill",null);
+          if(frameControls.play){
+            divFrameCtrl.select("button.play")
+              .style("background-color",darkGrey)
+              .selectAll("path").style("fill","LawnGreen");
+          }else{
+            divFrameCtrl.select("button.pause")
+              .style("background-color",darkGrey)
+              .selectAll("path").style("fill",lightGrey);
+          }
+        }
 }
 
 function frameStep(value){
@@ -2591,7 +2612,7 @@ function drawNet(){
         .data(d3.values(lines))
       .enter().append("path")
         .attr("class","cluster")
-        .style("stroke", "#777777")
+        .style("stroke", darkGrey)
         .style("fill", "none")
         .attr("d",function(d){
             var x1 = d[0]*x.bandwidth() + x.bandwidth()/2,
@@ -2756,8 +2777,9 @@ function drawNet(){
     svg.select("g.heatmap").remove();
 
     //hide sliders
-    d3.select(".slider.charge").style("display",nodes.length<2?"none":null)
-    d3.select(".slider.linkDistance").style("display",!links.length || options.linkWeight?"none":null)
+    sidebar.select(".slider.charge").style("display",nodes.length<2?"none":null)
+    sidebar.select(".slider.linkDistance").style("display",!links.length || options.linkWeight?"none":null)
+    sidebar.select(".buttons .button.showArrows").classed("disabled",!links.length)
 
     simulation.nodes(nodes);
 
@@ -2808,23 +2830,29 @@ function drawNet(){
   }
 
   // display legends
+  var legendLegend = options.nodeLegend ? true : false,
+      legendColor = !options.imageItem && (options.nodeColor && dataType(nodes,options.nodeColor)!='number'),
+      legendShape = !options.imageItem && options.nodeShape,
+      legendImage = (!options.heatmap && options.imageItem) && (options.imageItems && options.imageNames);
+  sidebar.select(".buttons .button.showLegend").classed("disabled",!(legendLegend || legendColor || legendShape || legendImage));
+
   if(options.showLegend){
     Legends = {};
     var data;
 
-  if(options.nodeLegend){
-    data = nodes.map(function(d){ return d[options.nodeLegend]; });
-    if(dataType(nodes,options.nodeLegend) == 'object')
-      data = data.reduce(function(a,b) { return a.concat(b); }, []);
-    data = d3.set(data).values();
-    Legends.legend = displayLegend()
+    if(legendLegend){
+      data = nodes.map(function(d){ return d[options.nodeLegend]; });
+      if(dataType(nodes,options.nodeLegend) == 'object'){
+        data = data.reduce(function(a,b) { return a.concat(b); }, []);
+      }
+      data = d3.set(data).values();
+      Legends.legend = displayLegend()
       .type("Legend")
       .key(options.nodeLegend)
       .data(data.sort(sortAsc));
-  }
+    }
 
-  if(!options.imageItem){
-    if(options.nodeColor && dataType(nodes,options.nodeColor)!='number'){
+    if(legendColor){
       data = d3.map(nodes.filter(function(d){ return d[options.nodeColor]!==null; }), function(d){ return d[options.nodeColor]; }).keys();
       Legends.color = displayLegend()
         .type("Color")
@@ -2833,7 +2861,7 @@ function drawNet(){
         .color(colorNodesScale);
     }
 
-    if(options.nodeShape){
+    if(legendShape){
       data = d3.map(nodes, function(d){ return d[options.nodeShape]; }).keys();
       Legends.shape = displayLegend()
         .type("Shape")
@@ -2841,11 +2869,9 @@ function drawNet(){
         .data(data.sort(sortAsc))
         .shape(symbolList)
     }
-  }
 
-  if(!options.heatmap && options.imageItem){
-    if(options.imageItems && options.imageNames){
-      var title = options.imageNames[options.imageItems.indexOf(options.imageItem)],
+    if(legendImage){
+      var title = options.imageNames[options.imageItems.indexOf(options.imageItem)];
       data = nodes.map(function(d){ return [d[title],d[options.imageItem]]; })
       data.sort(function(a,b){
           return sortAsc(a[0],b[0]);
@@ -2865,7 +2891,6 @@ function drawNet(){
         .text(textFunc)
         .color("image")
     }
-  }
 
     if(d3.keys(Legends).length){
       var legendsHeight = height - 220;
@@ -2911,7 +2936,7 @@ function drawNet(){
       var text = frameControls.frames[frameControls.frame];
       if(options.main && Array.isArray(options.main))
         text = options.main[frameControls.frame];
-      ctx.font = 10*options.cex+"px sans-serif";
+      ctx.font = 10*options.cex+"px "+fontFamily;
       ctx.textAlign = "right";
       ctx.fillStyle = "#000000";
       ctx.fillText(text,width-10,height-10);
@@ -2968,9 +2993,9 @@ function drawNet(){
     ctx.globalAlpha = 1;
 
     if(options.linkText){
-      ctx.fillStyle = "#999";
+      ctx.fillStyle = defaultLinkColor;
       ctx.beginPath();
-      ctx.font = 10*options.cex+"px sans-serif";
+      ctx.font = 10*options.cex+"px "+fontFamily;
       links.forEach(function(link) {
         var coords = getLinkTextCoords(link);
 
@@ -3021,7 +3046,7 @@ function drawNet(){
       ctx.textAlign = "left";
       ctx.fillStyle = "#000000";
       ctx.beginPath();
-      ctx.font = 10*options.cex+"px sans-serif";
+      ctx.font = 10*options.cex+"px "+fontFamily;
       nodes.forEach(function(node) {
         var fontSize = node._bigger ? 10/transform.k : 0;
         ctx.globalAlpha = node._back? 0.2 : 1;
@@ -3032,7 +3057,7 @@ function drawNet(){
         }else{
           fontSize = 10+fontSize;
         }
-        ctx.font = fontSize*options.cex+"px sans-serif";
+        ctx.font = fontSize*options.cex+"px "+fontFamily;
         ctx.fillText(node[options.nodeLabel], node.x + checkNodeBigger(node) + 4, node.y - 4);
       });
       ctx.fill();
@@ -3175,7 +3200,7 @@ function drawNet(){
 
       if(options.linkText){
         doc.setFontSize(10*options.cex*scale);
-        doc.setTextColor("#999");
+        doc.setTextColor(defaultLinkColor);
         links.forEach(function(link){
           var coords = getLinkTextCoords(link),
               x = (coords[0]*scale)+translate[0],
@@ -3896,7 +3921,7 @@ function displayLegend(){
 
     legend.append("div")
         .attr("class","title")
-        .text(type + " / " + (typeof title == "undefined" ? key : title))
+        .text(texts[type] + " / " + (typeof title == "undefined" ? key : title))
 
     legend.append("hr")
     .attr("class","legend-separator")
@@ -4713,6 +4738,27 @@ function svg2png(callback){
 
 function svg2pdf(){
     displayWindow("The network is not loaded yet!");
+}
+
+function moveShift(key){
+  if(frameControls){
+    switch(key){
+      case "ArrowLeft":
+      case "ArrowRight":
+        if(key=="ArrowLeft"){
+          var val = frameControls.frame-1;
+          if(val < 0){
+            val = frameControls.frames.length+val;
+          }
+        }else{
+          var val = frameControls.frame+1;
+        }
+        frameControls.play = false;
+        handleFrames(val);
+        clickFrameCtrlBtn();
+      break;
+    }
+  }
 }
 
 function movePan(dir){

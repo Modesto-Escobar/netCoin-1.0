@@ -10,7 +10,7 @@ netCoin <- function(nodes, links = NULL, tree = NULL, name = NULL,
     nodeFilter = NULL, linkFilter = NULL, degreeFilter = NULL, nodeBipolar = FALSE, linkBipolar = FALSE,
     defaultColor = "#1f77b4", distance = 10, repulsion = 25, zoom = 1, fixed = showCoordinates,
     scenarios = NULL, main = NULL, note = NULL, help = NULL, helpOn = FALSE,
-    cex = 1, background = NULL, layout = NULL, limits = NULL, controls = 1:5, mode = c("network","heatmap"),
+    cex = 1, background = NULL, layout = NULL, limits = NULL, controls = 1:4, mode = c("network","heatmap"),
     showCoordinates = FALSE, showArrows = FALSE, showLegend = TRUE, showAxes = FALSE, axesLabels = NULL,
     language = c("en", "es", "ca"), image = NULL, imageNames = NULL, dir = NULL)
 {
@@ -1601,7 +1601,7 @@ layoutCircle <- function(N,nodes,deg=0,name=NULL){
   return(as.matrix(N[,c("x","y")]))
 }
 
-layoutGrid <- function(N,string,name=NULL){
+layoutGrid <- function(N,string,name=NULL,byrow=FALSE){
   N[,"x"] <- NA
   N[,"y"] <- NA
 
@@ -1636,8 +1636,15 @@ layoutGrid <- function(N,string,name=NULL){
         N[indices,"y"] <- N[indices,"y"] + ((ylen - len)/2)
       }
     }
-    N[,"x"] <- N[,"x"]/(xlen-1)
-    N[,"y"] <- 1 - (N[,"y"]/(ylen-1))
+    x <- N[,"x"]/(xlen-1)
+    y <- 1 - (N[,"y"]/(ylen-1))
+    if(byrow){
+      aux <- rev(x)
+      x <- rev(y)
+      y <- aux
+    }
+    N[,"x"] <- x
+    N[,"y"] <- y
   }else
     warning("string: must be character")
 

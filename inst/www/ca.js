@@ -22,6 +22,7 @@ var texts = {
     pngexport: "PNG exportació",
     showHelp: "Mostrar ajuda",
     showhidelegend: "Llegenda",
+    Image: "Imatge",
     showhideaxes: "Eixos",
     showhidesidebar: "Mostra/oculta barra lateral",
     showhidebuttons: "Mostra/oculta botons",

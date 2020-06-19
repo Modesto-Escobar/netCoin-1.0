@@ -21,15 +21,20 @@ createHTML <- function(directory, styles, dependencies, json){
   html <- sub("titulo", name, html)
 
   scripts <- "<!--scripts-->"
-  if(length(styles))
+  if(length(styles)){
     dir.create(paste(directory, "styles", sep = "/"),FALSE)
+  }
   for(i in styles){
     scripts <- paste(scripts, paste0("<link rel=\"stylesheet\" type=\"text/css\" href=\"styles/",i,"\"></link>"), sep = "\n")
     file.copy(paste(www, i, sep = "/"), paste(directory, "styles", sep = "/"))
+    if(i=="styles.css"){
+      file.copy(paste(www, "Roboto-Regular.ttf", sep = "/"), paste(directory, "styles", sep = "/"))
+    }
   }
 
-  if(length(dependencies))
+  if(length(dependencies)){
     dir.create(paste(directory, "scripts", sep = "/"),FALSE)
+  }
   for(i in dependencies){
     scripts <- paste(scripts, paste0("<script src=\"scripts/",i,"\"></script>"), sep = "\n")
     file.copy(paste(www, i, sep = "/"), paste(directory, "scripts", sep = "/"))

@@ -13,11 +13,12 @@ function MultiGraph(input){
 
 MultiGraph.prototype = {
   graphSelect: function(sel){
-    var current = this.current;
+    var current = this.current,
+        items = this.items;
     sel = sel.append("div").attr("class","multi-select")
     var select = sel.append("select")
     select.selectAll("option")
-      .data(this.items)
+      .data(items)
       .enter().append("option")
         .property("value",function(d,i){ return i; })
         .text(function(d){ return d; })
@@ -27,7 +28,31 @@ MultiGraph.prototype = {
         })
     select.on("change",function(){ window.location.href = "?"+this.value; })
     sel.append("span")
-      .html(this.items[current])
+      .html(items[current])
+
+    d3.select("body").on("keydown.multishortcut",function(){
+      if(d3.event.ctrlKey){ 
+        d3.event.preventDefault();
+        var key = getKey(d3.event);
+        switch(key){
+          case "ArrowUp":
+          case "ArrowDown":
+            if(d3.event.shiftKey){
+              var multiSelect = select.node(),
+                  idx = multiSelect.selectedIndex;
+              idx = (key=="ArrowUp"?idx-1:idx+1);
+              if(idx<0){
+                idx = items.length-1;
+              }
+              if(idx>=items.length){
+                idx = 0;
+              }
+              window.location.href = "?"+idx;
+            }
+            return;
+        }
+      }
+    });
   },
   getJSON: function(){
     return this.json;
@@ -71,7 +96,7 @@ function displayIframe(url){
   var topBar = body.append("div")
     .attr("class","topbar")
 
-  topBar.append("h3").text(texts.netselection + ":")
+  topBar.append("h3").text(texts.graph + ":")
   multiGraph.graphSelect(topBar);
 
   body.append("iframe")
