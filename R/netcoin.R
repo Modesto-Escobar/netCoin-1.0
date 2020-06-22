@@ -1639,8 +1639,8 @@ layoutGrid <- function(N,string,name=NULL,byrow=FALSE){
     x <- N[,"x"]/(xlen-1)
     y <- 1 - (N[,"y"]/(ylen-1))
     if(byrow){
-      aux <- rev(x)
-      x <- rev(y)
+      aux <- 1-x
+      x <- 1-y
       y <- aux
     }
     N[,"x"] <- x
