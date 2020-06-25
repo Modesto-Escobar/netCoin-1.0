@@ -93,6 +93,10 @@ netCoin <- function(nodes, links = NULL, tree = NULL, name = NULL,
   }
   options[["language"]] <- language
 
+  if(is.null(help) && language=="es"){
+    options[["help"]] <- paste0(scan(file = paste(wwwDirectory(), "help_es.html", sep = "/"), what = character(0), sep = "\n", quiet = TRUE),collapse="")
+  }
+
   if(nodeBipolar) options[["nodeBipolar"]] <- TRUE
   if(linkBipolar) options[["linkBipolar"]] <- TRUE
   if(helpOn) options[["helpOn"]] <- TRUE

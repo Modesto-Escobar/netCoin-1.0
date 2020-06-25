@@ -37,6 +37,7 @@ function network(Graph){
       primaryBtnWidth = 70, // primary button width (will increase with cex)
       infoLeft = 0, // global variable for panel left position
       plotHeight = 0, // global variable for plot height
+      nodeRadius = 4.514, // base node radius
       findNodeRadius = 20, // radius in which to find a node in the canvas
       hiddenFields = ["Source","Target","x","y","source","target","fx","fy","hidden","childNodes","parentNode","_frame_"]; // not to show in sidebar controllers or tables
 
@@ -1092,60 +1093,49 @@ function displaySidebar(){
         Sliders.time.update(frameControls.time);
       }
 
-      var countY = 8,
-          secondCol = sidebarWidth/2 - 20,
-          svg = sel.append("div")
+      var secondColW = sidebarWidth/2 - 20,
+          divButtons = sel.append("div")
             .attr("class","buttons")
-      .append("svg")
+
+      var checkContainer = divButtons.append("div")
+        .style("display","inline-block")
+        .style("padding-left","5px")
+        .style("width",secondColW+"px")
+
+      if(!options.heatmap && !options.constructural){
+        checkContainer.datum(dynamicNodes)
+        var checkbox = checkContainer.append("div")
+          .attr("class","legend-check-box dynamicNodes")
+          .classed("checked",function(d){ return options[d.key]; });
+        checkContainer
+          .style("cursor","pointer")
+          .on("click",function(d){
+            options[d.key] = !options[d.key];
+            checkbox.classed("checked",options[d.key]);
+            d.callback();
+          })
+          .append("span")
+            .style("margin-left","5px")
+            .text(function(d){ return d.txt; })
+      }
+
+      divButtons.append("button")
+        .attr("class","primary reset")
+        .text(texts.reset)
+        .on("click",function(){
+          location.reload();
+        })
+        .append("title")
+          .text("F5")
+
+      var countY = 16,
+          svg = divButtons.append("svg")
         .attr("width",sidebarWidth-24)
-        .attr("heigth",0)
+        .attr("height",countY)
 
       var buttons = svg.append("g")
         .attr("class","buttons")
         .attr("transform","translate(5,0)")
-
-      if(!options.heatmap && !options.constructural){
-        buttons.append("g")
-        .attr("class",function(d){ return "checkbox dynamicNodes"; })
-        .attr("transform","translate(0,"+countY*options.cex+")")
-        .datum(dynamicNodes)
-      }
-
-      var resetButton = buttons.append("g")
-          .attr("class","reset-button")
-          .attr("transform","translate("+secondCol+","+(countY*options.cex-5)+")"),
-        resetButtonSize = 20*options.cex,
-        resetButtonPathScale = 1.4,
-        resetButtonPad = (resetButtonSize-8*resetButtonPathScale)/2;
-
-      resetButton.append("rect")
-      .attr("x",0)
-      .attr("y",0)
-      .attr("rx",3)
-      .attr("ry",3)
-      .attr("width",resetButtonSize*4)
-      .attr("height",resetButtonSize)
-      .style("cursor","pointer")
-      .on("click",function(){
-        location.reload();
-      })
-      .append("title")
-        .text("F5")
-
-      resetButton.append("text")
-      .style("fill","#fff")
-      .attr("pointer-events","none")
-      .attr("x",10)
-      .attr("y",10*options.cex + (resetButtonSize-13*options.cex)/2)
-      .text(texts.reset);
-
-      resetButton.append("path")
-      .style("fill","#fff")
-      .attr("pointer-events","none")
-      .attr("transform","translate("+(resetButtonSize*4-resetButtonSize)+","+resetButtonPad+")scale("+resetButtonPathScale+")")
-      .attr("d",d4paths.loop)
-
-      countY = countY+30;
 
       buttons.append("g")
       .attr("class",function(d){ return "button showArrows"; })
@@ -1154,7 +1144,7 @@ function displaySidebar(){
 
       buttons.append("g")
       .attr("class",function(d){ return "button showLegend"; })
-      .attr("transform","translate("+secondCol+","+countY*options.cex+")")
+      .attr("transform","translate("+secondColW+","+countY*options.cex+")")
       .datum(showLegend)
 
       countY = countY+30;
@@ -1174,39 +1164,9 @@ function displaySidebar(){
       if(Array.isArray(options.mode)){
         buttons.append("g")
       .attr("class",function(d){ return "button heatmap"; })
-      .attr("transform","translate("+secondCol+","+countY*options.cex+")")
+      .attr("transform","translate("+secondColW+","+countY*options.cex+")")
       .datum(heatmap)
       }
-
-      buttons.selectAll(".checkbox").each(function(d){
-        var self = d3.select(this);
-
-        self.classed("checked",options[d.key])
-
-        self.append("rect")
-      .attr("x",0)
-      .attr("y",5*(options.cex-1))
-      .attr("rx",2)
-      .attr("ry",2)
-      .attr("width",10)
-      .attr("height",10)
-      .on("click",function(){
-        options[d.key] = !options[d.key];
-        d.callback();
-      }).append("title")
-        .text(function(d){
-          return d.tooltip;
-        });
-
-        self.append("path")
-      .attr("transform","translate(0,"+5*(options.cex-1)+")")
-      .attr("d","M1,3L4,6L9,1L10,2L4,8L0,4Z");
-
-        self.append("text")
-        .attr("x",20)
-        .attr("y",9*options.cex)
-        .text(d.txt);
-      })
 
       buttons.selectAll(".button").each(function(d){
 
@@ -1256,7 +1216,7 @@ function displaySidebar(){
 
       })
 
-      svg.attr("height",buttons.node().getBBox().height+5)
+      svg.attr("height",countY*options.cex+parseInt(svg.attr("height")))
     }
 
     function displayFrameControls(sel){
@@ -2490,7 +2450,7 @@ function drawNet(){
     var getNodeSize = getNumAttr(nodes,'nodeSize',nodeSizeRange,options.imageItem?3:1),
         getNodeLabelSize = getNumAttr(nodes,'nodeLabelSize',nodeLabelSizeRange,10*options.cex);
     nodes.forEach(function(node){
-      node.nodeSize = getNodeSize(node) * 4.514;
+      node.nodeSize = getNodeSize(node) * nodeRadius;
       node.nodeLabelSize = getNodeLabelSize(node);
     });
   }
@@ -2901,9 +2861,11 @@ function drawNet(){
         .attr("class","legends")
       var div = divLegends.append("div");
 
-      for(var k in Legends){
-        div.call(Legends[k]);
-      }
+      ["legend","color","shape","image"].forEach(function(k){
+        if(Legends.hasOwnProperty(k)){
+          div.call(Legends[k]);
+        }
+      })
 
       if(div.node().offsetHeight>legendsHeight){
         div.style("height",legendsHeight+"px")
@@ -2914,7 +2876,15 @@ function drawNet(){
 
       var gSelectAll = divLegends.append("div")
         .attr("class","legend-selectall")
-      displaycheck(gSelectAll);
+      displaycheck(gSelectAll,function(self){
+        Graph.nodes.forEach(function(d){
+            if(self.selected && checkSelectable(d)){
+              d.selected = true;
+            }else{
+              delete d.selected;
+            }
+        });
+      });
       gSelectAll.append("span")
         .text(texts.selectall)
 
@@ -3233,7 +3203,7 @@ function drawNet(){
           }
         }else{
           var points = d3.symbol().type(getShape(node))();
-          doc.polygon(points, x, y, [size/4.514,size/4.514], 'FD');
+          doc.polygon(points, x, y, [size/nodeRadius,size/nodeRadius], 'FD');
         }
       });
 
@@ -3268,12 +3238,74 @@ function drawNet(){
     if(!legendPanel.empty()){
       // scale
       if(!legendPanel.select(".scale").empty()) {
-        //TODO
+          var svrRect = legendPanel.select(".scale svg > rect");
+          var colors = colorScales[svrRect.attr("fill").replace(/(url\()|(\))/g, "").replace("#","")];
+          var canvas = document.createElement("canvas");
+          canvas.width = parseInt(svrRect.attr("width"));
+          canvas.height = parseInt(svrRect.attr("height"));
+          var ctx = canvas.getContext("2d");
+          var grd = ctx.createLinearGradient(0,0,canvas.width,0);
+          grd.addColorStop(0,colors[0]);
+          grd.addColorStop(0.5,colors[1]);
+          grd.addColorStop(1,colors[2]);
+          ctx.fillStyle = grd;
+          ctx.fillRect(0,0,canvas.width,10);
+          var uri = canvas.toDataURL();
+          doc.addImage(uri, 'PNG', (width-canvas.width-20), 40, canvas.width, 10);
+          [
+            {"selector":"title", "x":+(width-(canvas.width/2)-20), "y":30, "align":"center", "fontSize":14},
+            {"selector":"domain1", "x":+(width-canvas.width-20), "y":70, "align":"left", "fontSize":12},
+            {"selector":"domain2", "x":+(width-20), "y":70, "align":"right", "fontSize":12}
+          ].forEach(function(d){
+            var text = legendPanel.select(".scale ."+d.selector).text();
+            doc.setFontSize(d.fontSize);
+            doc.text(d.x, d.y, text, { align: d.align });
+          });
       }
 
       // legend
       if(!legendPanel.select(".legends").empty()) {
-        //TODO
+        var y = legendPanel.select(".scale").empty() ? 20 : 100;
+        doc.setDrawColor(198, 198, 198);
+        ["legend","color","shape","image"].forEach(function(k){
+          if(Legends.hasOwnProperty(k)){
+            var data = Legends[k].data(),
+                title = Legends[k].title(),
+                type = Legends[k].type(),
+                key = Legends[k].key(),
+                shape = Legends[k].shape(),
+                color = Legends[k].color(),
+                text = Legends[k].text(),
+                titleText = texts[type] + " / " + (typeof title == "undefined" ? key : title);
+
+            doc.setFontSize(12);
+            doc.text(width-20, y, titleText, { align: "right" });
+            y = y + 10;
+            doc.line(width-120,y,width-20,y);
+            doc.setFontSize(10);
+            data.forEach(function(d,i){
+              y = y + 18;
+              doc.text(width-40, y, text(d,i), { align: "right" }); 
+
+              if(k!="image"){
+                doc.setFillColor(typeof color == "function" ? color(d) : color);
+                var points = d3.symbol().type(d3["symbol"+(typeof shape == "function" ? shape(d) : shape)])();
+                doc.polygon(points, width-25, y-4, [1,1], 'F');
+              }else{
+                if(images64[d]){
+                  var widthRatio = 1,
+                      heightRatio = images[d].height/images[d].width;
+                  if(heightRatio>1){
+                    widthRatio = 1/heightRatio;
+                    heightRatio = 1;
+                  }
+                  doc.addImage(images64[d], 'PNG', width-36, y-12, 16*widthRatio, heightRatio*16);
+                }
+              }
+            });
+            y = y + 40;
+          }
+        })
       }
     }
 
@@ -3423,12 +3455,25 @@ function dragged_constructural(d) {
     if(node.type=="parent"){
       dx = node.fx-dx;
       dy = node.fy-dy;
-      Graph.links.filter(function(link){ return link.Source==node[options.nodeName] && link.Constructural })
-        .forEach(function(link){
-          link.target.fx = link.target.fx + dx;
-          link.target.fy = link.target.fy + dy;
+      Graph.nodes.filter(checkSelectable)
+        .filter(function(n){ return isDescendant(n,node); })
+        .forEach(function(n){
+          n.fx = n.fx + dx;
+          n.fy = n.fy + dy;
         })
     }
+}
+
+function isDescendant(node,parent){
+  var links = Graph.links.filter(function(link){ return link.Target==node[options.nodeName] && link.Constructural });
+  for(var i = 0; i<links.length; i++){
+    if(links[i].Source==parent[options.nodeName]){
+      return true;
+    }else if(isDescendant(links[i].source,parent)){
+      return true;
+    }
+  }
+  return false;
 }
 
 function dragended(d) {
@@ -3931,7 +3976,40 @@ function displayLegend(){
     .enter().append("div")
       .attr("class","legend-item")
 
-    displaycheck(row,true,key);
+    displaycheck(row,function(self){
+      var compare = function(value){
+        value = String(value);
+        Graph.nodes.forEach(function(d){
+          if(d3.event.ctrlKey && !d3.event.shiftKey){
+            delete d.selected;
+          }
+          if(d[key] && (String(d[key])==value || (typeof d[key] == "object" && (d[key].indexOf(value)!=-1 || d[key].join(",")==value)))){
+            if(self.selected && checkSelectable(d)){
+              d.selected = true;
+            }else{
+              delete d.selected;
+            }
+          }
+        });
+      }
+      if(d3.event.shiftKey && row.filter(function(d){ return this.selected; }).size()>1){
+        var first = false,
+            last = false;
+        row.each(function(d,i){
+          if(this.selected){
+            if(first===false){
+              first = i;
+            }
+            last = i;
+          }
+        });
+        row.filter(function(d,i){
+          return i>=first && i<=last;
+        }).each(compare);
+      }else{
+        compare(d3.select(self).datum());
+      }
+    },true);
 
     if(type == "Image"){
       row.append("img")
@@ -3998,42 +4076,19 @@ function displayLegend(){
 }
 
 // render checkbox
-function displaycheck(sel,item,key){
+function displaycheck(sel,callback,item){
 
-    if(item)
+    if(item){
       sel.property("item",true);
+    }
 
     sel.append("div")
     .attr("class","legend-check-box")
 
     sel.style("cursor","pointer")
     .on("click",function(){
-      var value = String(d3.select(this).datum()),
-          selected = this.selected = !this.selected;
-      if(!this.item){
-        // select all/none nodes
-        Graph.nodes.forEach(function(d){
-            if(selected && checkSelectable(d)){
-              d.selected = true;
-            }else{
-              delete d.selected;
-            }
-        });
-      }else{
-        // select especific nodes
-        Graph.nodes.forEach(function(d){
-          if(d3.event.ctrlKey){
-            delete d.selected;
-          }
-          if(d[key] && (String(d[key])==value || (typeof d[key] == "object" && (d[key].indexOf(value)!=-1 || d[key].join(",")==value)))){
-            if(selected && checkSelectable(d)){
-              d.selected = true;
-            }else{
-              delete d.selected;
-            }
-          }
-        });
-      }
+      this.selected = !this.selected;
+      callback(this);
       showTables();
     })
 }
