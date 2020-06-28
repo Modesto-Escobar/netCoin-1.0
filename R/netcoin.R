@@ -2,7 +2,7 @@
 # Image is a files vector with length and order equal to nrow(nodes). Place as nodes field
 # Batch
 
-netCoin <- function(nodes, links = NULL, tree = NULL, name = NULL,
+netCoin <- function(nodes = NULL, links = NULL, tree = NULL, name = NULL,
     label = NULL, labelSize = NULL, size = NULL, color = NULL,
     shape = NULL, legend = NULL, ntext = NULL, info = NULL,
     orderA = NULL, orderD = NULL, group = NULL, community = NULL,
@@ -14,6 +14,9 @@ netCoin <- function(nodes, links = NULL, tree = NULL, name = NULL,
     showCoordinates = FALSE, showArrows = FALSE, showLegend = TRUE, showAxes = FALSE, axesLabels = NULL,
     language = c("en", "es", "ca"), image = NULL, imageNames = NULL, dir = NULL)
 {
+  if(is.null(links) &  is.null(nodes)) stop("You must explicit a nodes or links data frame, or a netCoin object.")
+  if(!is.null(links) &  is.null(nodes)) nodes <- data.frame(name=unique(c(links$Source,links$Target)))
+
   if(inherits(nodes,"netCoin")){
     links <- nodes$links
     tree <- nodes$tree
@@ -375,17 +378,16 @@ surCoin<-function(data,variables=names(data), commonlabel=NULL,
   
   #Data.frame  
   if (all(inherits(data,c("tbl_df","tbl","data.frame"),TRUE))) data<-as.data.frame(data) # convert haven objects
+  if (inherits(weight,"character")) variables <- setdiff(variables,weight)
   allvar<-union(union(metric,dichotomies),variables)
   
-  if (!pairwise) {
+  if (!pairwise & inherits(weight,"character")) {
     if (!is.null(weight)) weight <- data[rowSums(is.na(data[,allvar]))<1,weight]
     data <- data[complete.cases(data[,allvar]),]
   }
   
   if(!is.null(weight)) {
     if(inherits(weight,"character")){
-      allvar<-setdiff(allvar,weight)
-      variables<-setdiff(variables,weight)
       weight<-data[,weight]
       data<-data[,allvar]
     }
