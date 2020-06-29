@@ -14,8 +14,9 @@ netCoin <- function(nodes = NULL, links = NULL, tree = NULL, name = NULL,
     showCoordinates = FALSE, showArrows = FALSE, showLegend = TRUE, showAxes = FALSE, axesLabels = NULL,
     language = c("en", "es", "ca"), image = NULL, imageNames = NULL, dir = NULL)
 {
-  if(is.null(links) &  is.null(nodes)) stop("You must explicit a nodes or links data frame, or a netCoin object.")
-  if(!is.null(links) &  is.null(nodes)) nodes <- data.frame(name=unique(c(links$Source,links$Target)))
+  if(is.null(links) &&  is.null(nodes)){
+    stop("You must explicit a nodes or links data frame, or a netCoin object.")
+  }
 
   if(inherits(nodes,"netCoin")){
     links <- nodes$links
