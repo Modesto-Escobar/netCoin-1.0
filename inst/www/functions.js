@@ -546,6 +546,49 @@ function displayPicker(options,itemVisual,callback){
         })
 }
 
+function displayPicker2(value,active,callback){
+    var win = displayWindow(),
+        h = 14;
+
+    win.append("h2").text(texts.selectacolor+"\""+value+"\"");
+
+    var picker = win.append("div")
+      .attr("class","picker");
+
+    var itemsPerCol = Math.ceil(categoryColors.length/3),
+        col;
+
+    categoryColors.forEach(function(d){
+      if(!col || col.selectAll("li").size()>=itemsPerCol){
+        col = picker.append("ul").attr("class","col-3");
+      }
+
+      col.append("li")
+        .property("val",d)
+        .classed("active",active==d)
+        .on("click",function(){
+          picker.selectAll("li").classed("active",false);
+          d3.select(this).classed("active",true);
+        })
+        .append("div")
+          .append("div")
+            .style("width",h*6+"px")
+            .style("height",h+"px")
+            .style("background-color",d)
+            .style("color",d)
+            .text(d)
+    });
+
+    win.append("center")
+      .append("button")
+        .attr("class","primary")
+        .text(texts.select)
+        .on("click",function(){
+          callback(picker.select("li.active").property("val"));
+          d3.select(win.node().parentNode).remove();
+        })
+}
+
 function topFilter(){
 
   var data,
@@ -821,7 +864,9 @@ var b64Icons = {
 
   help: "data:image/svg+xml;base64,"+btoa('<svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24"><path d="M0 0h24v24H0V0z" fill="none"/><path fill="#777777" d="M11 18h2v-2h-2v2zm1-16C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm0-14c-2.21 0-4 1.79-4 4h2c0-1.1.9-2 2-2s2 .9 2 2c0 2-3 1.75-3 5h2c0-2.25 3-2.5 3-5 0-2.21-1.79-4-4-4z"/></svg>'),
 
-  edit: "data:image/svg+xml;base64,"+btoa('<svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24" ><path d="M0 0H24V24H0V0Z" fill="none"/><path d="M14.06 9.02L14.98 9.94L5.92 19H5V18.08L14.06 9.02V9.02ZM17.66 3C17.41 3 17.15 3.1 16.96 3.29L15.13 5.12L18.88 8.87L20.71 7.04C21.1 6.65 21.1 6.02 20.71 5.63L18.37 3.29C18.17 3.09 17.92 3 17.66 3V3ZM14.06 6.19L3 17.25V21H6.75L17.81 9.94L14.06 6.19V6.19Z" fill="#2F7BEE"/></svg>')
+  edit: "data:image/svg+xml;base64,"+btoa('<svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24" ><path d="M0 0H24V24H0V0Z" fill="none"/><path d="M14.06 9.02L14.98 9.94L5.92 19H5V18.08L14.06 9.02V9.02ZM17.66 3C17.41 3 17.15 3.1 16.96 3.29L15.13 5.12L18.88 8.87L20.71 7.04C21.1 6.65 21.1 6.02 20.71 5.63L18.37 3.29C18.17 3.09 17.92 3 17.66 3V3ZM14.06 6.19L3 17.25V21H6.75L17.81 9.94L14.06 6.19V6.19Z" fill="#2F7BEE"/></svg>'),
+
+  chart: "data:image/svg+xml;base64,"+btoa('<svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24"><path d="M0 0h24v24H0V0z" fill="none"/><path fill="#777777" d="M5 9.2h3V19H5V9.2zM10.6 5h2.8v14h-2.8V5zm5.6 8H19v6h-2.8v-6z"/></svg>')
 }
 
 function iconButton(){

@@ -11,6 +11,7 @@ function network(Graph){
       frameControls = false,
       Sliders = {},
       Legends = {},
+      VisualHandlers = {},
       Controllers = {},
       GraphNodesLength = 0,
       GraphLinksLength = 0,
@@ -159,13 +160,15 @@ function network(Graph){
           }
           return;
         case "a":
-          options.showArrows = !options.showArrows;
-          if(options.heatmap){
-            drawNet();
-          }else{
-            simulation.restart();
+          if(Graph.links.filter(checkSelectableLink).length){
+            options.showArrows = !options.showArrows;
+            if(options.heatmap){
+              drawNet();
+            }else{
+              simulation.restart();
+            }
+            displaySidebar();
           }
-          displaySidebar();
           return;
         case "b":
           if(selectedNodesLength()) addNeighbors();
@@ -197,9 +200,11 @@ function network(Graph){
           applyInitialFilter();
           return;
         case "l":
-          options.showLegend = !options.showLegend;
-          drawNet();
-          displaySidebar();
+          if(!panel.select(".legend-panel > div").empty()){
+            options.showLegend = !options.showLegend;
+            showLegendFunction();
+            displaySidebar();
+          }
           return;
         case "m":
           options.heatmap = !options.heatmap;
@@ -278,6 +283,7 @@ function network(Graph){
     .attr("href","https://sociocav.usal.es/blog/nca/")
     .text("netCoin")
 
+  selectLayout();
   adaptLayout();
 
   displayArrows();
@@ -652,6 +658,15 @@ function displayMain(){
           }
         }));
     }
+    if(options.frequencies){
+      main.call(iconButton()
+        .alt("freq")
+        .width(24)
+        .height(24)
+        .src(b64Icons.chart)
+        .title("frequencies")
+        .job(displayFreqBars));
+    }
   }else{
     main.style("display","none")
   }
@@ -711,7 +726,7 @@ function displayBottomPanel(){
     tables.append("div")
       .attr("class","switchNodeLink")
       .selectAll("div")
-        .data(["nodes","links"])
+        .data(Graph.links.length ? ["nodes","links"] : ["nodes"])
         .enter().append("div")
           .style("top","-"+ tablesoffset +"px")
           .on("click",function(d){
@@ -950,9 +965,11 @@ function displaySidebar(){
     navs.append("li").text(texts.nodes).on("click",function(){
       navClick(this,"nodes");
     })
-    navs.append("li").text(texts.links).on("click",function(){
-      navClick(this,"links");
-    })
+    if(Graph.links.length){
+      navs.append("li").text(texts.links).on("click",function(){
+        navClick(this,"links");
+      })
+    }
 
     function navClick(thiz,tab){
       subSidebar.selectAll(".tab").style("display",null);
@@ -1063,7 +1080,7 @@ function displaySidebar(){
             simulation.restart();
           }
         }},
-          showLegend = {txt: texts.showhidelegend, key: "showLegend", tooltip: "ctrl + l", callback: drawNet},
+          showLegend = {txt: texts.showhidelegend, key: "showLegend", tooltip: "ctrl + l", callback: showLegendFunction},
           showAxes = {txt: texts.showhideaxes, key: "showAxes", tooltip: "ctrl + x", callback: showAxesFunction},
           heatmap = {txt: texts.netheatmap, key: "heatmap", tooltip: "ctrl + m", callback: function(){
           drawSVG();
@@ -1075,8 +1092,10 @@ function displaySidebar(){
         .attr("class","sliders")
 
       if(!options.heatmap && options.dynamicNodes){
-        sliders.call(Sliders.distance);
-        Sliders.distance.update(options['linkDistance']);
+        if(Graph.links.filter(checkSelectableLink).length){
+          sliders.call(Sliders.distance);
+          Sliders.distance.update(options['linkDistance']);
+        }
 
         sliders.call(Sliders.repulsion);
         Sliders.repulsion.update(options['charge']);
@@ -1093,6 +1112,8 @@ function displaySidebar(){
         Sliders.time.update(frameControls.time);
       }
 
+      displayLayoutSelection(sideGraph);
+
       var secondColW = sidebarWidth/2 - 20,
           divButtons = sel.append("div")
             .attr("class","buttons")
@@ -1102,7 +1123,7 @@ function displaySidebar(){
         .style("padding-left","5px")
         .style("width",secondColW+"px")
 
-      if(!options.heatmap && !options.constructural){
+      if(!options.heatmap && !options.fixed && !options.constructural){
         checkContainer.datum(dynamicNodes)
         var checkbox = checkContainer.append("div")
           .attr("class","legend-check-box dynamicNodes")
@@ -1139,11 +1160,13 @@ function displaySidebar(){
 
       buttons.append("g")
       .attr("class",function(d){ return "button showArrows"; })
+      .classed("disabled",!Graph.links.filter(checkSelectableLink).length)
       .attr("transform","translate(0,"+countY*options.cex+")")
       .datum(showArrows)
 
       buttons.append("g")
       .attr("class",function(d){ return "button showLegend"; })
+      .classed("disabled",panel.select(".legend-panel > div").empty())
       .attr("transform","translate("+secondColW+","+countY*options.cex+")")
       .datum(showLegend)
 
@@ -1217,6 +1240,43 @@ function displaySidebar(){
       })
 
       svg.attr("height",countY*options.cex+parseInt(svg.attr("height")))
+    }
+
+    function displayLayoutSelection(sel){
+      if(options.dynamicNodes || !Graph.layouts || Graph.layouts.length<=1 || options.heatmap){
+        return;
+      }
+
+      var div = sel.append("div")
+        .attr("class", "layouts")
+
+      div.append("div")
+        .style("display","inline-block")
+        .style("width","40%")
+        .append("span")
+          .text(texts.Layout+" ")
+          .append("img")
+            .attr("width","12")
+            .attr("height","12")
+            .attr("src",b64Icons.help)
+            .attr("title",texts.LayoutInfo);
+
+      div.append("div")
+        .style("display","inline-block")
+        .style("width","60%")
+        .attr("class","select-wrapper")
+        .append("select")
+        .on("change",function(){
+          selectLayout(this.value);
+          delete options.dynamicNodes;
+          adaptLayout();
+          simulation.restart();
+        })
+        .selectAll("option")
+          .data(d3.keys(Graph.layouts))
+        .enter().append("option")
+          .property("value",String)
+          .text(String)
     }
 
     function displayFrameControls(sel){
@@ -1439,7 +1499,10 @@ function addVisualController(){
         var attr = this.value;
         applyAuto(visual,attr);
         if((visual=="Color"|| visual=="Group") && dataType(data,attr) == "number"){
-          displayPicker(options,item+visual,drawNet);
+          displayPicker(options,item+visual,function(){
+            delete VisualHandlers[item+visual];
+            drawNet();
+          });
         }
       })
       .selectAll("option")
@@ -1464,10 +1527,15 @@ function addVisualController(){
     }else{
       options[item+visual] = attr;
     }
-    if(item+visual == "nodeOrderA")
+    if(item+visual == "nodeOrderA"){
         delete options.nodeOrderD;
-    if(item+visual == "nodeOrderD")
+    }
+    if(item+visual == "nodeOrderD"){
         delete options.nodeOrderA;
+    }
+    if(VisualHandlers.hasOwnProperty(item+visual)){
+      delete VisualHandlers[item+visual];
+    }
     drawNet();
   }
 
@@ -2432,12 +2500,29 @@ function drawNet(){
   options.imageItem = imgidx!=-1 ? options.imageItems[imgidx] : false;
 
   // compute colors
-  var colorNodesScale = setColorScale(options.nodeColor=="degree" ? nodes : Graph.nodes,'node',"nodeColor"),
-      colorGroupsScale = setColorScale(options.nodeGroup=="degree" ? nodes : Graph.nodes,'node',"nodeGroup"),
-      colorLinksScale = setColorScale(Graph.links,'link',"linkColor"),
-  colorNodes = colorNodesScale?function(d){ return colorNodesScale(d[options.nodeColor]); }:defaultColor,
-  colorGroups = colorGroupsScale?(function(d){ return colorGroupsScale(d[options.nodeGroup]); }):defaultColor,
-  colorLinks = colorLinksScale?(function(d){ return colorLinksScale(d[options.linkColor]); }):defaultLinkColor;
+  if(!VisualHandlers.hasOwnProperty("nodeColor")){
+    VisualHandlers.nodeColor = setColorScale()
+        .data(options.nodeColor=="degree" ? nodes : Graph.nodes)
+        .item('node')
+        .itemAttr("nodeColor")
+        .computeScale()
+  }
+
+  if(!VisualHandlers.hasOwnProperty("nodeGroup")){
+    VisualHandlers.nodeGroup = setColorScale()
+        .data(options.nodeGroup=="degree" ? nodes : Graph.nodes)
+        .item('node')
+        .itemAttr("nodeGroup")
+        .computeScale()
+  }
+
+  if(!VisualHandlers.hasOwnProperty("linkColor")){
+    VisualHandlers.linkColor = setColorScale()
+        .data(Graph.links)
+        .item('link')
+        .itemAttr("linkColor")
+        .computeScale()
+  }
 
   // compute link attributes
   if(options.heatmap){
@@ -2456,13 +2541,12 @@ function drawNet(){
   }
 
   // compute shapes
-  var getShape = function() { return d3["symbol"+defaultShape]; };
-  if(options.nodeShape){
-    var symbolList = d3.scaleOrdinal()
-         .range(symbolTypes)
-         .domain(d3.map(Graph.nodes, function(d) { return d[options.nodeShape]; }).keys());
-
-    getShape = function(d) { return d3["symbol"+symbolList(d[options.nodeShape])]; }
+  if(!VisualHandlers.hasOwnProperty("nodeShape")){
+    VisualHandlers.nodeShape = setShapeScale()
+        .data(Graph.nodes)
+        .item('node')
+        .itemAttr("nodeShape")
+        .computeScale()
   }
 
   svg.attr("clip-path", options.heatmap && options.heatmapTriangle?"url(#heatmapClip)":null);
@@ -2497,7 +2581,7 @@ function drawNet(){
           valColor = options.linkColor?link[options.linkColor]:1,
           loadMatrix = function(i,j){
             matrix[i][j][options.linkIntensity] = val;
-            matrix[i][j].color = valColor;
+            matrix[i][j].linkColor = valColor;
             if(options.linkText)
               matrix[i][j].txt = link[options.linkText];
           }
@@ -2593,8 +2677,8 @@ function drawNet(){
       .attr("transform", !row && options.heatmapTriangle? "rotate(180)" : null)
       .attr("dy", ".32em")
       .style("font-size",(x.bandwidth()-2)+"px")
-      .style("fill",colorNodesScale? function(d, i) {
-        var col = d3.rgb(colorNodesScale(nodes[i][options.nodeColor]));
+      .style("fill",options.nodeColor? function(d, i) {
+        var col = d3.rgb(VisualHandlers.nodeColor(nodes[i]));
         if(col.r==255 && col.g==255 && col.b==255)
           col = col.darker(1);
         return col;
@@ -2668,7 +2752,7 @@ function drawNet(){
         .attr("width", x.bandwidth())
         .attr("height", x.bandwidth())
         .style("fill-opacity", getLinkIntensity)
-        .style("fill", colorLinksScale?function(d) { return colorLinksScale(d.color); }:defaultColor)
+        .style("fill", function(link) { return VisualHandlers.linkColor(link); })
         .on("mouseover", mouseover)
         .on("mouseout", mouseout)
         .on("click",click)
@@ -2789,14 +2873,19 @@ function drawNet(){
     var groups = getGroups(nodes);
   }
 
-  // display legends
-  var legendLegend = options.nodeLegend ? true : false,
-      legendColor = !options.imageItem && (options.nodeColor && dataType(nodes,options.nodeColor)!='number'),
-      legendShape = !options.imageItem && options.nodeShape,
-      legendImage = (!options.heatmap && options.imageItem) && (options.imageItems && options.imageNames);
-  sidebar.select(".buttons .button.showLegend").classed("disabled",!(legendLegend || legendColor || legendShape || legendImage));
+    // display scale
+    if(options.heatmap){
+      VisualHandlers.linkColor.displayScale();
+    }else{
+      VisualHandlers.nodeColor.displayScale();
+    }
 
-  if(options.showLegend){
+    // display legends
+    var legendLegend = options.nodeLegend ? true : false,
+        legendColor = !options.imageItem && (options.nodeColor && dataType(nodes,options.nodeColor)!='number'),
+        legendShape = !options.imageItem && options.nodeShape,
+        legendImage = (!options.heatmap && options.imageItem) && (options.imageItems && options.imageNames);
+
     Legends = {};
     var data;
 
@@ -2818,7 +2907,7 @@ function drawNet(){
         .type("Color")
         .key(options.nodeColor)
         .data(data.sort(sortAsc))
-        .color(colorNodesScale);
+        .color(VisualHandlers.nodeColor.getScale());
     }
 
     if(legendShape){
@@ -2827,7 +2916,7 @@ function drawNet(){
         .type("Shape")
         .key(options.nodeShape)
         .data(data.sort(sortAsc))
-        .shape(symbolList)
+        .shape(VisualHandlers.nodeShape.getScale())
     }
 
     if(legendImage){
@@ -2891,7 +2980,9 @@ function drawNet(){
       displayBottomButton(divLegends,"egonet","ctrl + e",switchEgoNet);
       displayBottomButton(divLegends,"filter","ctrl + f",filterSelection);
     }
-  } // end legends
+
+    sidebar.select(".buttons .button.showLegend").classed("disabled",panel.select(".legend-panel > div").empty());
+    // end legends
 
   showTables();
 
@@ -2921,7 +3012,7 @@ function drawNet(){
       ctx.globalAlpha = 0.2;
       ctx.lineWidth = 3;
       groups.forEach(function(group){
-        ctx.strokeStyle = colorGroups(group);
+        ctx.strokeStyle = VisualHandlers.nodeGroup(group);
         ctx.fillStyle = d3.rgb(ctx.strokeStyle).brighter(0.6);
         var points = getArea(group,nodes);
         ctx.beginPath();
@@ -2940,7 +3031,7 @@ function drawNet(){
         return;
       ctx.beginPath();
       ctx.lineWidth = getLinkWidth(link);
-      ctx.strokeStyle = link._selected? "#F00" : (colorLinksScale ? colorLinks(link) : defaultLinkColor);
+      ctx.strokeStyle = link._selected? "#F00" : VisualHandlers.linkColor(link);
       ctx.moveTo(points[0][0], points[0][1]);
       if(link.linkNum)
         ctx.quadraticCurveTo(points[2][0], points[2][1], points[1][0], points[1][1]);
@@ -2999,11 +3090,12 @@ function drawNet(){
           ctx.stroke();
         }
       }else{
-        ctx.fillStyle = colorNodesScale?colorNodes(node):defaultColor;
+        ctx.fillStyle = VisualHandlers.nodeColor(node);
+
         if(!strokeStyle)
           ctx.strokeStyle = d3.rgb(ctx.fillStyle).darker(1);
         ctx.beginPath();
-        d3.symbol().type(getShape(node)).size(nodeSize * nodeSize * Math.PI).context(ctx)();
+        d3.symbol().type(VisualHandlers.nodeShape(node)).size(nodeSize * nodeSize * Math.PI).context(ctx)();
         ctx.closePath();
         ctx.fill();
         ctx.stroke();
@@ -3107,7 +3199,7 @@ function drawNet(){
       var areas = [];
       groups.forEach(function(group){
         var d = {},
-            color = colorGroups(group),
+            color = VisualHandlers.nodeGroup(group),
             points = getArea(group,nodes);
         d.colorf = applyOpacity(d3.rgb(color).brighter(0.6),0.2);
         d.colord = applyOpacity(d3.rgb(color),0.2);
@@ -3135,7 +3227,7 @@ function drawNet(){
       });
 
       links.forEach(function(link){
-        var color = applyOpacity(d3.rgb(colorLinksScale ? colorLinks(link) : defaultLinkColor),0.6),
+        var color = applyOpacity(d3.rgb(VisualHandlers.linkColor(link)),0.6),
             w = getLinkWidth(link)*scale,
             points = getLinkCoords(link);
 
@@ -3184,7 +3276,7 @@ function drawNet(){
       }
 
       nodes.forEach(function(node){
-        var color = d3.rgb(colorNodesScale?colorNodes(node):defaultColor),
+        var color = d3.rgb(VisualHandlers.nodeColor(node)),
             sColor = d3.rgb(node.selected ? "#FF0" : d3.rgb(color).darker(1)),
             size = node.nodeSize*scale,
             x = (node.x*scale)+translate[0],
@@ -3202,7 +3294,7 @@ function drawNet(){
             }
           }
         }else{
-          var points = d3.symbol().type(getShape(node))();
+          var points = d3.symbol().type(VisualHandlers.nodeShape(node))();
           doc.polygon(points, x, y, [size/nodeRadius,size/nodeRadius], 'FD');
         }
       });
@@ -3646,31 +3738,174 @@ function updateAxes(){
       })
 }
 
-function setColorScale(data,item,itemAttr){
-    if(options[itemAttr]){
-      var scale;
-      if(dataType(data,options[itemAttr]) == "number"){
-        var colorDomain = d3.extent(data.filter(function(d){ return d !== null; }), function(d) { return d[options[itemAttr]]; }),
-            nameScale = options["colorScale"+itemAttr];
-        if(options[item+"Bipolar"]){
-          var absmax = Math.max(Math.abs(colorDomain[0]),Math.abs(colorDomain[1]));
-          colorDomain = [-absmax,+absmax];
-        }
-        if(!options.imageItem && ((itemAttr=="nodeColor" && !options.heatmap) || (itemAttr=="linkColor" && options.heatmap)))
-          displayScale(colorDomain, "url(#"+nameScale+")", options[itemAttr]);
-        scale = d3.scaleLinear().range(colorScales[nameScale])
-          .domain([colorDomain[0],d3.mean(colorDomain),colorDomain[1]]);
-      }else{
-        scale = d3.scaleOrdinal().range(categoryColors)
-          .domain(d3.map(data.filter(function(d){ return d[options[itemAttr]] !== null; }), function(d){ return d[options[itemAttr]]; }).keys());
+function setSomeSale(callback){
+  var config = {
+    scale: false,
+    data: [],
+    item: "",
+    itemAttr: "",
+    exports: callback
+  }
+
+  config.exports.getScale = function(){
+    return config.scale;
+  }
+
+  config.exports.data = function(x) {
+      if (!arguments.length) return config.data;
+      config.data = x;
+      return config.exports;
+  };
+
+  config.exports.item = function(x) {
+      if (!arguments.length) return config.item;
+      config.item = x;
+      return config.exports;
+  };
+
+  config.exports.itemAttr = function(x) {
+      if (!arguments.length) return config.itemAttr;
+      config.itemAttr = x;
+      return config.exports;
+  };
+
+  config.exports.domain = function(x) {
+      if (!arguments.length){
+        return config.scale ? config.scale.domain() : false;
       }
-      return function(d){
-               return (d === null)? (item == "node"? "#ffffff" : "#000000") : scale(d);
-             };
+      if(config.scale){
+        config.scale.domain(x);
+      }
+      return config.exports;
+  };
+
+  config.exports.range = function(x) {
+      if (!arguments.length){
+        return config.scale ? config.scale.range() : false;
+      }
+      if(config.scale){
+        config.scale.range(x);
+      }
+      return config.exports;
+  };
+
+  return config;
+}
+
+function setShapeScale(){
+  var config = setSomeSale(function(obj){
+    var shape = defaultShape;
+    if(config.scale){
+      shape = config.scale(obj[options[config.itemAttr]]);
+    }
+    return d3["symbol"+shape];
+  });
+
+  config.exports.computeScale = function(){
+    if(options[config.itemAttr]){
+      var domain = d3.map(config.data, function(d) { return d[options[config.itemAttr]]; }).keys(),
+          range = [];
+      domain.forEach(function(d,i){
+        range[i] = symbolTypes[i%symbolTypes.length];
+      })
+      config.scale = d3.scaleOrdinal()
+         .range(range)
+         .domain(domain);
+    }
+    return config.exports;
+  }
+
+  return config.exports;
+}
+
+function setColorScale(){
+  var config = setSomeSale(function(obj){
+    if(config.scale){
+      return (obj[options[config.itemAttr]] === null)? (config.item == "node"? "#ffffff" : "#000000") : config.scale(obj[options[config.itemAttr]]);
     }else{
-      return false;
+      return config.item == "link" && !options.heatmap ? defaultLinkColor : defaultColor;
+    }
+  });
+
+  config.datatype = "string";
+
+  config.exports.computeScale = function(){
+    if(options[config.itemAttr]){
+      config.datatype = dataType(config.data,options[config.itemAttr]);
+      var domain, range;
+      if(config.datatype == "number"){
+        domain = d3.extent(config.data.filter(function(d){ return d !== null; }), function(d) { return d[options[config.itemAttr]]; });
+        if(options[config.item+"Bipolar"]){
+          var absmax = Math.max(Math.abs(domain[0]),Math.abs(domain[1]));
+          domain = [-absmax,+absmax];
+        }
+        range = colorScales[options["colorScale"+config.itemAttr]];
+        config.scale = d3.scaleLinear()
+          .range(range)
+          .domain([domain[0],d3.mean(domain),domain[1]]);
+      }else{
+        domain = d3.map(config.data.filter(function(d){ return d[options[config.itemAttr]] !== null; }), function(d){ return d[options[config.itemAttr]]; }).keys();
+        range = [];
+        domain.forEach(function(d,i){
+          range[i] = categoryColors[i%categoryColors.length];
+        })
+        config.scale = d3.scaleOrdinal()
+          .range(range)
+          .domain(domain);
+      }
+    }
+    return config.exports;
+  }
+
+  config.exports.displayScale = function(){
+    if(config.scale && config.datatype == "number"){
+      var div = legendPanel.append("div")
+      .attr("class","scale")
+
+      div.append("img")
+        .attr("width","24")
+        .attr("height","24")
+        .attr("src",b64Icons.edit)
+        .on("click",function(){
+          displayPicker(options,config.itemAttr,function(){
+            delete VisualHandlers[config.itemAttr];
+            drawNet();
+          });
+        })
+
+      div = div.append("div");
+
+      div.append("div")
+      .attr("class","title")
+      .text(options[config.itemAttr]);
+
+      var scaleWidth = div.node().offsetWidth - parseInt(div.style("padding-right"));
+
+      div.append("svg")
+      .attr("width", scaleWidth)
+      .attr("height",10)
+      .append("rect")
+        .attr("x",0)
+        .attr("y",0)
+        .attr("height",10)
+        .attr("width",scaleWidth)
+        .attr("rx",2)
+        .attr("fill", "url(#"+options["colorScale"+config.itemAttr]+")");
+
+      var domain = config.scale.domain();
+
+      div.append("span")
+      .attr("class","domain1")
+      .text(formatter(domain[0]));
+
+      div.append("span")
+      .attr("class","domain2")
+      .text(formatter(domain[domain.length-1]));
     }
   }
+
+  return config.exports;
+}
 
 function getNumAttr(data,itemAttr,range,def){
     if(options[itemAttr]){
@@ -3767,7 +4002,7 @@ function displayInfoPanel(info){
                 div.remove();
               })
           });
-    var contentDiv = div.append("div").html(info);
+    var contentDiv = div.append("div").append("div").html(info);
   }else{
     div.select("div.infopanel > div.close-button").dispatch("click");
   }
@@ -3935,6 +4170,10 @@ function showAxesFunction(){
   }
 }
 
+function showLegendFunction(){
+  panel.select(".legend-panel").style("display",options.showLegend ? "block" : "none");
+}
+
 function displayLegend(){
   var parent,
       legend,
@@ -4024,6 +4263,21 @@ function displayLegend(){
       .attr("transform","translate(8,8)")
       .attr("d", d3.symbol().type(typeof shape=="function" ? function(d){ return d3["symbol"+shape(d)]; } : d3["symbol"+shape]))
       .style("fill", color)
+
+      if(typeof color == "function"){
+        row.each(function(d,i){
+          d3.select(this).select("svg").on("click",function(){
+            displayPicker2(d,color(d),function(val){
+              var range = color.range(),
+                  domain = color.domain();
+              range[domain.indexOf(d)] = val;
+              color.range(range)
+              drawNet();
+            });
+            d3.event.stopPropagation();
+          })
+        })
+      }
     }
 
     row.append("span")
@@ -4115,52 +4369,6 @@ function stripTags(text){
     return "NA";
   }
   return text.replace(/(<([^>]+)>)/ig,"");
-}
-
-function displayScale(domain, fill, title){
-    if(!options.showLegend){
-      return;
-    }
-
-    var div = legendPanel.append("div")
-      .attr("class","scale")
-
-    div.append("img")
-        .attr("width","24")
-        .attr("height","24")
-        .attr("src",b64Icons.edit)
-        .on("click",function(){
-          var itemColor = options.heatmap ? "linkColor" : "nodeColor";
-          displayPicker(options,itemColor,drawNet);
-        })
-
-    div = div.append("div");
-
-    div.append("div")
-      .attr("class","title")
-      .text(title);
-
-    var scaleWidth = div.node().offsetWidth - parseInt(div.style("padding-right"));
-
-    div.append("svg")
-      .attr("width", scaleWidth)
-      .attr("height",10)
-      .append("rect")
-    .attr("x",0)
-    .attr("y",0)
-    .attr("height",10)
-    .attr("width",scaleWidth)
-    .attr("rx",2)
-    .attr("fill", fill);
-
-    div.append("span")
-      .attr("class","domain1")
-      .text(formatter(domain[0]));
-
-    div.append("span")
-      .attr("class","domain2")
-      .text(formatter(domain[domain.length-1]));
-
 }
 
 function showTables() {
@@ -4385,6 +4593,12 @@ function showTables() {
     body.select("div.infopanel > div.close-button").dispatch("click");
   }
 
+  // update frequency bars
+  if(!body.select("div.infopanel .freq-bars").empty()){
+    body.select("div.infopanel > div.close-button").dispatch("click");
+    displayFreqBars();
+  }
+
   // highlight egonet of selection
   if(!options.heatmap){
     var names = nodesData.map(function(node){ return node[options.nodeName]; });
@@ -4566,6 +4780,19 @@ function getLayoutRange(){
   return { x: xrange, y: yrange };
 }
 
+function selectLayout(key){
+  if(Graph.layouts){
+    if(!key){
+      key = d3.keys(Graph.layouts)[0];
+    }
+    Graph.nodes.forEach(function(node,i){
+      var coor = Graph.layouts[key][i];
+      node.fx = coor[0];
+      node.fy = coor[1];
+    })
+  }
+}
+
 function adaptLayout(){
   plot.style("width",width+"px");
   plot.style("height",height+"px");
@@ -4698,6 +4925,123 @@ function adaptLayout(){
     scaleCoorX.range([0,width]);
     scaleCoorY.range([0,height]);
   }
+}
+
+function displayFreqBars(){
+  if(!options.frequencies){
+    return;
+  }else if(options.frequencies!="relative"){
+    options.frequencies = "absolute";
+  }
+  displayInfoPanel("<div class=\"freq-bars\"><div>");
+  var div = body.select(".infopanel .freq-bars");
+  div.append("div")
+    .attr("class","select-wrapper")
+    .append("select")
+    .on("change",function(){
+      options.frequencies = this.value;
+      displayFreqBars();
+    })
+    .selectAll("option")
+      .data(["absolute","relative"])
+    .enter().append("option")
+      .property("selected",function(d){ return options.frequencies==d; })
+      .property("value",String)
+      .text(String)
+  Graph.nodenames.forEach(function(name){
+    if(dataType(Graph.nodes,name)=="string"){
+      var values = {},
+          selectedValues = {};
+      Graph.nodes.forEach(function(node){
+        var val = String(node[name]);
+        if(!values.hasOwnProperty(val)){
+          values[val] = 1;
+        }else{
+          values[val] += 1;
+        }
+        if(node.selected){
+          if(!selectedValues.hasOwnProperty(val)){
+            selectedValues[val] = 1;
+          }else{
+            selectedValues[val] += 1;
+          }
+        }
+      });
+
+      var maxvalue = d3.max(d3.values(values)),
+          keyvalues = d3.keys(values).sort(function(a,b){
+            a = values[a];
+            b = values[b];
+            return a > b ? -1 : a < b ? 1 : a <= b ? 0 : NaN;
+          });
+          total = Graph.nodes.length,
+          selectedtotal = Graph.nodes.filter(function(n){ return n.selected; }).length;
+
+      if(options.frequencies=="relative"){
+        for(v in values){
+          values[v] = values[v]/total*100;
+        }
+        for(v in selectedValues){
+          selectedValues[v] = selectedValues[v]/selectedtotal*100;
+        }
+
+        maxvalue = d3.max([d3.max(d3.values(values)),d3.max(d3.values(selectedValues))]);
+      }
+
+      if(!(maxvalue<=1 && keyvalues.length>5)){
+        var barplot = div.append("div").attr("class","bar-plot");
+        barplot.append("h2").text(name);
+
+        keyvalues.forEach(function(v){
+          var percentage = values[v]/maxvalue*100,
+              percentage2 =  0;
+
+          if(selectedValues[v]){
+            percentage2 = selectedValues[v]/maxvalue*100;
+          }
+
+          var row = barplot.append("div")
+            .attr("class","freq-bar")
+            .attr("title",v+": "+(options.frequencies=="relative" ? formatter(values[v])+"%" : values[v]))
+            .on("click",function(){
+              Graph.nodes.filter(checkSelectable).forEach(function(node){
+                delete node.selected;
+                if(node[name]==v){
+                  node.selected = true;
+                }
+              })
+              showTables();
+            })
+          row.append("div")
+            .attr("class","freq1")
+            .style("width",percentage+"%")
+            .html("&nbsp;");
+          row.append("div")
+            .attr("class","freq2")
+            .style("width",percentage2+"%")
+            .html("&nbsp;");
+          row.append("span")
+            .text(v)
+        })
+        var axis = barplot.append("div")
+          .attr("class","freq-axis")
+
+        var step = 1,
+            half = false;
+        while(maxvalue/step>10){
+          if(half){
+            step = step*2;
+          }else{
+            step = step*5
+          }
+          half = !half;
+        }
+        for(var i = 0; i<maxvalue; i += step){
+          axis.append("span").style("left",(i/maxvalue*100)+"%").text(i+(options.frequencies=="relative"?"%":""));
+        }
+      }
+    }
+  })
 }
 
 function embedImages(callback){

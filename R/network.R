@@ -4,6 +4,7 @@ networkJSON<-function(net){
   links <- net$links
   tree <- net$tree
   nodes <- net$nodes
+  layouts <- net$layouts
   options <- net$options
 
   name <- as.character(nodes[[options$nodeName]])
@@ -75,8 +76,12 @@ networkJSON<-function(net){
     json$links <- links
     json$linknames <- linknames
   }
-  if(length(tree))
+  if(length(tree)){
     json$tree <- tree
+  }
+  if(length(layouts)){
+    json$layouts <- layouts
+  }
   json$options <- options
   
   return(toJSON(json))
@@ -84,11 +89,24 @@ networkJSON<-function(net){
 
 # add layout
 netAddLayout <- function(net,layout){
-  if(nrow(layout)==nrow(net$nodes)){
+  if(inherits(layout,"list") &&
+       all(sapply(layout,inherits,what="matrix")) &&
+       all(sapply(layout,is.numeric)) &&
+       all(sapply(layout,ncol)==2) &&
+       all(sapply(layout,nrow)==nrow(net$nodes))){
+    if(is.null(names(layout))){
+      names(layout) <- paste0("layout",seq_along(layout))
+    }
+    net$layouts <- layout
+  }else if(inherits(layout,"matrix") &&
+       is.numeric(layout) &&
+       ncol(layout)==2 &&
+       nrow(layout)==nrow(net$nodes)){
     net$nodes[["fx"]] <- layout[,1]
     net$nodes[["fy"]] <- layout[,2]
-  }else
-    warning("layout: must have a coordinate per node")
+  }else{
+    warning("layout: each layout must be a numeric matrix and have a pair of coordinates per node")
+  }
   return(net)
 }
 

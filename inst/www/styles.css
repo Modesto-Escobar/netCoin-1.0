@@ -623,11 +623,12 @@ div.topbar {
   cursor: pointer;
   text-align: center;
 }
-.picker li canvas {
+.picker li > * {
+  display: inline-block;
   padding: 3px;
   border: 1px solid #ffffff;
 }
-.picker li.active canvas {
+.picker li.active > * {
   border-color: #2f7bee;
 }
 
@@ -650,8 +651,7 @@ div.infopanel {
   background-color: #ffffff;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.4);
   border-radius: 10px;
-  padding: 20px;
-  overflow-y: auto;
+  padding: 20px 0;
   position: absolute;
   top: 10px;
   right: 10px;
@@ -672,6 +672,12 @@ div.infopanel .close-button {
 }
 div.infopanel > div:last-child {
   width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+div.infopanel > div:last-child > div {
+  padding: 0 20px;
   height: 100%;
 }
 
@@ -710,8 +716,9 @@ div.showhideArrow {
   cursor: pointer;
 }
 
-div.divFrameCtrl,
-div.subSidebar div.buttons {
+div.subSidebar div.divFrameCtrl,
+div.subSidebar div.buttons,
+div.subSidebar div.layouts {
   padding: 12px 0 12px 0;
   border-top: 1px solid #c6c6c6;
 }
@@ -974,6 +981,7 @@ svg .zoombutton.zoomreset rect {
   width:100%;
   height:100%; 
   background:linear-gradient(to right, transparent 90%, white);
+  pointer-events: none;
 }
 .legend-item img,
 .legend-item svg {
@@ -1015,4 +1023,59 @@ svg .legend-bottom-button > text{
   font-size: 8px !important;
   fill: #ffffff !important;
   pointer-events: none;
+}
+
+/* frequency plots */
+.freq-bars .bar-plot h2 {
+  margin: 12px 0 6px 0;
+}
+.freq-bars .bar-plot .freq-bar {
+  position: relative;
+  margin-bottom: 4px;
+  cursor: pointer;
+}
+.freq-bars .bar-plot .freq-bar > div.freq1 {
+  background-color: #cbdefb;
+  height: 100%;
+  width: 100%;
+  padding: 4px 0;
+}
+.freq-bars .bar-plot .freq-bar > div.freq2 {
+  background-color: #c6c6c6;
+  margin: 4px 0;
+  position: absolute;
+  display: inline-block;
+  z-index: 1;
+  top: 0;
+  left: 0;
+}
+.freq-bars .bar-plot .freq-bar > span {
+  position: absolute;
+  display: inline-block;
+  padding: 4px;
+  z-index: 1;
+  top: 0;
+  left: 0;
+}
+.freq-bars .bar-plot .freq-axis {
+  position: relative;
+  border-top: solid 1px #777777;
+  padding-bottom: 20px;
+}
+.freq-bars .bar-plot .freq-axis > span {
+  position: absolute;
+  display: block;
+  width: 30px;
+  text-align: center;
+  margin-left: -15px;
+  margin-top: 4px;
+}
+.freq-bars .bar-plot .freq-axis > span:after {
+  content: "";
+  border-left: solid 1px #777777;
+  height: 4px;
+  display: block;
+  position: absolute;
+  top: -4px;
+  left: 15px;
 }

@@ -221,9 +221,7 @@ netCoin <- function(nodes = NULL, links = NULL, tree = NULL, name = NULL,
         if(layoutName=="su")layout=layout$layout
       }
     }
-    if (inherits(layout,"matrix"))
-      net <- netAddLayout(net,layout)
-    else warning("layout is not a matrix")
+    net <- netAddLayout(net,layout)
   }
 
   #community
