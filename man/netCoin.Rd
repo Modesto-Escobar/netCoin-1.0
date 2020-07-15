@@ -18,8 +18,8 @@ netCoin(nodes, links = NULL, tree = NULL, name = NULL, label = NULL,
         nodeFilter = NULL, linkFilter = NULL, degreeFilter = NULL,
         nodeBipolar = FALSE, linkBipolar = FALSE, defaultColor = "#1f77b4",
         distance = 10, repulsion = 25, zoom = 1, fixed = showCoordinates,
-        scenarios = NULL, main = NULL, note = NULL, help = NULL,
-        helpOn = FALSE, cex = 1, background = NULL, layout = NULL,
+        scenarios = NULL, main = NULL, note = NULL, frequencies = FALSE,
+        help = NULL, helpOn = FALSE, cex = 1, background = NULL, layout = NULL,
         limits = NULL, controls = 1:4, mode = c("network","heatmap"),
         showCoordinates = FALSE, showArrows = FALSE, showLegend = TRUE,
         showAxes = FALSE, axesLabels = NULL, language = c("en","es","ca"),
@@ -59,6 +59,7 @@ netCoin(nodes, links = NULL, tree = NULL, name = NULL, label = NULL,
 \item{scenarios}{a note showing number of scenarios.}
 \item{main}{upper title of the graph.}
 \item{note}{lower title of the graph.}
+\item{frequencies}{a logical value true if the frequencies can be shown in barplots. Default = FALSE.}
 \item{help}{help text of the graph.}
 \item{helpOn}{Should the help be shown at the beginning?}
 \item{background}{background color or image of the graph.}

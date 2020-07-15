@@ -11,9 +11,7 @@ var texts = {
     add: "Add",
     nodesattributes: "Node attributes",
     linksattributes: "Link attributes",
-    noitemsselected: "No items selected",
-    alertnonodes: "No nodes selected! Hold shift to select nodes.",
-    alertnonodestable: "Anything matched in table!",
+    noitemsselected: "Select a node in the graph to see its attributes.",
     repulsion: "Repulsion",
     distance: "Distance",
     loading: "Loading...",
@@ -27,7 +25,7 @@ var texts = {
     showhidebuttons: "Show/hide buttons",
     showhidetables: "Show/hide tables",
     stopresume: "Dynamic",
-    netheatmap: "Heatmap",
+    heatmap: "Heatmap",
     isolateselection: "Filter selection",
     resetfilter: "Remove filters",
     selectall: "Select all/none",
@@ -104,6 +102,6 @@ var texts = {
     searchanode: "Search a node",
     goback: "Return",
     newtab: "Open in new tab",
-    configure: "Configure",
+    tools: "Tools",
     poweredby: "Powered by"
   };

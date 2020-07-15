@@ -9,7 +9,7 @@ netCoin <- function(nodes = NULL, links = NULL, tree = NULL, name = NULL,
     lwidth = NULL, lweight = NULL, lcolor = NULL, ltext = NULL,
     nodeFilter = NULL, linkFilter = NULL, degreeFilter = NULL, nodeBipolar = FALSE, linkBipolar = FALSE,
     defaultColor = "#1f77b4", distance = 10, repulsion = 25, zoom = 1, fixed = showCoordinates,
-    scenarios = NULL, main = NULL, note = NULL, help = NULL, helpOn = FALSE,
+    scenarios = NULL, main = NULL, note = NULL, frequencies = FALSE, help = NULL, helpOn = FALSE,
     cex = 1, background = NULL, layout = NULL, limits = NULL, controls = 1:4, mode = c("network","heatmap"),
     showCoordinates = FALSE, showArrows = FALSE, showLegend = TRUE, showAxes = FALSE, axesLabels = NULL,
     language = c("en", "es", "ca"), image = NULL, imageNames = NULL, dir = NULL)
@@ -104,6 +104,7 @@ netCoin <- function(nodes = NULL, links = NULL, tree = NULL, name = NULL,
   if(nodeBipolar) options[["nodeBipolar"]] <- TRUE
   if(linkBipolar) options[["linkBipolar"]] <- TRUE
   if(helpOn) options[["helpOn"]] <- TRUE
+  if(frequencies) options[["frequencies"]] <- TRUE
   if (!is.null(defaultColor)) options[["defaultColor"]] <- defaultColor
   if (!is.null(controls)) options[["controls"]] <- as.numeric(controls)
   if (!is.null(mode)) options[["mode"]] <- tolower(substr(as.character(mode),1,1))
