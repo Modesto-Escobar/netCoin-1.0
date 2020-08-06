@@ -77,6 +77,7 @@ button.primary-outline {
   background-color: #fff;
   color: #2f7bee;
   border-color: #2f7bee;
+  padding: 3px 7px;
 }
 button.primary-outline:hover {
   color: #135dcd;
@@ -92,6 +93,15 @@ button.primary.reset {
   background-repeat: no-repeat;
   background-position: right;
   background-image: url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIGhlaWdodD0iMTYiIHZpZXdCb3g9IjAgMCAyNCAyNCIgd2lkdGg9IjIwIj48cGF0aCBmaWxsPSIjZmZmZmZmIiBkPSJNMTcuNjUgNi4zNUMxNi4yIDQuOSAxNC4yMSA0IDEyIDRjLTQuNDIgMC03Ljk5IDMuNTgtNy45OSA4czMuNTcgOCA3Ljk5IDhjMy43MyAwIDYuODQtMi41NSA3LjczLTZoLTIuMDhjLS44MiAyLjMzLTMuMDQgNC01LjY1IDQtMy4zMSAwLTYtMi42OS02LTZzMi42OS02IDYtNmMxLjY2IDAgMy4xNC42OSA0LjIyIDEuNzhMMTMgMTFoN1Y0bC0yLjM1IDIuMzV6Ii8+PC9zdmc+);
+}
+button.primary-outline.clear {
+  overflow: hidden;
+  white-space: nowrap;
+  color: transparent;
+  width: 22px;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-image: url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIGhlaWdodD0iMTIiIHZpZXdCb3g9IjAgMCAyNCAyNCIgd2lkdGg9IjEyIj48cGF0aCBkPSJNMCAwaDI0djI0SDBWMHoiIGZpbGw9Im5vbmUiLz48cGF0aCBkPSJNMjIgM0g3Yy0uNjkgMC0xLjIzLjM1LTEuNTkuODhMMCAxMmw1LjQxIDguMTFjLjM2LjUzLjkuODkgMS41OS44OWgxNWMxLjEgMCAyLS45IDItMlY1YzAtMS4xLS45LTItMi0yem0wIDE2SDcuMDdMMi40IDEybDQuNjYtN0gyMnYxNHptLTExLjU5LTJMMTQgMTMuNDEgMTcuNTkgMTcgMTkgMTUuNTkgMTUuNDEgMTIgMTkgOC40MSAxNy41OSA3IDE0IDEwLjU5IDEwLjQxIDcgOSA4LjQxIDEyLjU5IDEyIDkgMTUuNTl6IiBmaWxsPSIjMkY3QkVFIi8+PC9zdmc+);
 }
 input[type=range]{
   height: 5px;
@@ -154,7 +164,7 @@ th.sorting_desc:after {
   color: #2f7bee;
 }
 .tables {
-  background-color: #f5f5f5;
+  background-color: #ffffff;
   padding: 6px 10px;
   border-top: solid 2px #2f7bee;
 }
@@ -244,6 +254,9 @@ div.switchNodeLink > div.active {
   color: #ffffff;
   pointer-events: none;
 }
+div.switchNodeLink > div:not(.active):hover {
+  color: #777777;
+}
 div.switchNodeLink > div > h3{
   font-size: 1.2em;
 }
@@ -251,7 +264,8 @@ div.main {
   padding: 6px 12px;
   border-bottom: solid 1px #c6c6c6;
   background-color: #ffffff;
-  font-size: 1.8em;
+  font-size: 1.6em;
+  min-height: 24px;
 }
 div.main span.title {
   font-weight: bold;
@@ -475,25 +489,30 @@ div.infopanel,
 }
 .subSidebar > .nav > ul > li {
   padding: 6px 12px;
-  border-bottom: 2px solid #ffffff;
   font-weight: bold;
   cursor: pointer;
   color: #c6c6c6;
   display: inline-block;
+  text-transform: uppercase;
+  margin: 0 2px;
+  border-radius: 5px 5px 0 0;
+  background-color: #f5f5f5;
+  text-align: center;
 }
 .subSidebar > .nav > ul > li:not(.active):hover {
   color: #777777;
 }
 .subSidebar > .nav > ul > li.active {
-  color: #2f7bee;
-  border-bottom: 2px solid #2f7bee;
+  background-color: #2f7bee;
+  color: #ffffff;
+  pointer-events: none;
 }
 .subSidebar .valSel > select {
   width: 100%;
   margin: 4px 0;
 }
 .subSidebar .filter-controls button {
-  margin: 0 2px 2px 0;
+  margin: 0 4px 2px 0;
 }
 .multi-select {
   position: relative;
@@ -694,6 +713,23 @@ div.topbar {
 }
 .picker li.active > * {
   border-color: #2f7bee;
+}
+
+.picker div.row {
+  text-align: center;
+}
+.picker div.row > span {
+  display: inline-block;
+  border: 1px solid #ffffff;
+  cursor: pointer;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  margin: 4px;
+}
+.picker div.row > span.active,
+.picker div.row > span:hover {
+  border-color: rgba(0,0,0, 0.25);
 }
 
 div.loading {

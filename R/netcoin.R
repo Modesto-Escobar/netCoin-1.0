@@ -566,6 +566,39 @@ surCoin<-function(data,variables=names(data), commonlabel=NULL,
   } else warning("Input is not a dichotomous matrix of incidences")
 }
 
+# surScat is a wrapper to build a netCoin object from an original non-dichotomized data.frame and see frequencies.
+
+surScat <- function(data, variables=names(data), active=names(data), nclusters=2, maxN=2000, ...) {
+  B <- as.data.frame(droplevels(as_factor(na.omit(data[,variables]))))
+  b <- B[,active]
+  m <- as.matrix(dichotomize(b,variables=names(b), sort=F, add=F, nas=NULL))
+  cc <- layoutMca(m, rows=T)
+  for(i in nclusters) {
+    G <- stats::kmeans(cc, centers=i)
+    g <- paste0("Grupos(",sprintf(paste0("%0",length(levels(G$cluster)),"d"),i),")")
+    B[[g]] <- paste0("Grupo: ",sprintf(paste0("%0",length(levels(G$cluster)),"d"),G$cluster))
+  }
+  arguments <- list(...)
+  arguments$name <- nameByLanguage(NULL,arguments$language,NULL)
+  B[[arguments$name]] <- sprintf(paste0("%0",nchar(nrow(B)),"d"),as.numeric(rownames(B)))
+  B <- B[, c(active, setdiff(names(B), active))]
+  if(nrow(B)>maxN) {
+    set.seed(2020)
+    rcases <- sample(1:nrow(B), maxN)
+    B  <- B[rcases,]
+    cc <- cc[rcases,]
+  }
+  arguments$nodes <- B
+  arguments$layout <- cc
+  arguments$color <- g
+  arguments$frequencies <- TRUE
+  arguments$showAxes <- TRUE
+  arguments$showCoordinates <- TRUE
+  if(is.null(arguments$label)) arguments$label <- ""
+  if(is.null(arguments$controls)) arguments$controls <- c(1,4)  
+  return(do.call(netCoin, arguments))
+}
+
 # Elaborate a netCoin object from a lavaan object.
 
 pathCoin<-function(model, estimates=c("b","se","z","pvalue","beta"), fitMeasures=c("chisq", "cfi", "rmsea"), ...){
@@ -1754,6 +1787,26 @@ layoutMCA<-function(matrix) { # Correspondencias simples clasicas aplicadas a di
   principal.coordinates.columns = sweep(standard.coordinates.columns, 2, SVD$d[1:2], "*")
   colnames(principal.coordinates.columns)<-c("F1","F2")
   return(principal.coordinates.columns)
+}
+
+layoutMca<-function(matrix, nfactors=2, rows=FALSE){ # Correspondencias simples clasicas aplicadas a dicotomicas.
+  P=matrix/nrow(matrix)
+  column.masses<-colSums(P)
+  row.masses=rowSums(P)
+  E=row.masses %o% column.masses
+  R=P-E
+  I=R/E
+  Z=R/sqrt(E) # Corrected
+  SVD=svd(Z)
+  rownames(SVD$v)=colnames(P)
+  CC <-list()
+  CC$standard.coordinates.rows = sweep(SVD$u, 1, sqrt(row.masses), "/")
+  CC$principal.coordinates.rows = sweep(CC$standard.coordinates.rows, 2, SVD$d, "*")
+  CC$standard.coordinates.columns = sweep(SVD$v, 1, sqrt(column.masses), "/")
+  CC$principal.coordinates.columns = sweep(CC$standard.coordinates.columns, 2, SVD$d, "*")
+  CC <- lapply(CC, function(X){X<-X[,2:(nfactors+1)];colnames(X) <- paste0("F",1:nfactors); return(X)})
+  if(rows) return(CC$principal.coordinates.rows)
+  else return(CC$principal.coordinates.columns)
 }
 
 layoutPCA<-function(coin) { # Coordenadas a partir de Pearson: Haberman/raiz(n)

@@ -353,7 +353,7 @@ function network(Graph){
     }
 
     if(options.frames){
-      if(options.frames.length>1 && Graph.linknames.indexOf("_frame_")!=-1){
+      if(options.frames.length>1 && Graph.linknames && Graph.linknames.indexOf("_frame_")!=-1){
 
         var speed = 50;
         if(options.hasOwnProperty("speed"))
@@ -372,14 +372,15 @@ function network(Graph){
           "time": speed,
           "loop": false
         };
-
-        ["zoom","repulsion","distance"].forEach(function(d){
-          if(options.hasOwnProperty(d) && Array.isArray(options[d])){
-            frameControls[d] = options[d];
-            options[d] = options[d][0];
-          }
-        });
       }
+      ["zoom","repulsion","distance"].forEach(function(d){
+        if(options.hasOwnProperty(d) && Array.isArray(options[d])){
+          if(frameControls){
+            frameControls[d] = options[d];
+          }
+          options[d] = options[d][0];
+        }
+      });
       delete options.frames;
     }
 
@@ -504,7 +505,7 @@ function network(Graph){
     }
 
     // add fixed width to primary buttons
-    d3.select("head").append("style").text("button.primary, button.primary-outline { width: "+primaryBtnWidth+"px }")
+    d3.select("head").append("style").text("button.primary { min-width: "+primaryBtnWidth+"px }")
 
     if(!options.hasOwnProperty("zoom"))
       options.zoom = 1;
@@ -597,7 +598,7 @@ function network(Graph){
   } // end of checkGraphData
 
   function loadFrameData(frame){
-    for(var i=0; i<GraphNodesLength; i++){
+    for(var i=0; i<Graph.nodes.length; i++){
       Graph.nodenames.forEach(function(col){
         if(Array.isArray(backupNodes[i][col]))
           Graph.nodes[i][col] = backupNodes[i][col][frame];
@@ -767,7 +768,7 @@ function displayBottomPanel(){
     buttonsSelect.append("span").text(texts.select+": ");
     buttonsSelect.append("input")
       .attr("type", "text")
-      .attr("placeholder",texts.search)
+      .attr("placeholder",texts.searchanode)
       .on("keyup",function(){
         var txt = d3.select(this).property("value");
         if(txt.length>1){
@@ -787,23 +788,23 @@ function displayBottomPanel(){
       })
     buttonsSelect.append("span").text(" ");
 
-    var selectButton = function(id,clk,tooltip,enable){
+    var selectButton = function(id,clk,tooltip,enable,classes){
           buttonsSelect.append("button")
             .attr("id",id)
-            .attr("class",(enable?"":" disabled"))
+            .attr("class",classes+(enable?"":" disabled"))
             .text(texts[id])
             .on("click",clk)
             .attr("title",tooltip)
         }
 
-    selectButton("selectall",selectAllNodes,"ctrl + s",true);
-    selectButton("tableselection",selectNodesFromTable,"ctrl + o");
-    selectButton("selectneighbors",addNeighbors,"ctrl + b");
-    selectButton("isolateselection",filterSelection,"ctrl + f");
-    selectButton("egonet",switchEgoNet,"ctrl + e");
+    selectButton("selectall",selectAllNodes,"ctrl + s",true,"primary");
+    selectButton("tableselection",selectNodesFromTable,"ctrl + o",false,"primary");
+    selectButton("selectneighbors",addNeighbors,"ctrl + b",false,"primary");
+    selectButton("isolate",filterSelection,"ctrl + f",false,"primary");
+    selectButton("filter",switchEgoNet,"ctrl + e",false,"primary");
     if(Graph.tree)
-      selectButton("expandcollapse",treeAction,"ctrl + p",true);
-    selectButton("resetfilter",showHidden,"ctrl + r",false);
+      selectButton("expandcollapse",treeAction,"ctrl + p",true,"primary");
+    selectButton("resetfilter",showHidden,"ctrl + r",false,"primary-outline clear");
   }
 
     if(options.showTables){
@@ -954,7 +955,7 @@ function displaySidebar(){
   }
 
   function showSidebar(){
-    var divControl, applyFuncObject = {}, visData;
+    var divControl, visData;
 
     var subSidebar = sidebar.append("div")
       .attr("class","subSidebar")
@@ -991,13 +992,7 @@ function displaySidebar(){
       subSidebar.select(".tab."+tab).style("display","block");
       nav.selectAll("li").classed("active",false);
       d3.select(thiz).classed("active",true);
-      // update sidebar filters
-      if(Controllers.nodeFilter){
-        Controllers.nodeFilter.update();
-      }
-      if(Controllers.linkFilter){
-        Controllers.linkFilter.update();
-      }
+      updateSidebarFilters(true);
       subSidebarHeight(subSidebar.select(".tab."+tab));
     }
 
@@ -1026,18 +1021,11 @@ function displaySidebar(){
       .visual(visData);
     divControl.call(Controllers.nodeVisual); // nodes visualization
 
-    applyFuncObject["select"] = applySelection;
-    applyFuncObject["egonet"] = function(query,data){
-        applySelection(query,data);
-        switchEgoNet();
-    };
-
     divControl = sideNodes.append("div")
       .attr("class","nodeFilter");
 
     Controllers.nodeFilter = addFilterController()
       .item("nodes")
-      .functions(applyFuncObject);
     divControl.call(Controllers.nodeFilter); // nodes filter
 
     // sidebar links
@@ -1507,15 +1495,10 @@ function addVisualController(){
 function addFilterController(){
   var items,
       item,
-      data = [],
-      applyFunc = {},
       attrData = [],
-      selectedValues = {},
-      appliedFilters = {},
       itemFilter,
       attrSelect,
-      valSelector,
-      filterTags;
+      valSelector;
 
   function exports(sel){
 
@@ -1546,107 +1529,26 @@ function addFilterController(){
 
     itemFilter.append("button")
       .attr("class","primary")
-      .text(texts.filter)
-      .on("click", function(){
-        updateAppliedFilters();
-        updateTags();
-        applyFilter(selectedValues2str(appliedFilters,data));
-      })
+      .text(texts.isolate)
+      .on("click",filterSelection)
 
-    if(d3.keys(applyFunc).length){
-      if(applyFunc["select"]){
+    if(items=="nodes"){
         itemFilter.append("button")
         .attr("class","primary")
-        .text(texts["select"])
-        .on("click", function(){
-          applyFunc["select"](prepareQuery(),data);
-        });
-      }
-
-      filterTags = itemFilter.append("div")
-        .attr("class","filter-tags")
-
-      if(applyFunc["egonet"]){
-        itemFilter.append("button")
-        .attr("class","primary")
-        .text(texts["egonet"])
-        .on("click", function(){
-          applyFunc["egonet"](prepareQuery(),data);
-        });
-      }
+        .text(texts["filter"])
+        .on("click",switchEgoNet);
     }
 
     itemFilter.append("button")
-      .attr("class","primary-outline")
+      .attr("class","primary-outline clear")
       .text(texts.clear)
       .on("click", function(){
-        selectedValues = {};
-        changeAttrSel(attrSelect.property("value"));
         Graph.nodes.forEach(function(d){
           delete d.selected;
         });
+        updateSidebarFilters(true);
         applyInitialFilter();
-      });
-
-    if(!d3.keys(applyFunc).length){
-      filterTags = itemFilter.append("div")
-        .attr("class","filter-tags")
-    }
-  }
-
-  function applyFilter(query){
-        data.forEach(function(d){ 
-          if(eval(query)){
-            delete d._hidden;
-          }else{
-            d._hidden = true;
-            delete d.selected;
-          }
-        });
-        drawNet();
-  }
-
-  function updateAppliedFilters(){
-    for(var k in selectedValues){
-          if(typeof selectedValues[k][0] == 'number'){
-            appliedFilters[k] = selectedValues[k].slice();
-          }else{
-            selectedValues[k].forEach(function(v){
-              if(appliedFilters[k]){
-                if(appliedFilters[k].indexOf(v)==-1)
-                  appliedFilters[k].push(v);
-              }else{
-                appliedFilters[k] = [v];
-              }
-            });
-          }
-    }
-  }
-
-  function updateTags(){
-    var tags = filterTags.selectAll("div").data(d3.keys(appliedFilters),String);
-
-    tags.enter().append("div")
-      .text(String)
-      .append("span")
-        .html("&times;")
-        .on("click",function(k){
-          delete appliedFilters[k];
-          updateTags();
-          applyFilter(selectedValues2str(appliedFilters,data));
-          data.forEach(function(d){
-            if(d.hidden){
-              d._hidden = true;
-            }
-          });
-          drawNet();
-        })
-
-    tags.exit().remove();
-  }
-
-  function prepareQuery(){
-    return selectedValues2str(selectedValues,data);
+      })
   }
 
   function changeAttrSel(val){
@@ -1655,24 +1557,29 @@ function addFilterController(){
       var type = dataType(tmpData,val);
       if(type == 'number'){
         var extent = d3.extent(tmpData, function(d){ return d[val]; }),
+            mid = (extent[0]+extent[1])/2;
             baseWidth = parseInt(valSelector.style("width"));
-        if(!selectedValues[val])
-          selectedValues[val] = extent.slice();
         valSelector.call(brushSlider()
           .domain(extent)
-          .current(selectedValues[val])
-          .callback(function(s){ selectedValues[val] = s; })
+          .current([mid,mid])
+          .callback(function(s){
+            Graph.nodes.forEach(function(d){
+              delete d.selected;
+              if(items=="nodes" && checkSelectable(d) && (d[val]>=s[0] && d[val]<=s[1])){
+                d.selected = true;
+              }
+            });
+            if(items=="links"){
+              tmpData.forEach(function(d){
+                if(d[val]>=s[0] && d[val]<=s[1]){
+                  d.source.selected = d.target.selected = true;
+                }
+              });
+            }
+            showTables();
+          })
           .baseWidth(baseWidth));
       }else{
-        var loadSelValues = function(){
-          selectedValues[val] = [];
-          valSelector.selectAll("option").each(function(){
-            if(this.selected)
-              selectedValues[val].push(this.value);
-          })
-          if(selectedValues[val].length == 0)
-            delete selectedValues[val];
-        }
         var dat = tmpData.map(function(d){ return d[val]; });
         if(type != 'string')
           dat = dat.reduce(function(a,b) { return b ? a.concat(b) : a; }, []);
@@ -1680,84 +1587,77 @@ function addFilterController(){
         valSelector.append("select")
           .attr("multiple","multiple")
           .attr("size",8)
-          .on("blur",loadSelValues)
+          .on("change",function(){
+            var values = [];
+            d3.select(this).selectAll("option")
+              .filter(function(){ return this.selected; })
+              .each(function(){
+                values.push(this.value);
+              })
+            Graph.nodes.forEach(function(d){
+              delete d.selected;
+              if(items=="nodes" && checkSelectable(d) && values.indexOf(String(d[val]))!=-1){
+                d.selected = true;
+              }
+            });
+            if(items=="links"){
+              tmpData.forEach(function(d){
+                if(values.indexOf(String(d[val]))!=-1){
+                  d.source.selected = d.target.selected = true;
+                }
+              });
+            }
+            showTables();
+          })
           .selectAll("option")
         .data(d3.set(dat).values().sort())
           .enter().append("option")
           .property("value",function(d){ return d.replace(/\'/g, "\\'"); })
           .text(stripTags)
           .each(function(d){
-            if(selectedValues[val] && selectedValues[val].indexOf(d)!=-1)
-              this.selected = true;
+            this.selected = true;
+            for(var i=0; i<tmpData.length; i++){
+              if(items=="nodes"){
+                if(!tmpData[i].selected && String(tmpData[i][val])==d){
+                  this.selected = false;
+                  break;
+                }
+              }else{
+                if(!(tmpData[i].source.selected && tmpData[i].target.selected) && String(tmpData[i][val])==d){
+                  this.selected = false;
+                  break;
+                }
+              }
+            }
           })
       }
   }
 
-  function showFilter(x) {
-      show = x;
-      if(itemFilter){
-        if(show){
-          itemFilter
-            .style("display","block")
-            .style("opacity", 0)
-            .style("height",null);
-          var height = itemFilter.style("height");
-          itemFilter.style("height", "0px")
-            .transition()
-              .style("height", height)
-              .on("end",function(){
-                itemFilter.style("height",null)
-                  .transition()
-                    .style("opacity", 1)
-                    .style("overflow",null);
-              })
-          attrSelect.dispatch("change");
-        }else{
-          itemFilter
-            .style("opacity", 1)
-            .style("height", itemFilter.style("height"))
-            .transition().style("opacity", 0)
-              .on("end",function(){
-                itemFilter.transition()
-                  .style("overflow","hidden")
-                  .style("height", "0px")
-                  .on("end",function(){
-                    itemFilter.style("display","none");
-                  })
-              })
-          selectedValues = {};
-        }
-      }
-      return exports;
-  };
-
-  exports.cleanFilterTags = function(){
-    appliedFilters = {};
-    updateTags();
-  }
-
-  exports.update = function(){
-    selectedValues = {};
-    attrSelect.dispatch("change");
+  exports.update = function(slider){
+    if(slider ^ valSelector.select("div.slider").empty()){
+      attrSelect.dispatch("change");
+    }
   }
 
   exports.item = function(x) {
       if (!arguments.length) return items;
       items = x;
-      data = Graph[items];
       item = items.slice(0, 4);
       attrData = Graph[item+"names"].filter(function(d){ return hiddenFields.indexOf(d)==-1; });
       return exports;
   };
 
-  exports.functions = function(x) {
-      if (!arguments.length) return applyFunc;
-      applyFunc = x;
-      return exports;
-  };
-
   return exports;
 } // end of Filter Controller
+
+function updateSidebarFilters(slider){
+  if(Controllers.nodeFilter){
+    Controllers.nodeFilter.update(slider);
+  }
+  if(Controllers.linkFilter){
+    Controllers.linkFilter.update(slider);
+  }
+}
 
 function displayShowPanelButton(sel,callback){
     var showPanelButton = sel.append("div")
@@ -1785,22 +1685,12 @@ function applyInitialFilter(){
 }
 
 function checkInitialFilters(){
-  for(var i = 0; i<GraphNodesLength; i++){
+  for(var i = 0; i<Graph.nodes.length; i++){
     if((Graph.nodes[i].hidden ? 1 : 0) != (Graph.nodes[i]._hidden ? 1 : 0)){
       return false;
     }
   }
   return true;
-}
-
-function applySelection(query,data){
-  data.forEach(function(d){
-    if(eval(query))
-      d.selected = true;
-    else
-      delete d.selected;
-  });
-  showTables();
 }
 
 // draw canvas and svg environment for plot
@@ -2792,13 +2682,7 @@ function drawNet(){
 
     update_forces();
 
-    // update sidebar filters
-    if(Controllers.nodeFilter){
-      Controllers.nodeFilter.update();
-    }
-    if(Controllers.linkFilter){
-      Controllers.linkFilter.update();
-    }
+    updateSidebarFilters();
 
     //axes
     if(!options.showCoordinates){
@@ -2962,8 +2846,8 @@ function drawNet(){
       gSelectAll.append("span")
         .text(texts.selectall)
 
-      displayBottomButton(legendBottomControls,"egonet","ctrl + e",switchEgoNet);
-      displayBottomButton(legendBottomControls,"filter","ctrl + f",filterSelection);
+      displayBottomButton(legendBottomControls,"filter","ctrl + e",switchEgoNet);
+      displayBottomButton(legendBottomControls,"isolate","ctrl + f",filterSelection);
     }
     // end legends
 
@@ -3992,16 +3876,11 @@ function displayInfoPanel(info){
 }
 
 function selectAllNodes(){
-  if(Graph.nodes.filter(function(d){ return !d.selected && checkSelectable(d); }).length){
-    Graph.nodes.forEach(function(d){
-      if(checkSelectable(d))
-        d.selected = true;
-    });
-  }else{
-    Graph.nodes.forEach(function(d){
-      delete d.selected;
-    });
-  }
+  Graph.nodes.forEach(function(d){
+    if(checkSelectable(d)){
+      d.selected = true;
+    }
+  });
   showTables();
 }
 
@@ -4014,12 +3893,6 @@ function filterSelection(){
 }
 
 function showHidden(){
-  if(Controllers.nodeFilter){
-    Controllers.nodeFilter.cleanFilterTags();
-  }
-  if(Controllers.linkFilter){
-    Controllers.linkFilter.cleanFilterTags();
-  }
   egoNet = false;
   Graph.nodes.forEach(function(d){
     delete d._hidden;
@@ -4605,15 +4478,18 @@ function showTables() {
     simulation.restart();
   }
 
+  // update sidebar filter selected
+  updateSidebarFilters();
+
   // check legend items checked
   checkLegendItemsChecked();
 
   // enable/disable selection buttons
   if(options.showButtons2){
     if(nodesData.length){
-      enableSelectButtons("#selectneighbors, #isolateselection, #egonet", nodesData.length<totalItems["nodes"]);
+      enableSelectButtons("#selectneighbors, #isolate, #filter", nodesData.length<totalItems["nodes"]);
     }else{
-      enableSelectButtons("#tableselection, #selectneighbors, #isolateselection, #egonet", false);
+      enableSelectButtons("#tableselection, #selectneighbors, #isolate, #filter", false);
     }
   }
 }

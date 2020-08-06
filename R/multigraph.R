@@ -68,7 +68,9 @@ frameGraph <- function(multi,frame,speed,dir){
 
   links <- lapply(multi,function(x){ return(x$links) })
   for(i in seq_along(frames)){
+    if(!is.null(links[[i]])){
       links[[i]][["_frame_"]] <- i-1
+    }
   }
   links <- do.call(rbind,links)
   rownames(links) <- NULL

@@ -1,6 +1,7 @@
 export(fromIgraph)
 export(multigraphCreate)
 export(surCoin)
+export(surScat)
 export(allNet)
 export(netCoin)
 export(netCorr)

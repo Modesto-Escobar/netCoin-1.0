@@ -547,36 +547,29 @@ function displayPicker(options,itemVisual,callback){
 }
 
 function displayPicker2(value,active,callback){
-    var win = displayWindow(),
-        h = 14;
+    var win = displayWindow();
 
     win.append("h2").text(texts.selectacolor+"\""+value+"\"");
 
     var picker = win.append("div")
       .attr("class","picker");
 
-    var itemsPerCol = Math.ceil(categoryColors.length/3),
-        col;
+    var itemsPerRow = Math.ceil(categoryColors.length/2),
+        row;
 
     categoryColors.forEach(function(d){
-      if(!col || col.selectAll("li").size()>=itemsPerCol){
-        col = picker.append("ul").attr("class","col-3");
+      if(!row || row.selectAll("span").size()>=itemsPerRow){
+        row = picker.append("div").attr("class","row");
       }
 
-      col.append("li")
+      row.append("span")
         .property("val",d)
         .classed("active",active==d)
         .on("click",function(){
-          picker.selectAll("li").classed("active",false);
+          picker.selectAll("span").classed("active",false);
           d3.select(this).classed("active",true);
         })
-        .append("div")
-          .append("div")
-            .style("width",h*6+"px")
-            .style("height",h+"px")
-            .style("background-color",d)
-            .style("color",d)
-            .text(d)
+        .style("background-color",d)
     });
 
     win.append("center")
@@ -584,7 +577,7 @@ function displayPicker2(value,active,callback){
         .attr("class","primary")
         .text(texts.select)
         .on("click",function(){
-          callback(picker.select("li.active").property("val"));
+          callback(picker.select("span.active").property("val"));
           d3.select(win.node().parentNode).remove();
         })
 }
