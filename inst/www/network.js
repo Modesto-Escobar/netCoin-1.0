@@ -119,6 +119,7 @@ function network(Graph){
     if(d3.event.ctrlKey){ 
       d3.event.preventDefault();
       var key = getKey(d3.event);
+console.log(event.which || event.keyCode);
       switch(key){
         case "+":
           if(d3.event.shiftKey){
@@ -800,8 +801,8 @@ function displayBottomPanel(){
     selectButton("selectall",selectAllNodes,"ctrl + s",true,"primary");
     selectButton("tableselection",selectNodesFromTable,"ctrl + o",false,"primary");
     selectButton("selectneighbors",addNeighbors,"ctrl + b",false,"primary");
-    selectButton("isolate",filterSelection,"ctrl + f",false,"primary");
     selectButton("filter",switchEgoNet,"ctrl + e",false,"primary");
+    selectButton("isolate",filterSelection,"ctrl + f",false,"primary");
     if(Graph.tree)
       selectButton("expandcollapse",treeAction,"ctrl + p",true,"primary");
     selectButton("resetfilter",showHidden,"ctrl + r",false,"primary-outline clear");
@@ -1527,17 +1528,17 @@ function addFilterController(){
       .attr("class","valSel")
       .style("margin-bottom",0);
 
-    itemFilter.append("button")
-      .attr("class","primary")
-      .text(texts.isolate)
-      .on("click",filterSelection)
-
     if(items=="nodes"){
         itemFilter.append("button")
         .attr("class","primary")
         .text(texts["filter"])
         .on("click",switchEgoNet);
     }
+
+    itemFilter.append("button")
+      .attr("class","primary")
+      .text(texts.isolate)
+      .on("click",filterSelection)
 
     itemFilter.append("button")
       .attr("class","primary-outline clear")

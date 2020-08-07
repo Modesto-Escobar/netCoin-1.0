@@ -96,8 +96,8 @@ function escapeHtml(unsafe) {
 }
 
 function getKey(event){
-  if(typeof event.key != "undefined"){
-    // modern browsers
+  if(false && typeof event.key != "undefined"){
+    // TODO: modern browsers
     var key = event.key;
 
     // alternative names in Internet Explorer
@@ -197,6 +197,8 @@ function getKey(event){
   '109': "-",
   '110': ".",
   '111': "/",
+  '171': "+",
+  '173': "-",
   '190': "."
     //TODO: complete list
     };

@@ -488,7 +488,7 @@ div.infopanel,
   padding-top: 6px;
 }
 .subSidebar > .nav > ul > li {
-  padding: 6px 12px;
+  padding: 6px;
   font-weight: bold;
   cursor: pointer;
   color: #c6c6c6;
