@@ -101,5 +101,7 @@ var texts = {
     goback: "Volver",
     newtab: "Abrir en nueva pestaña",
     tools: "Herramientas",
-    poweredby: "Hecho con"
+    poweredby: "Hecho con",
+    isolateInfo: "Permite ver únicamente el nodo (o nodos) seleccionado",
+    filterInfo: "Permite ver el nodo (o nodos) seleccionado y su red (nodos con los que está relacionado)",
   };

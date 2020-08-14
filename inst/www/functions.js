@@ -199,6 +199,8 @@ function getKey(event){
   '111': "/",
   '171': "+",
   '173': "-",
+  '187': "+",
+  '189': "-",
   '190': "."
     //TODO: complete list
     };
@@ -411,6 +413,10 @@ function brushSlider(){
     }
   }
 
+  exports.dispatch = function(){
+    callback(d3.extent(current));
+  }
+
   exports.domain = function(x) {
     if (!arguments.length) return domain;
     domain = x;
@@ -497,44 +503,47 @@ function displayPicker(options,itemVisual,callback){
     var win = displayWindow(),
         attr = options[itemVisual],
         scaleKeys = d3.keys(colorScales),
-        canvasHeight = 14;
+        r = 7;
     win.append("h2").text(texts.selectacolorscale+"\""+attr+"\"");
 
     var picker = win.append("div")
       .attr("class","picker");
 
-    var itemsPerCol = Math.ceil(scaleKeys.length/3),
-        col;
+    var itemsPerRow = 8,
+        row;
 
     scaleKeys.forEach(function(d){
-      if(!col || col.selectAll("li").size()>=itemsPerCol){
-        col = picker.append("ul").attr("class","col-3");
+      if(!row || row.selectAll("span").size()>=itemsPerRow){
+        row = picker.append("div").attr("class","row");
       }
 
-      var canvas = col.append("li")
+      var canvas = row.append("span")
         .property("val",d)
         .classed("active",options["colorScale"+itemVisual]==d)
         .on("click",function(){
-          picker.selectAll("li").classed("active",false);
+          picker.selectAll("span").classed("active",false);
           d3.select(this).classed("active",true);
         })
         .append("canvas")
-          .attr("width",canvasHeight*6)
-          .attr("height",canvasHeight)
+          .attr("width",r*2)
+          .attr("height",r*2)
           .text(d)
           .node();
 
       var ctx = canvas.getContext("2d");
 
       // Create gradient
-      var grd = ctx.createLinearGradient(0,0,canvas.width,0);
-      grd.addColorStop(0,colorScales[d][0]);
-      grd.addColorStop(0.5,colorScales[d][1]);
-      grd.addColorStop(1,colorScales[d][2]);
+      var grd = ctx.createLinearGradient(0,0,canvas.width,0),
+          colors = colorScales[d];
+      colors.forEach(function(c,i){
+        grd.addColorStop(i/(colors.length-1),c);
+      })
 
       // Fill with gradient
       ctx.fillStyle = grd;
-      ctx.fillRect(0,0,canvas.width,canvas.height);
+      ctx.beginPath();
+      ctx.arc(r,r,r,0,2*Math.PI);
+      ctx.fill();
     });
 
     win.append("center")
@@ -542,7 +551,7 @@ function displayPicker(options,itemVisual,callback){
         .attr("class","primary")
         .text(texts.select)
         .on("click",function(){
-          options["colorScale"+itemVisual] = picker.select("li.active").property("val");
+          options["colorScale"+itemVisual] = picker.select("span.active").property("val");
           callback();
           d3.select(win.node().parentNode).remove();
         })
@@ -556,7 +565,7 @@ function displayPicker2(value,active,callback){
     var picker = win.append("div")
       .attr("class","picker");
 
-    var itemsPerRow = Math.ceil(categoryColors.length/2),
+    var itemsPerRow = 10,
         row;
 
     categoryColors.forEach(function(d){

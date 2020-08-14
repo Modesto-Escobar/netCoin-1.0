@@ -24,42 +24,34 @@ var categoryColors = [
 var colorScales = {
   "WhGn": [
       "#ffffff",
-      "#96d096",
       "#2ca02c"
     ],
   "GnWh": [
       "#2ca02c",
-      "#96d096",
       "#ffffff"
     ],
   "WhRd": [
       "#ffffff",
-      "#ea9394",
       "#d62728"
     ],
   "RdWh": [
       "#d62728",
-      "#ea9394",
       "#ffffff"
     ],
   "WhBk": [
       "#ffffff",
-      "#808080",
       "#000000"
     ],
   "BkWh": [
       "#000000",
-      "#808080",
       "#ffffff"
     ],
   "WhBu": [
       "#ffffff",
-      "#8fbbd9",
       "#1f77b4"
     ],
   "BuWh": [
       "#1f77b4",
-      "#8fbbd9",
       "#ffffff"
     ],
   "GnWhRd": [
@@ -114,32 +106,34 @@ var colorScales = {
     ],
   "BkRd": [
       "#000000",
-      "#6b1414",
       "#d62728"
     ],
   "RdBk": [
       "#d62728",
-      "#6b1414",
       "#000000"
     ],
   "BuRd": [
       "#1f77b4",
-      "#7a4f6e",
       "#d62728"
     ],
   "RdBu": [
       "#d62728",
-      "#7a4f6e",
       "#1f77b4"
     ],
   "YlBu": [
       "#bcbd22",
-      "#6d9a6b",
       "#1f77b4"
     ],
   "BuYl": [
       "#1f77b4",
-      "#6d9a6b",
       "#bcbd22"
-    ]
+    ],
+  "BuGn": ["#6720D6", "#0BD638"],
+  "PiGn": ["#D6249D", "#70D661"],
+  "YlPi": ["#D6C30C", "#8A013C"],
+  "BuPi": ["#24D6C0", "#D618CC"],
+  "OrPu": ["#D68706", "#811CD6"],
+  "PiWh": ["#D618CC", "#FFFFFF"],
+  "OrWh": ["#D68D01", "#FFFFFF"],
+  "YlWh": ["#D6D31F", "#FFFFFF"]
 };

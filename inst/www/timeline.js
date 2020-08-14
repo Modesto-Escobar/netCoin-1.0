@@ -188,9 +188,13 @@ function timeline(json){
     if(options.eventColor){
       if(dataType(json.events,options.eventColor)=="number"){
         var colorDomain = d3.extent(json.events,function(d){ return d[options.eventColor]; }),
-            eventColorScale = d3.scaleLinear()
-          .range(colorScales[options.colorScaleeventColor])
-          .domain([colorDomain[0],d3.mean(colorDomain),colorDomain[1]])
+            colorRange = colorScales[options.colorScaleeventColor];
+        if(colorRange.length==3){
+          colorDomain = [colorDomain[0],d3.mean(colorDomain),colorDomain[1]];
+        }
+        var eventColorScale = d3.scaleLinear()
+          .range(colorRange)
+          .domain(colorDomain)
       }else{
         var eventColorScale = d3.scaleOrdinal()
           .range(categoryColors)

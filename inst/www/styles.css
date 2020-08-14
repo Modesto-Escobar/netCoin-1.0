@@ -168,18 +168,25 @@ th.sorting_desc:after {
   padding: 6px 10px;
   border-top: solid 2px #2f7bee;
 }
-.tables div.title{
+.tables > .table-header {
+  margin: 0 10px;
+}
+.tables > .table-header > * {
+  display: inline-block;
+  margin-right: 6px;
+}
+.tables > .table-header > .table-title {
   font-size: 1.2em;
   padding-bottom: 10px;
   margin-top: 20px;
   cursor: default;
 }
-.tables div.title span{
+.tables > .table-header > .table-title span {
   font-weight: bold;
   font-size: 1.4em;
 }
-.tables div.nodes,
-.tables div.links {
+.tables > div.nodes,
+.tables > div.links {
   margin: 10px;
 }
 .tables table {
@@ -224,13 +231,6 @@ img.icon {
   cursor: pointer;
   float: right;
   margin: 0 5px;
-}
-.selectButton{
-  padding: 5px 10px;
-}
-.selectButton>button{
-  display:inline-block;
-  margin:0 5px 5px 0;
 }
 div.switchNodeLink{
   position: absolute;
@@ -654,6 +654,15 @@ textarea[name=query] {
   height: 10px;
   margin-top: -10px;
   width: 100%;
+}
+.panel > .panel-buttons {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+}
+.panel > .panel-buttons > button{
+  display: inline-block;
+  margin: 0 6px 6px 0;
 }
 div.window {
   border-radius: 5px;

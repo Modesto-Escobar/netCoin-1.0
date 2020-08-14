@@ -101,5 +101,7 @@ var texts = {
     goback: "Return",
     newtab: "Open in new tab",
     tools: "Tools",
-    poweredby: "Powered by"
+    poweredby: "Powered by",
+    isolateInfo: "Allows you to see only the selected node (or nodes)",
+    filterInfo: "Allows you to see the selected node (or nodes) and its network (nodes with which it is related)",
   };
