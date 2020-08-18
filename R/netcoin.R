@@ -48,37 +48,54 @@ netCoin <- function(nodes = NULL, links = NULL, tree = NULL, name = NULL,
   }
 
   rownames(nodes) <- nodes[,name]
-
+  
+  no.option <- function(X){ # TRUE if no options or options are not as defaults
+    LR <- FALSE; LP <- TRUE
+    if(is.null(formals(netCoin)[[X]])) default <- -Inf
+    else default <- eval(formals(netCoin)[[X]])
+    if(!is.null(get0(X)) && isTRUE(all.equal(get0(X),default))) LP <- FALSE
+    if(!exists(X,options) & !is.null(X) | LP) LR <- TRUE
+    return(LR)
+  }
+  
   # graph options
+  if(no.option("cex")) {
   if(!is.numeric(cex)){
     cex <- formals(netCoin)[["cex"]]
     warning("cex: must be numeric")
   }
   options[["cex"]] <- cex
-
-  if(!(is.numeric(distance) && distance>=0 && distance<=100)){
-    distance <- formals(netCoin)[["distance"]]
-    warning("distance: must be numeric between 0 and 100")
   }
-  options[["distance"]] <- distance
 
-  if(!(is.numeric(repulsion) && repulsion>=0 && repulsion<=100)){
-    repulsion <- formals(netCoin)[["repulsion"]]
-    warning("repulsion: must be numeric between 0 and 100")
+  if (no.option("distance")) {
+    if(!(is.numeric(distance) && distance>=0 && distance<=100)){
+      distance <- formals(netCoin)[["distance"]]
+      warning("distance: must be numeric between 0 and 100")
+    }
+    options[["distance"]] <- distance
   }
-  options[["repulsion"]] <- repulsion
 
-  if(!(is.numeric(zoom) && zoom>=0.1 && zoom<=10)){
+  if (no.option("repulsion")) {
+    if(!(is.numeric(repulsion) && repulsion>=0 && repulsion<=100)){
+      repulsion <- formals(netCoin)[["repulsion"]]
+      warning("repulsion: must be numeric between 0 and 100")
+    }
+    options[["repulsion"]] <- repulsion
+  }
+
+  if (no.option("zoom")) {
+    if(!(is.numeric(zoom) && zoom>=0.1 && zoom<=10)){
     zoom <- formals(netCoin)[["zoom"]]
     warning("zoom: must be numeric between 0.1 and 10")
-  }
+    }
   options[["zoom"]] <- zoom
+  }
 
-  if (!is.null(scenarios)){
+  if (no.option("scenarios")) {
     if(is.numeric(scenarios))
       options[["scenarios"]] <- scenarios
     else
-      warning("scenarios: must be numeric")
+      if (!is.null(scenarios)) warning("scenarios: must be numeric")
   }
   if (!is.null(limits)){
     if(length(limits)!=4)
@@ -90,30 +107,33 @@ netCoin <- function(nodes = NULL, links = NULL, tree = NULL, name = NULL,
   if (!is.null(note)) options[["note"]] <- note
   if (!is.null(help)) options[["help"]] <- help
   if (!is.null(background)) options[["background"]] <- background
+  
+  if (no.option("language")) {
   language <- language[1]
   if(!(language %in% languages)){
       warning(paste0("language: '",language,"' is not supported"))
       language <- "en"
   }
   options[["language"]] <- language
-
+}
   if(is.null(help) && language=="es"){
     options[["help"]] <- paste0(scan(file = paste(wwwDirectory(), "help_es.html", sep = "/"), what = character(0), sep = "\n", quiet = TRUE),collapse="")
   }
 
-  if(nodeBipolar) options[["nodeBipolar"]] <- TRUE
-  if(linkBipolar) options[["linkBipolar"]] <- TRUE
-  if(helpOn) options[["helpOn"]] <- TRUE
+  options[["nodeBipolar"]] <- nodeBipolar
+  options[["linkBipolar"]] <- linkBipolar
+  options[["helpOn"]] <- helpOn
   if(frequencies) options[["frequencies"]] <- TRUE
-  if (!is.null(defaultColor)) options[["defaultColor"]] <- defaultColor
-  if (!is.null(controls)) options[["controls"]] <- as.numeric(controls)
-  if (!is.null(mode)) options[["mode"]] <- tolower(substr(as.character(mode),1,1))
+  if (no.option("defaultColor") & !is.null(defaultColor)) options[["defaultColor"]] <- defaultColor
+  if (no.option("controls") & !is.null(controls)) options[["controls"]] <- as.numeric(controls)
+  if (no.option("mode") & !is.null(mode)) options[["mode"]] <- tolower(substr(as.character(mode),1,1))
   if (!is.null(axesLabels)) options[["axesLabels"]] <- as.character(axesLabels)
 
   if(fixed) options[["fixed"]] <- TRUE
 
   if(showCoordinates) options[["showCoordinates"]] <- TRUE
   if(showArrows) options[["showArrows"]] <- TRUE
+  if(no.option("showLegend")) options[["showLegend"]] <- FALSE
   if(showLegend) options[["showLegend"]] <- TRUE
   if(showAxes) options[["showAxes"]] <- TRUE
 
