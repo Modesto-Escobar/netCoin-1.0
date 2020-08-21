@@ -177,8 +177,7 @@ th.sorting_desc:after {
 }
 .tables > .table-header > .table-title {
   font-size: 1.2em;
-  padding-bottom: 10px;
-  margin-top: 20px;
+  margin-top: 10px;
   cursor: default;
 }
 .tables > .table-header > .table-title span {
@@ -284,23 +283,26 @@ div.note {
   left: 0;
   bottom: 0;
   height: 1.2em;
-  width: 100%;
+  width: 300px;
   overflow: hidden;
-  cursor: pointer;
+  margin: 0 40px 0 40px;
   margin-bottom: 3.4em;
+  pointer-events: none;
 }
 div.note > div {
-  position: relative;
-  margin: 0 40px 0 40px;
+  display: inline;
+  cursor: pointer;
+  white-space: nowrap;
+  pointer-events: all;
 }
-div.note > div:after {
+div.note:after {
   content: '';
   position: absolute;
   top: 0;
   left: 0;
   width:100%;
   height:100%; 
-  background:linear-gradient(to right, transparent 90%, white);
+  background:linear-gradient(to right, transparent 75%, white);
   pointer-events: none;
 }
 div.poweredby {
@@ -457,6 +459,9 @@ div.infopanel,
   display: inline-block;
   cursor: pointer;
   line-height: 0;
+}
+.show-panel-button:hover {
+  background-color: #135dcd;
 }
 .show-panel-button > span {
   display: inline-block;
@@ -664,11 +669,20 @@ textarea[name=query] {
   display: inline-block;
   margin: 0 6px 6px 0;
 }
+div.window-background {
+  position: fixed;
+  top: 0;
+  left: 0;
+  background: rgba(0,0,0,0.8);
+  z-index: 10;
+}
 div.window {
+  position: relative;
   border-radius: 5px;
   background-color: #ffffff;
   margin: 0 auto;
   padding: 30px;
+  overflow-y: auto;
 }
 div.window h2 {
   font-size: 1.8em;
@@ -680,6 +694,13 @@ div.window h3 {
   font-size: 1.4em;
   padding-bottom: 10px;
   font-weight: bold;
+}
+div.window > .close-button {
+  margin: 8px 10px 0 0;
+}
+p.window-message {
+  font-size: 1.6em;
+  text-align: center;
 }
 div.topbar {
   margin: 10px;
@@ -731,8 +752,6 @@ div.topbar {
   display: inline-block;
   border: 1px solid #ffffff;
   cursor: pointer;
-  width: 15px;
-  height: 15px;
   border-radius: 50%;
   margin: 4px;
 }
@@ -840,6 +859,9 @@ div.showHideTable:after {
 div.showHideTable.showing:after {
   border-color: transparent #ffffff #ffffff transparent;
   top: 3px;
+}
+div.showHideTable:hover {
+  background-color: #135dcd;
 }
 
 div.subSidebar div.divFrameCtrl,

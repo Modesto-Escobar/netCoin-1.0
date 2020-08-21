@@ -183,7 +183,7 @@ function barplot(json){
             .on("click",function(){
               options.defaultColor = this.textContent;
               displayGraph();
-              d3.select(panel.node().parentNode).remove();
+              d3.select("div.window-background").remove();
             })
       })
   topBar.append("span").style("padding","0 10px");

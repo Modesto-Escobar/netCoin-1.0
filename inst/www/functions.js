@@ -259,26 +259,18 @@ function downloadExcel(data,name){
   });
 }
 
-function displayWindow(txt){
+function displayWindow(w,h){
   var docSize = viewport(),
       bg = d3.select("body").append("div")
-        .style("position","fixed")
-        .style("top",0)
-        .style("left",0)
+        .attr("class","window-background")
         .style("width",docSize.width+"px")
         .style("height",docSize.height+"px")
-        .style("background","rgba(0,0,0,0.8)")
-        .style("z-index",10);
 
-  var boxStyle = {"margin-top":(docSize.height/5)+"px","width":(docSize.width/2)+"px"};
-
-  if(txt){
-    boxStyle["font-size"] = "16px";
-    boxStyle["text-align"] = "center";
-  }else{
-    boxStyle["height"] = (docSize.height/2)+"px";
-    boxStyle["overflow-y"] = "auto";
-  }
+  var boxStyle = {
+    "margin-top": (docSize.height/5)+"px",
+    "width": (w ? w : (docSize.width/2))+"px",
+    "max-height": (h ? h : (docSize.height/2))+"px",
+  };
 
   var win = bg.append("div")
     .attr("class","window")
@@ -287,17 +279,14 @@ function displayWindow(txt){
   for(var s in boxStyle)
     win.style(s,boxStyle[s]);
 
-  bg.append("div")
+  win.append("div")
     .attr("class","close-button")
-    .style("position","absolute")
-    .style("top",(12+docSize.height/5)+"px")
-    .style("right",(docSize.width/4)+"px")
     .on("click", function(){ bg.remove() });
 
-  if(txt)
-    win.text(txt);
-  else
-    return win;
+  win = win.append("div")
+    .attr("class","window-content")
+
+  return win;
 }
 
 function brushSlider(){
@@ -500,17 +489,17 @@ function getOptions(data,order){
 }
 
 function displayPicker(options,itemVisual,callback){
-    var win = displayWindow(),
-        attr = options[itemVisual],
+    var attr = options[itemVisual],
         scaleKeys = d3.keys(colorScales),
-        r = 7;
+        r = 14,
+        itemsPerRow = 8,
+        row,
+        win = displayWindow((r*2+12)*itemsPerRow);
+
     win.append("h2").text(texts.selectacolorscale+"\""+attr+"\"");
 
     var picker = win.append("div")
       .attr("class","picker");
-
-    var itemsPerRow = 8,
-        row;
 
     scaleKeys.forEach(function(d){
       if(!row || row.selectAll("span").size()>=itemsPerRow){
@@ -518,6 +507,8 @@ function displayPicker(options,itemVisual,callback){
       }
 
       var canvas = row.append("span")
+        .style("width",(r*2+1)+"px")
+        .style("height",(r*2+1)+"px")
         .property("val",d)
         .classed("active",options["colorScale"+itemVisual]==d)
         .on("click",function(){
@@ -546,27 +537,22 @@ function displayPicker(options,itemVisual,callback){
       ctx.fill();
     });
 
-    win.append("center")
-      .append("button")
-        .attr("class","primary")
-        .text(texts.select)
-        .on("click",function(){
-          options["colorScale"+itemVisual] = picker.select("span.active").property("val");
-          callback();
-          d3.select(win.node().parentNode).remove();
-        })
+    pickerSelectButton(win, function(){
+      options["colorScale"+itemVisual] = picker.select("span.active").property("val");
+      callback();
+    });
 }
 
 function displayPicker2(value,active,callback){
-    var win = displayWindow();
+    var r = 14,
+        itemsPerRow = 10,
+        row,
+        win = displayWindow((r*2+12)*itemsPerRow);
 
     win.append("h2").text(texts.selectacolor+"\""+value+"\"");
 
     var picker = win.append("div")
       .attr("class","picker");
-
-    var itemsPerRow = 10,
-        row;
 
     categoryColors.forEach(function(d){
       if(!row || row.selectAll("span").size()>=itemsPerRow){
@@ -574,6 +560,8 @@ function displayPicker2(value,active,callback){
       }
 
       row.append("span")
+        .style("width",(r*2+1)+"px")
+        .style("height",(r*2+1)+"px")
         .property("val",d)
         .classed("active",active==d)
         .on("click",function(){
@@ -583,13 +571,65 @@ function displayPicker2(value,active,callback){
         .style("background-color",d)
     });
 
+    pickerSelectButton(win, function(){
+      callback(picker.select("span.active").property("val"));
+    });
+}
+
+function displayPickerShape(value,active,options,callback){
+    var r = 14,
+        itemsPerRow = 7,
+        row,
+        win = displayWindow((r*2+12)*itemsPerRow);
+
+    win.append("h2").text(texts.selectashape+"\""+value+"\"");
+
+    var picker = win.append("div")
+      .attr("class","picker");
+
+    options.forEach(function(d){
+      if(!row || row.selectAll("span").size()>=itemsPerRow){
+        row = picker.append("div").attr("class","row");
+      }
+
+      var canvas = row.append("span")
+        .style("width",(r*2+1)+"px")
+        .style("height",(r*2+1)+"px")
+        .property("val",d)
+        .classed("active",active==d)
+        .on("click",function(){
+          picker.selectAll("span").classed("active",false);
+          d3.select(this).classed("active",true);
+        })
+        .append("canvas")
+          .attr("width",r*2)
+          .attr("height",r*2)
+          .text(d)
+          .node();
+
+      var ctx = canvas.getContext("2d");
+
+      ctx.translate(r, r);
+      ctx.fillStyle = "#000000";
+      ctx.beginPath();
+      d3.symbol().type(d3["symbol"+d]).size(r*10).context(ctx)();
+      ctx.closePath();
+      ctx.fill();
+    });
+
+    pickerSelectButton(win, function(){
+      callback(picker.select("span.active").property("val"));
+    });
+}
+
+function pickerSelectButton(win, callback){
     win.append("center")
       .append("button")
         .attr("class","primary")
         .text(texts.select)
         .on("click",function(){
-          callback(picker.select("span.active").property("val"));
-          d3.select(win.node().parentNode).remove();
+          callback();
+          d3.select("div.window-background").remove();
         })
 }
 
@@ -642,9 +682,9 @@ function topFilter(){
 
         panel.append("button")
           .text(texts.apply)
-          .style("position","fixed")
-          .style("left",((2*vp.width/3)-80)+"px")
-          .style("top",(2*vp.height/3)+"px")
+          .style("position","absolute")
+          .style("bottom","30px")
+          .style("right","80px")
           .on("click",function(){
             selectedValues = {};
             add2filter();
@@ -653,9 +693,9 @@ function topFilter(){
 
         panel.append("button")
           .text(texts.add)
-          .style("position","fixed")
-          .style("left",(2*vp.width/3)+"px")
-          .style("top",(2*vp.height/3)+"px")
+          .style("position","absolute")
+          .style("bottom","30px")
+          .style("right","30px")
           .on("click",add2filter)
       }
 
@@ -671,7 +711,7 @@ function topFilter(){
             }
             if(selectedValues[val].length == 0)
               delete selectedValues[val];
-            d3.select(panel.node().parentNode).remove();
+            d3.select("div.window-background").remove();
       }
     }
 

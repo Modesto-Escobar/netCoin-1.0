@@ -105,7 +105,7 @@ function network(Graph){
   }
 
   body.on("keydown.shortcut",function(){
-    if(d3.event.ctrlKey){ 
+    if(d3.event.ctrlKey){
       d3.event.preventDefault();
       var key = getKey(d3.event);
       switch(key){
@@ -694,7 +694,8 @@ function displayPanelButtons(){
     displayButton(buttonsSelect,"filter",switchEgoNet,texts.filterInfo+" (ctrl + e)",false,"primary");
     displayButton(buttonsSelect,"isolate",filterSelection,texts.isolateInfo+" (ctrl + f)",false,"primary");
     if(Graph.tree){
-      displayButton(buttonsSelect,"expandcollapse",treeAction,"ctrl + p",true,"primary");
+      displayButton(buttonsSelect,"expand",treeActionExpand,"ctrl + p",false,"primary");
+      displayButton(buttonsSelect,"collapse",treeActionCollapse,"ctrl + p",false,"primary");
     }
     displayButton(buttonsSelect,"resetfilter",showHidden,"ctrl + r",false,"primary-outline clear");
 
@@ -1347,7 +1348,10 @@ showTables();
       .call(getSVG().d(d4paths.rec))
       .on("click",function(){
         if(options.heatmap){
-          displayWindow(texts.alertrecordheatmap);
+          displayWindow()
+            .append("p")
+              .attr("class","window-message")
+              .text(texts.alertrecordheatmap);
         }else{
           if(frameControls.recorder){
             stopRecord();
@@ -4020,8 +4024,40 @@ function treeAction(){
   }else{
       drawNet();
   }
+}
 
-  function return2roots(d){
+function treeActionExpand(){
+  Graph.nodes.filter(function(d){
+      return d.selected;
+  }).forEach(function(d){
+        d.childNodes.forEach(function(c){
+          c.selected = true;
+          delete c._hidden;
+        });
+        d._hidden = true;
+        delete d.selected;
+  });
+
+  if(egoNet){
+      switchEgoNet();
+  }else{
+      drawNet();
+  }
+}
+
+function treeActionCollapse(){
+  Graph.nodes.filter(function(d){
+      return d.selected;
+  }).forEach(return2roots);
+
+  if(egoNet){
+      switchEgoNet();
+  }else{
+      drawNet();
+  }
+}
+
+function return2roots(d){
     if(d.parentNode){
       delete d.selected;
       return2roots(d.parentNode);
@@ -4029,7 +4065,6 @@ function treeAction(){
       d.selected = true;
       delete d._hidden;
     }
-  }
 }
 
 function stopResumeNet(){
@@ -4171,6 +4206,20 @@ function displayLegend(){
           })
         })
       }
+      if(typeof shape == "function"){
+        row.each(function(d,i){
+          d3.select(this).select("svg").on("click",function(){
+            displayPickerShape(d,shape(d),symbolTypes,function(val){
+              var range = shape.range(),
+                  domain = shape.domain();
+              range[domain.indexOf(d)] = val;
+              shape.range(range)
+              drawNet();
+            });
+            d3.event.stopPropagation();
+          })
+        })
+      }
     }
 
     row.append("span")
@@ -4289,7 +4338,7 @@ function showTables() {
 
   var totalItems = {};
   ["nodes","links"].forEach(function(name){
-    totalItems[name] = (frameControls ? Graph[name].filter(function(d){ return !d._hideFrame; }).length : Graph[name].length);
+    totalItems[name] = (frameControls ? Graph[name].filter(function(d){ return !d._hideFrame; }) : Graph[name]).filter(name=="nodes" ? checkSelectable : checkSelectableLink).length;
   });
 
   var tableWrapper = function(dat, name, columns){
@@ -4538,8 +4587,19 @@ function showTables() {
   // enable/disable selection buttons
   if(nodesData.length){
     d3.selectAll("button.primary.selectneighbors, button.primary.isolate, button.primary.filter").classed("disabled",!(nodesData.length<totalItems["nodes"]));
+    if(Graph.tree){
+      d3.selectAll("button.primary.expand, button.primary.collapse").classed("disabled",true);
+      Graph.nodes.filter(checkSelectable).forEach(function(node){
+          if(node.childNodes.length){
+            d3.selectAll("button.primary.expand").classed("disabled",false);
+          }
+          if(node.parentNode){
+            d3.selectAll("button.primary.collapse").classed("disabled",false);
+          }
+      });
+    }
   }else{
-    d3.selectAll("button.primary.tableselection, button.primary.selectneighbors, button.primary.isolate, button.primary.filter").classed("disabled",true);
+    d3.selectAll("button.primary.tableselection, button.primary.selectneighbors, button.primary.isolate, button.primary.filter, button.primary.expand, button.primary.collapse").classed("disabled",true);
   }
 }
 
@@ -4607,7 +4667,10 @@ function tables2xlsx(){
         links = loadData(tableLinks);
       }
       if(nodes.length == 0 && links.length == 0)
-        displayWindow(texts.noitemsselected);
+        displayWindow()
+            .append("p")
+              .attr("class","window-message")
+              .text(texts.noitemsselected);
       else
         downloadExcel({nodes: nodes, links: links}, d3.select("head>title").text());
 }
@@ -5039,7 +5102,10 @@ function svg2png(callback){
 }
 
 function svg2pdf(){
-    displayWindow("The network is not loaded yet!");
+    displayWindow()
+      .append("p")
+        .attr("class","window-message")
+        .text("The network is not loaded yet!");
 }
 
 function moveShift(key){
