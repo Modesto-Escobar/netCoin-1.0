@@ -120,10 +120,14 @@ function timeline(json){
 
   topBar.append("span").style("padding","0 10px");
 
+  topBar.append("h3")
+    .text(texts.expand)
   topBar.append("button")
-    .text(texts.expandcollapse)
+    .attr("class","switch-button")
+    .classed("active",!options.collapse)
     .on("click",function(){
       options.collapse = !options.collapse;
+      d3.select(this).classed("active",!options.collapse);
       displayGraph();
     })
 
@@ -705,6 +709,12 @@ function timeline(json){
             .attr("class", "item")
             .attr("fill", color(d))
             .style("cursor","pointer")
+            .on("mouseenter",function(){
+              d3.select(this).attr("fill", d3.rgb(color(d)).darker(1));
+            })
+            .on("mouseleave",function(){
+              d3.select(this).attr("fill", color(d));
+            })
           rectsEnter.append("rect")
             .attr("height", 10)
             .style("stroke",function(){ return d3.rgb(d3.select(this).style("fill")).darker(1); })

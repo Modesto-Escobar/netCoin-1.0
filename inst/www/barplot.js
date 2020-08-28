@@ -696,14 +696,17 @@ function topOrder(topBar,data,displayGraph){
         .property("value",function(d){ return d[0]; })
         .text(function(d){ return d[1]; })
 
+  topBar.append("h3")
+    .text(texts.Reverse)
   topBar.append("button")
-    .style("background-color",options.rev?"#ccc":null)
-    .text("Reverse")
+    .attr("class","switch-button")
+    .classed("active",options.rev)
     .on("click",function(){
       options.rev = !options.rev;
-      d3.select(this).style("background-color",options.rev?"#ccc":null)
+      d3.select(this).classed("active",options.rev);
       displayGraph();
     })
+
   topBar.append("span").style("padding","0 10px")
 }
 

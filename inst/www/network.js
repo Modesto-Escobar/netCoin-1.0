@@ -105,6 +105,9 @@ function network(Graph){
   }
 
   body.on("keydown.shortcut",function(){
+    if(!body.select("body > div.window-background").empty()){
+      return;
+    }
     if(d3.event.ctrlKey){
       d3.event.preventDefault();
       var key = getKey(d3.event);
@@ -138,6 +141,9 @@ function network(Graph){
   });
 
   body.on("keyup.shortcut",function(){
+    if(!body.select("body > div.window-background").empty()){
+      return;
+    }
     var key = getKey(d3.event);
     if(d3.event.ctrlKey){
       switch(key){
@@ -1446,7 +1452,7 @@ function addVisualController(){
         .append("select")
       .on("change", function(){
         var attr = this.value;
-        applyAuto(visual,attr);
+        applyAuto(item+visual,attr);
         if((visual=="Color"|| visual=="Group") && dataType(data,attr) == "number"){
           displayPicker(options,item+visual,function(){
             delete VisualHandlers[item+visual];
@@ -1470,24 +1476,6 @@ function addVisualController(){
     sel.append("div").attr("class","clear")
   }
 
-  function applyAuto(visual, attr){
-    if(attr=="-"+texts.none+"-"){
-      delete options[item+visual];
-    }else{
-      options[item+visual] = attr;
-    }
-    if(item+visual == "nodeOrderA"){
-        delete options.nodeOrderD;
-    }
-    if(item+visual == "nodeOrderD"){
-        delete options.nodeOrderA;
-    }
-    if(VisualHandlers.hasOwnProperty(item+visual)){
-      delete VisualHandlers[item+visual];
-    }
-    drawNet();
-  }
-
   exports.item = function(x) {
       if (!arguments.length) return items;
       items = x;
@@ -1505,6 +1493,24 @@ function addVisualController(){
 
   return exports;
 } // end of Visual Controller
+
+function applyAuto(key, attr){
+    if(attr=="-"+texts.none+"-"){
+      delete options[key];
+    }else{
+      options[key] = attr;
+    }
+    if(key == "nodeOrderA"){
+        delete options.nodeOrderD;
+    }
+    if(key == "nodeOrderD"){
+        delete options.nodeOrderA;
+    }
+    if(VisualHandlers.hasOwnProperty(key)){
+      delete VisualHandlers[key];
+    }
+    drawNet();
+}
 
 // sidebar controller for filters and selections
 function addFilterController(){
@@ -3792,7 +3798,10 @@ function setColorScale(){
 
       div.append("div")
       .attr("class","title")
-      .text(options[config.itemAttr]);
+      .text("Color / "+options[config.itemAttr])
+      .on("click",function(){
+          displayVisualPicker("Color");
+      });
 
       var scaleWidth = div.node().offsetWidth - parseInt(div.style("padding-right"));
 
@@ -3869,6 +3878,33 @@ function addGradient(defs,id, stops){
     .append("stop")
     .attr("offset",(offset*i)+"%")
     .style("stop-color",d);
+  });
+}
+
+function displayVisualPicker(type){
+  var win = displayWindow(300),
+      attrData = Graph.nodenames.filter(function(d){ return hiddenFields.indexOf(d)==-1; });
+  attrData.unshift("-"+texts.none+"-");
+  win.append("h2")
+    .text(texts.selectattribute+texts[type])
+  var ul = win.append("ul")
+    .attr("class","visual-selector")
+  ul.selectAll("li")
+      .data(attrData)
+    .enter().append("li")
+      .text(String)
+      .property("val",String)
+      .classed("active",function(d){
+        return d==options["node"+type];
+      })
+      .on("click",function(attr){
+        ul.selectAll("li").classed("active",false);
+        d3.select(this).classed("active",true);
+      })
+
+  pickerSelectButton(win, function(){
+    applyAuto("node"+type,ul.select("li.active").property("val"));
+    displaySidebar();
   });
 }
 
@@ -4134,6 +4170,9 @@ function displayLegend(){
     legend.append("div")
         .attr("class","title")
         .text(texts[type] + " / " + (typeof title == "undefined" ? key : title))
+        .on("click",function(){
+          displayVisualPicker(type);
+        })
 
     legend.append("hr")
     .attr("class","legend-separator")
@@ -4559,12 +4598,14 @@ function showTables() {
         }
       })
       Graph.links.forEach(function(link){
-        if(names.indexOf(link.Source)!=-1 || names.indexOf(link.Target)!=-1){
-          delete link.source._back;
-          delete link.target._back;
-          delete link._back;
-        }else{
-          link._back = true;
+        delete link._back;
+        if(checkSelectableLink(link)){
+          if(names.indexOf(link.Source)!=-1 || names.indexOf(link.Target)!=-1){
+            delete link.source._back;
+            delete link.target._back;
+          }else{
+            link._back = true;
+          }
         }
       })
     }else{
@@ -4887,8 +4928,8 @@ function adaptLayout(){
 function displayFreqBars(){
   if(!options.frequencies){
     return;
-  }else if(options.frequencies!="relative"){
-    options.frequencies = "absolute";
+  }else if(options.frequencies!="absolute"){
+    options.frequencies = "relative";
   }
 
   displayInfoPanel("<div class=\"freq-bars\"><div>");

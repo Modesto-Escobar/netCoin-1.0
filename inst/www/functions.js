@@ -684,19 +684,14 @@ function topFilter(){
           .text(texts.apply)
           .style("position","absolute")
           .style("bottom","30px")
-          .style("right","80px")
+          .style("right","30px")
           .on("click",function(){
             selectedValues = {};
             add2filter();
             applyfilter();
           })
 
-        panel.append("button")
-          .text(texts.add)
-          .style("position","absolute")
-          .style("bottom","30px")
-          .style("right","30px")
-          .on("click",add2filter)
+//        panel.append("button").text(texts.add).style("position","absolute").style("bottom","30px").style("right","80px").on("click",add2filter)
       }
 
       function add2filter(){
@@ -729,11 +724,11 @@ function topFilter(){
         .property("value",String)
         .text(String)
 
-    topBar.append("button")
-      .text(texts.apply)
-      .on("click",applyfilter)
+//    topBar.append("button").text(texts.apply).on("click",applyfilter)
+
 
     topBar.append("button")
+      .attr("class","primary-outline clear")
       .text(texts.removefilter)
       .on("click",removeFilter)
   }

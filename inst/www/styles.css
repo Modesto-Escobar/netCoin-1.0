@@ -103,6 +103,32 @@ button.primary-outline.clear {
   background-position: center;
   background-image: url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIGhlaWdodD0iMTIiIHZpZXdCb3g9IjAgMCAyNCAyNCIgd2lkdGg9IjEyIj48cGF0aCBkPSJNMCAwaDI0djI0SDBWMHoiIGZpbGw9Im5vbmUiLz48cGF0aCBkPSJNMjIgM0g3Yy0uNjkgMC0xLjIzLjM1LTEuNTkuODhMMCAxMmw1LjQxIDguMTFjLjM2LjUzLjkuODkgMS41OS44OWgxNWMxLjEgMCAyLS45IDItMlY1YzAtMS4xLS45LTItMi0yem0wIDE2SDcuMDdMMi40IDEybDQuNjYtN0gyMnYxNHptLTExLjU5LTJMMTQgMTMuNDEgMTcuNTkgMTcgMTkgMTUuNTkgMTUuNDEgMTIgMTkgOC40MSAxNy41OSA3IDE0IDEwLjU5IDEwLjQxIDcgOSA4LjQxIDEyLjU5IDEyIDkgMTUuNTl6IiBmaWxsPSIjMkY3QkVFIi8+PC9zdmc+);
 }
+button.switch-button {
+  width: 20px;
+  height: 10px;
+  border-radius: 5px;
+  background-color: #c6c6c6;
+  border: none;
+  vertical-align: middle;
+}
+button.switch-button:after {
+  content: "";
+  display: block;
+  width: 10px;
+  height: 10px;
+  border-radius: 5px;
+  background-color: #777777;
+  margin-top: -4px;
+  margin-left: -8px;
+  transition: all 0.2s ease-in-out;
+}
+button.switch-button.active {
+  background-color: #89b0e9;
+}
+button.switch-button.active:after {
+  background-color: #2f7bee;
+  margin-left: 2px;
+}
 input[type=range]{
   height: 5px;
   background-color: #c6c6c6;
@@ -345,6 +371,7 @@ div.poweredby img {
   text-align: center;
   font-size: 1.4em;
   margin-bottom: 6px;
+  cursor: pointer;
 }
 .legend-panel > .scale > div > .domain1,
 .legend-panel > .scale > div > .domain2 {
@@ -633,6 +660,21 @@ div.infopanel,
   display: inline-block;
   margin: 6px 0;
 }
+
+ul.visual-selector {
+  margin: 2em;
+}
+ul.visual-selector > li {
+  font-size: 1.4em;
+  padding: 0.2em;
+  text-align: center;
+  cursor: pointer;
+}
+ul.visual-selector > li:hover,
+ul.visual-selector > li.active {
+  font-weight: bold;
+}
+
 .filter-tags > div {
   display: inline-block;
   background-color: #777777;
@@ -703,15 +745,16 @@ p.window-message {
   text-align: center;
 }
 div.topbar {
-  margin: 10px;
-  background-color: #f5f5f5;
-  padding: 6px 10px;
+  background-color: #ffffff;
+  padding: 10px 20px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.07);
 }
 .topbar h3 {
   display: inline-block;
   padding-right: 4px;
-  color: #777777;
+  color: #000000;
   font-size: 1.2em;
+  font-weight: bold;
 }
 .topbar .select-wrapper {
   margin-right: 10px;
@@ -1059,6 +1102,7 @@ svg .zoombutton.zoomreset rect {
 /* legend */
 .legend .title {
   font-size: 1.2em;
+  cursor: pointer;
 }
 .legend-check-box {
   background-color: #ffffff;
