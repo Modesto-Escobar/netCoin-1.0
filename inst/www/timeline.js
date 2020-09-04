@@ -120,6 +120,7 @@ function timeline(json){
 
   topBar.append("span").style("padding","0 10px");
 
+  // expand/collpse bars displaying
   topBar.append("h3")
     .text(texts.expand)
   topBar.append("button")
@@ -131,10 +132,27 @@ function timeline(json){
       displayGraph();
     })
 
-  if(options.main)
-    body.append("div")
+  topBar.append("span").style("padding","0 10px");
+
+  // reset button
+  topBar.append("button")
+        .attr("class","primary reset")
+        .text(texts.reset)
+        .on("click",function(){
+          location.reload();
+        })
+        .append("title")
+          .text("F5")
+
+  var header = body.append("div")
+        .attr("class","header")
+
+  var headerButtons = header.append("div")
+    .attr("class","header-buttons")
+
+  header.append("div")
         .attr("class","main-title")
-        .html(options.main)
+        .html(options.main ? options.main : "&nbsp;")
 
   // styles
   d3.select("head")
@@ -165,9 +183,11 @@ function timeline(json){
       plot.selectAll("*").remove();
     }
 
-    plot.on("dblclick",function(){
-      filter = false;
-      displayGraph();
+    plot.on("click",function(){
+      if(d3.event.shiftKey){
+        filter = false;
+        displayGraph();
+      }
     });
 
     var currentYear = new Date().getFullYear(),
@@ -221,7 +241,7 @@ function timeline(json){
 
     //sizes
     var vp = viewport(),
-        marginLeft = 0,
+        marginLeft = 160,
         laneText = mini.append("g").append("g").attr("class","laneText").append("text");
     lanes.forEach(function(l){
       laneText.text(l);
@@ -230,17 +250,17 @@ function timeline(json){
         marginLeft = w;
     })
     mini.selectAll("*").remove();
-    if(marginLeft>vp.width/3)
+    if(marginLeft>160 && marginLeft>vp.width/3)
       marginLeft = vp.width/3;
 
-    var margin = [22*options.cex, 15, 20*options.cex, marginLeft], //top right bottom left
+    var margin = [30*options.cex, 15, 20*options.cex, marginLeft], //top right bottom left
         w = vp.width - 30 - margin[1] - margin[3],
         miniHeight = laneLength * (20*options.cex),
         mainHeight = 10;
 
     topSVG
       .attr("width", w + margin[1] + margin[3])
-      .attr("height", miniHeight + margin[0] + margin[2]*2 + 3*options.cex);
+      .attr("height", miniHeight + margin[0] + margin[2]);
 
     mini.attr("transform", "translate(" + margin[3] + "," + margin[0] + ")");
 
@@ -353,44 +373,21 @@ function timeline(json){
 
     var showCheckControls = !filter && laneLength>1;
 
-    if(showCheckControls){
-      var gSelectAll = mini.append("g")
-      .attr("class","legend-selectall")
-      .attr("transform", "translate("+(-margin[3])+","+(y-18*options.cex)+")")
-      .style("cursor", "pointer")
-      .on("click",function(){
-        if(!selectedGroups.size()){
-          gLaneTexts.selectAll(".laneText").each(function(){
-            d3.select(this).dispatch("click");
-          })
-        }else{
-          gLaneTexts.selectAll(".laneText").each(function(g){
-            if(selectedGroups.has(g)){
-              d3.select(this).dispatch("click");
-            }
-          })
-        }
-      })
-      gSelectAll.append("text")
-      .attr("x", defCheckOffset)
-      .attr("y", 10*options.cex)
-      .text(texts.selectall)
-      displayCheck(gSelectAll,1*options.cex*options.cex*options.cex);
+    headerButtons.selectAll("*").remove();
 
-      displayBottomButton(mini,margin[3]-gSelectAll.node().getBBox().width,(y-18*options.cex),"filter",applyCheckBoxes);
-      enableBottomButton(false);
+    if(showCheckControls){
+      displayHeaderButtons();
+      enableFilterButton(false);
 
       displaySeparator(mini,margin[3],y);
     }else if(filter){
-      mini.append("text")
+      headerButtons.append("div").html("&nbsp;")
+      headerButtons.append("div")
         .attr("class","goback")
-        .attr("x",(-margin[3]+8))
-        .attr("y",-4*options.cex)
         .on("click",function(){
           filter = false;
           displayGraph();
         })
-        .text("‹ "+texts.goback)
     }
 
     var laneText = gLaneTexts.selectAll(".laneText")
@@ -405,8 +402,8 @@ function timeline(json){
           laneText.each(function(g){
             checkBox(d3.select(this),selectedGroups.has(g));
           })
-          checkBox(gSelectAll,selectedGroups.size())
-          enableBottomButton(selectedGroups.size());
+          headerButtons.select(".legend-selectall > .legend-check-box").classed("checked",selectedGroups.size())
+          enableFilterButton(selectedGroups.size());
         })
 
     laneText.append("text")
@@ -456,33 +453,50 @@ function timeline(json){
         .attr("y2",y)
     }
 
-    function displayBottomButton(sel,x,y,text,callback){
-      var w = 50;
-      x = -x+8;
-      var g = sel.append("g")
-      .attr("class","legend-bottom-button "+text)
-      .attr("transform","translate("+x+","+y+")")
-      g.append("rect")
-      .attr("x",3)
-      .attr("y",0)
-      .attr("width",w-6)
-      .attr("height",15)
-      .attr("rx",2)
-      .on("click",callback)
-      g.append("text")
-      .attr("x",w/2)
-      .attr("y",10)
-      .text(texts[text])
+    function displayHeaderButtons(){
+      var div = headerButtons.append("div")
+        .attr("class","legend-selectall")
+        .on("click",selectAllChecks)
+
+      div.append("div").attr("class","legend-check-box")
+      div.append("span").text(texts.selectall)
+
+      headerButtons.append("button")
+        .attr("class","primary filter")
+        .text(texts["filter"])
+        .on("click",applyCheckBoxes)
+
+      headerButtons.append("button")
+        .attr("class","primary filter")
+        .text(texts["filter"])
+        .on("click",applyCheckBoxes)
+        .style("position","absolute")
+        .style("left",0)
+        .style("top",(header.select(".main-title").node().clientHeight + topSVG.node().clientHeight - margin[2] + 12)+"px")
     }
 
-    function enableBottomButton(enable){
-      mini.select(".legend-bottom-button")
+    function enableFilterButton(enable){
+      headerButtons.selectAll("button.primary.filter")
         .classed("disabled",!enable)
     }
 
     function checkBox(sel,check){
       sel.select(".legend-check-box")
         .classed("checked",check)
+    }
+
+    function selectAllChecks(){
+        if(!selectedGroups.size()){
+          gLaneTexts.selectAll(".laneText").each(function(){
+            d3.select(this).dispatch("click");
+          })
+        }else{
+          gLaneTexts.selectAll(".laneText").each(function(g){
+            if(selectedGroups.has(g)){
+              d3.select(this).dispatch("click");
+            }
+          })
+        }
     }
 
     //mini axis
@@ -492,10 +506,6 @@ function timeline(json){
       .attr("class", "x axis")
       .attr("transform", "translate(0," + y2(laneLength) + ")")
       .call(xAxis);
-
-    var mainAxis = mini.append("g")
-      .attr("class", "x1 axis")
-      .attr("transform", "translate(0," + (miniHeight + margin[0] + margin[2]) + ")");
 
     //mini item rects
     mini.append("g").selectAll(".item")
@@ -507,6 +517,22 @@ function timeline(json){
       .attr("y", getMiniY)
       .attr("width", function(d){ return x(timeBegin + getEnd(d[options.end]) - d[options.start]); })
       .attr("height", 10);
+
+    // sticky time header
+    var timeHeader = plot.append("svg")
+      .attr("class","time-header")
+      .attr("width", w + margin[1] + margin[3])
+      .attr("height", margin[2]+10);
+
+    timeHeader.append("rect")
+      .style("fill","#fff")
+      .attr("x",margin[3])
+      .attr("width", w)
+      .attr("height", margin[2]+10);
+
+    timeHeader.append("g")
+      .attr("class", "x1 axis")
+      .attr("transform", "translate(" + margin[3] + "," + (margin[2]+10-1) + ")")
     
     //main
     var svgLanes = plot.selectAll("svg.lane")
@@ -583,28 +609,12 @@ function timeline(json){
         d3.event.preventDefault();
       })
 
-    // sticky time header
-    var timeHeader = plot.append("svg")
-      .attr("class","time-header")
-      .style("display","none")
-      .style("position","fixed")
-      .style("top",0)
-      .attr("width", w + margin[1] + margin[3])
-      .attr("height", margin[2]);
-
-    timeHeader.append("rect")
-      .style("fill","#fff")
-      .attr("x",margin[3])
-      .attr("width", w)
-      .attr("height", margin[2]);
-
-    timeHeader.append("g")
-      .attr("class", "x1 axis")
-      .attr("transform", "translate(" + margin[3] + "," + (margin[2]-1) + ")")
-
     // dotted vertical guide
     var rect = plot.node().getBoundingClientRect(),
-        yearGuideTop = rect.top + body.select("div.plot>svg:first-child").node().clientHeight,
+        yearGuideTop = rect.top
+          + topSVG.node().clientHeight
+          + timeHeader.node().clientHeight
+          + 3,
         yearGuide = plot.append("div")
       .attr("class","year-guide")
       .style("position","absolute")
@@ -637,12 +647,15 @@ function timeline(json){
     })
 
     window.onscroll = function(){
-      if(window.pageYOffset>yearGuideTop){
-        timeHeader.style("display","block");
+      if(window.pageYOffset > (yearGuideTop - topBar.node().offsetHeight)){
+        timeHeader.style("position","fixed")
+          .style("top",(topBar.node().offsetHeight)+"px")
+          .style("left",0)
         pYear.style("position","fixed")
-          .style("top",margin[2]+"px")
+          .style("top",(topBar.node().offsetHeight + margin[2]+10)+"px")
       }else{
-        timeHeader.style("display","none");
+        timeHeader.style("position",null)
+          .style("top",null)
         pYear.style("position","absolute")
           .style("top",yearGuideTop+"px")
       }
@@ -683,10 +696,8 @@ function timeline(json){
 
       if(minExtent < maxExtent){
         var x1Axis = d3.axisTop(x1).tickFormat(formatter);
-        mainAxis.call(x1Axis);
         timeHeader.select("g").call(x1Axis);
       }else{
-        mainAxis.selectAll("*").remove();
         timeHeader.select("g").selectAll("*").remove();
       }
 
@@ -994,7 +1005,6 @@ function timeline(json){
       )
       div.append("div")
           .attr("class","close-button")
-          .html("&#x2716;")
           .on("click", function(){
             div.transition().duration(500)
               .style("left",docSize.width+"px")
@@ -1002,7 +1012,7 @@ function timeline(json){
                 div.remove();
               })
           });
-      div.append("div").html(info);
+      div.append("div").append("div").html(info);
     }else{
       div.select("div.infopanel > div.close-button").dispatch("click");
     }
@@ -1040,7 +1050,7 @@ function svg2pdf(){
     heights.push(tHeight);
   });
 
-  if(!d3.select("div.main-title").empty()){
+  if(options.main){
     margin[1] = margin[1] + 30;
     tHeight = tHeight + 30;
   }
@@ -1060,17 +1070,16 @@ function svg2pdf(){
   doc.setTextColor(0);
   doc.setLineWidth(1);
 
-  d3.select("div.main-title").each(function(){
-      var self = d3.select(this),
-          txt = self.text(),
-          fontsize = parseInt(self.style("font-size")),
+  if(options.main){
+      var txt = options.main,
+          fontsize = 18,
           txtWidth = doc.getStringUnitWidth(txt) * fontsize,
           x = tWidth/2 - txtWidth/2,
           y = fontsize + 10;
       doc.setFontType("bold");
       doc.setFontSize(fontsize);
       doc.text(x, y, txt);
-  })
+  }
 
   doc.setFontType("normal")
 

@@ -69,6 +69,7 @@ button.primary {
   background-color: #2f7bee;
   color: #ffffff;
   border: none;
+  min-width: 7em;
 }
 button.primary:hover {
   background-color: #135dcd;
@@ -244,6 +245,7 @@ th.sorting_desc:after {
     height: 100%;
     background-image: url(data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTgiIGhlaWdodD0iMTgiIHZpZXdCb3g9IjAgMCAyNCAyNCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTE4IDlMMTIgMTVMNiA5IiBzdHJva2U9IiMyRjdCRUUiIHN0cm9rZS13aWR0aD0iMiIgZmlsbD0ibm9uZSIvPgo8L3N2Zz4=);
     background-position: center;
+    background-repeat: no-repeat;
     pointer-events: none;
 }
 .select-wrapper > select {
@@ -412,7 +414,7 @@ div.infopanel,
   border: solid 1px #f5f5f5;
   border-radius: 5px;
 }
-.legend-panel > .legends > .goback {
+div.goback {
   background: #2f7bee;
   color: #ffffff;
   cursor: pointer;
@@ -423,7 +425,7 @@ div.infopanel,
   height: 16px;
   position: relative;
 }
-.legend-panel > .legends > .goback:after {
+div.goback:after {
   content: '';
   background-image: url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIGhlaWdodD0iMTIiIHZpZXdCb3g9IjAgMCAyNCAyNCIgd2lkdGg9IjEyIj48cGF0aCBmaWxsPSIjZmZmZmZmIiBkPSJNMjAgMTFINy44M2w1LjU5LTUuNTlMMTIgNGwtOCA4IDggOCAxLjQxLTEuNDFMNy44MyAxM0gyMHYtMnoiLz48L3N2Zz4=);
   background-position: center;
@@ -724,7 +726,6 @@ div.window {
   background-color: #ffffff;
   margin: 0 auto;
   padding: 30px;
-  overflow-y: auto;
 }
 div.window h2 {
   font-size: 1.8em;
@@ -740,11 +741,20 @@ div.window h3 {
 div.window > .close-button {
   margin: 8px 10px 0 0;
 }
+div.window > .window-content {
+  width: 100%;
+  overflow-y: auto;
+}
 p.window-message {
   font-size: 1.6em;
   text-align: center;
 }
 div.topbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1;
   background-color: #ffffff;
   padding: 10px 20px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.07);
@@ -767,6 +777,25 @@ div.topbar {
 }
 .topbar button {
   margin: 0 2px;
+}
+.header {
+  position: relative;
+  margin-top: 5em;
+}
+.header > .header-buttons {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 16em;
+}
+.header > .header-buttons > div:first-child {
+  margin: 0.5em;
+}
+.header > .header-buttons > .legend-selectall {
+  cursor: pointer;
+}
+.header > .header-buttons > button.primary {
+  margin: 0 0.5em;
 }
 .picker {
   margin: 20px 0;
@@ -1015,6 +1044,9 @@ svg > .axis {
 svg > .axis > .tick > text {
   color: #777777;
 }
+svg.time-header > .axis > .tick > text {
+  color: #000000;
+}
 svg .axis.brushSlider .domain {
   stroke: #c6c6c6;
   stroke-width: 4px;
@@ -1177,13 +1209,9 @@ svg .zoombutton.zoomreset rect {
 }
 
 /* svg legend */
-svg .goback {
-  fill: #2f7bee;
-  cursor: pointer;
-}
 svg .legend-check-box {
   fill: #ffffff;
-  stroke: #777777;
+  stroke: #2f7bee;
 }
 svg .legend-check-box.checked {
   fill: #2f7bee;
@@ -1265,4 +1293,39 @@ svg .legend-bottom-button > text{
   position: absolute;
   top: -4px;
   left: 15px;
+}
+
+/* grid gallery */
+div.content {
+  margin: 5em 2em 2em 2em;
+}
+div.grid-gallery {
+  width: 66%;
+}
+div.grid-gallery > div {
+  display: inline-block;
+  margin: 1em;
+}
+div.grid-gallery > div > img {
+  display: block;
+}
+div.grid-gallery > div > span {
+  display: block;
+  text-align: center;
+}
+div.gallery-panel {
+  position: fixed;
+  top: 0;
+  left: 66%;
+  bottom: 0;
+  right: 0;
+  background: #c6c6c6;
+}
+div.gallery-note {
+  background-color: #ffffff;
+  position: fixed;
+  left: inherit;
+  right: 0;
+  bottom: 0;
+  padding: 1em;
 }

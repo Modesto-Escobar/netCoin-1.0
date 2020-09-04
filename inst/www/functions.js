@@ -266,18 +266,11 @@ function displayWindow(w,h){
         .style("width",docSize.width+"px")
         .style("height",docSize.height+"px")
 
-  var boxStyle = {
-    "margin-top": (docSize.height/5)+"px",
-    "width": (w ? w : (docSize.width/2))+"px",
-    "max-height": (h ? h : (docSize.height/2))+"px",
-  };
-
   var win = bg.append("div")
     .attr("class","window")
     .on("click",function(){ d3.event.stopPropagation(); })
-
-  for(var s in boxStyle)
-    win.style(s,boxStyle[s]);
+    .style("margin-top",(docSize.height/5)+"px")
+    .style("width",(w ? w : (docSize.width/2))+"px");
 
   win.append("div")
     .attr("class","close-button")
@@ -285,6 +278,12 @@ function displayWindow(w,h){
 
   win = win.append("div")
     .attr("class","window-content")
+
+  if(h){
+    win.style("height", h+"px");
+  }else{
+    win.style("max-height", (docSize.height/2)+"px");
+  }
 
   return win;
 }

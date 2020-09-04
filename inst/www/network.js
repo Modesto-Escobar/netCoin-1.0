@@ -35,7 +35,6 @@ function network(Graph){
       timeRange = [5000,500], // speed range for dynamic net
       axisExtension = 50, // pixels to increase the axes size
       sidebarWidth = 240, // sidebar width (will increase with cex)
-      primaryBtnWidth = 70, // primary button width (will increase with cex)
       infoLeft = 0, // global variable for panel left position
       nodeRadius = 4.514, // base node radius
       findNodeRadius = 20, // radius in which to find a node in the canvas
@@ -493,13 +492,9 @@ function network(Graph){
     if(options.cex){
       body.style("font-size", 10*options.cex + "px")
       sidebarWidth = sidebarWidth * Math.sqrt(options.cex);
-      primaryBtnWidth = primaryBtnWidth * Math.sqrt(options.cex);
     }else{
       options.cex = 1;
     }
-
-    // add fixed width to primary buttons
-    d3.select("head").append("style").text("button.primary { min-width: "+primaryBtnWidth+"px }")
 
     if(!options.hasOwnProperty("zoom"))
       options.zoom = 1;

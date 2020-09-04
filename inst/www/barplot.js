@@ -210,6 +210,7 @@ function barplot(json){
 
   body.append("svg")
     .attr("class","plot")
+    .style("margin-top","5em")
 
   if(options.note){
     var pnote = body.append("p")
