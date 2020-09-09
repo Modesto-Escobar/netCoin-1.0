@@ -1,7 +1,5 @@
 ---
 title: "surCoin"
-author: "Pablo Cabrera-Álvarez and Modesto Escobar"
-date: "`r Sys.Date()`"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{surCoin}
@@ -15,6 +13,7 @@ knitr::opts_chunk$set(
   comment = "#>"
 )
 library(netCoin)
+library(htmltools)
 data("ess")
 ```
 
