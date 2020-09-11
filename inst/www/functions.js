@@ -546,7 +546,8 @@ function displayPicker2(value,active,callback){
     var r = 14,
         itemsPerRow = 10,
         row,
-        win = displayWindow((r*2+12)*itemsPerRow);
+        win = displayWindow((r*2+12)*itemsPerRow),
+        colorPicker = false;
 
     win.append("h2").text(texts.selectacolor+"\""+value+"\"");
 
@@ -566,12 +567,42 @@ function displayPicker2(value,active,callback){
         .on("click",function(){
           picker.selectAll("span").classed("active",false);
           d3.select(this).classed("active",true);
+          active = d;
+          if(colorPicker){
+            colorPicker.color.hexString = active;
+          }
         })
         .style("background-color",d)
     });
 
+    if(window.iro){
+      var iroContainer;
+
+      win.append("center")
+      .append("button")
+        .attr("class","custom-color")
+        .text(texts.selectcustomcolor)
+        .on("click",function(){
+          iroContainer.style("display",iroContainer.style("display")=="block" ? "none" : "block")
+        })
+
+      var iroContainer = win.append("center")
+        .attr("id","iro-picker")
+        .style("display","none")
+
+      colorPicker = new window.iro.ColorPicker('#iro-picker', {
+        width: 200,
+        color: active
+      });
+
+      colorPicker.on('input:change', function(color) {
+        picker.selectAll("span").classed("active",false);
+        active = color.hexString;
+      });
+    }
+
     pickerSelectButton(win, function(){
-      callback(picker.select("span.active").property("val"));
+      callback(active);
     });
 }
 
@@ -680,6 +711,7 @@ function topFilter(){
         }
 
         panel.append("button")
+          .attr("class","primary")
           .text(texts.apply)
           .style("position","absolute")
           .style("bottom","30px")

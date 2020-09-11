@@ -831,6 +831,14 @@ div.topbar {
 .picker div.row > span:hover {
   border-color: rgba(0,0,0, 0.25);
 }
+button.custom-color {
+  color: #777777;
+  width: 100%;
+  margin-bottom: 2em;
+}
+#iro-picker {
+  margin-bottom: 2em;
+}
 
 div.loading {
   position: fixed;
