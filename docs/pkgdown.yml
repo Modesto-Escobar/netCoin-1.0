@@ -4,6 +4,8 @@ pkgdown_sha: ~
 articles:
   netCoin: netCoin.html
   examples: pkgdown/examples/examples.html
+  netCoin: pkgdown/vignettes/netCoin.html
+  surCoin: pkgdown/vignettes/surCoin.html
   surCoin: surCoin.html
-last_built: 2020-09-09T16:15Z
+last_built: 2020-09-14T10:15Z
 

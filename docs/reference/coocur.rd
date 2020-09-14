@@ -86,7 +86,7 @@ Besides, this object has two attributes: 1) n is the total of the sum of the ocu
   </a>
 </li>
 <li>
-  <a href="../articles/surCoin.html">Quick start</a>
+  <a href="../articles/pkgdown/vignettes/surCoin.html">Quick start</a>
 </li>
 <li>
   <a href="../reference/index.html">Reference</a>
@@ -99,7 +99,7 @@ Besides, this object has two attributes: 1) n is the total of the sum of the ocu
   </a>
   <ul class="dropdown-menu" role="menu">
     <li>
-      <a href="../articles/netCoin.html">netCoin</a>
+      <a href="../articles/pkgdown/vignettes/netCoin.html">netCoin</a>
     </li>
   </ul>
 </li>
@@ -193,7 +193,7 @@ Besides, this object has two attributes: 1) n is the total of the sum of the ocu
 
       <footer>
       <div class="copyright">
-  <p>Developed by Modesto Escobar.</p>
+  <p>Developed by Modesto Escobar, David Barrios, Carlos Prieto, Luis Martinez-Barrios.</p>
 </div>
 
 <div class="pkgdown">

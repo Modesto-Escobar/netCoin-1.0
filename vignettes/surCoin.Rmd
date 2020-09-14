@@ -1,5 +1,6 @@
 ---
 title: "surCoin"
+author: Pablo Cabrera-Álvarez and Modesto Escobar
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{surCoin}

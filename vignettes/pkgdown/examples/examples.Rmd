@@ -19,10 +19,6 @@ This page contain some examples implemented using netCoin.
 ### Voting intention using data from the Spanish Center for Sociological Research
 <iframe width="850" height="850" src="https://sociocav.usal.es/me/CIS/" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
 
-### Catalonian elections 21-D 2017 from data collected by CEO
-<iframe width="850" height="850" src="https://coin.der.usal.es/CAT" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
-
-
 ## Big data
 
 ### Dynamic network of the Twitter hashtag #votarem

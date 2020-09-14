@@ -10,8 +10,12 @@ Imports: igraph (>= 1.0.1), Matrix (>= 1.2-4), haven (>= 1.1.0)
 Suggests: knitr, rmarkdown, lavaan, shiny
 VignetteBuilder: knitr
 NeedsCompilation: no
-Author: Modesto Escobar <modesto@usal.es>,
-  David Barrios <metal@usal.es>,
-  Carlos Prieto <cprietos@usal.es>,
-  Luis Martinez-Uribe <lmartinez@usal.es>.
-Maintainer: Modesto Escobar <modesto@usal.es>
+Authors@R: c( 
+    person("Modesto", "Escobar", email = "modesto@usal.es", role = c("cre", "aut", "cph"), comment = c(ORCID = "0000-0003-2072-6071")), 
+    person("David", "Barrios", email = "metal@usal.es", role = "aut"), 
+    person("Carlos", "Prieto", email = "cprietos@usal.es", role = "aut"),
+    person("Luis", "Martinez-Barrios", email = "lmartinez@usal.es", role = "aut", comment = c(ORCID = "0000-0002-7795-3972")) 
+    )
+URL: https://netCoin.es
+Encoding: UTF-8
+BugReports: https://github.com/Modesto-Escobar/netCoin-1.0/issues
