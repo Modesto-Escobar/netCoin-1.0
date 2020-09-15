@@ -1,5 +1,5 @@
 
-# netCoin <img src="man/figures/hexa_netCoin.png" align="right" alt="" width="150" />
+# netCoin <img src="man/figures/hexa_netCoin.png" align="right" alt="" width="200" />
 
 <!-- badges: start -->
 
