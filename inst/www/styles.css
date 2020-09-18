@@ -581,6 +581,7 @@ div.goback:after {
   padding: 0;
   border: none;
   margin: 0;
+  height: 34px;
 }
 .sidebar > .subSearch > .search > button {
   border: none;
@@ -589,11 +590,11 @@ div.goback:after {
   border-radius: 0;
   padding: 0.8em;
 }
-.sidebar > .subSearch > .search > button.search-icon,
-.sidebar > .subSearch > .search > button.help-icon {
+.sidebar > .subSearch > .search > button.search-icon {
   position: absolute;
   top: 0;
   right: 0;
+  z-index: 2;
 }
 .sidebar > .subSearch > .search > button.help-icon:before {
   content: "";
@@ -614,15 +615,60 @@ div.goback:after {
   border: solid 1px #c6c6c6;
   border-radius: 5px;
   width: 100%;
+  background-color: #ffffff;
 }
-.sidebar > .subSearch > .search > .search-box > div {
-  padding: 10px 30px 10px 10px;
+.sidebar > .subSearch > .search > .search-box > div.check-container {
+  position: absolute;
+  margin-top: 10px;
+  height: 20px;
+  width: 20px;
+  overflow: hidden;
 }
-.sidebar > .subSearch > .search > .search-box > div > input {
+.sidebar > .subSearch > .search > .search-box > div.check-container > span {
+  display: block;
+  height: 14px;
+}
+.sidebar > .subSearch > .search > .search-box > div.check-container > span.yes:after {
+  content: "";
+  display: block;
+  margin: 0 0 0 6px;
+  width: 3px;
+  height: 7px;
+  border: solid #000000;
+  border-width: 0 2px 2px 0;
+  -webkit-transform: rotate(45deg);
+  -ms-transform: rotate(45deg);
+  transform: rotate(45deg);
+}
+.sidebar > .subSearch > .search > .search-box > div.text-wrapper {
+  padding: 10px 30px 10px 20px;
+}
+.sidebar > .subSearch > .search > .search-box > div.text-wrapper > textarea {
+  height: 12px;
   width: 100%;
   border: none;
   margin: 0;
   padding: 0;
+  resize: none;
+}
+.sidebar > .subSearch > .search > .search-box > p {
+  margin: 2px;
+  color: #777777;
+  text-align: center;
+  display: none;
+}
+.sidebar > .subSearch > .search > .search-box.focused {
+  position: absolute;
+  z-index: 1;
+}
+.sidebar > .subSearch > .search > .search-box.focused > div.text-wrapper > textarea {
+  height: 300px;
+}
+.sidebar > .subSearch > .search > .search-box.focused > div.check-container {
+  height: 300px;
+}
+.sidebar > .subSearch > .search > .search-box.focused > p {
+  display: block;
 }
 .sidebar > .subSearch > .search > ul.dropdown-list {
   margin: 0;

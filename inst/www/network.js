@@ -842,6 +842,8 @@ function displaySidebar(){
 
   if(sidebar.select(".subSearch").empty()){
 
+    var selectedNodes = [];
+
     var searchSel = sidebar.append("div")
       .attr("class","subSearch")
       .append("div")
@@ -849,88 +851,51 @@ function displaySidebar(){
 
     var searchBox = searchSel.append("div")
       .attr("class","search-box")
+
+    var checkContainer = searchBox.append("div")
+      .attr("class","check-container")
+
     searchBox.append("div")
-      .append("input")
-        .attr("type","text")
+      .attr("class","text-wrapper")
+      .append("textarea")
         .attr("placeholder",texts.searchanode)
         .on("focus",function(){
-          searchBox.classed("shadowed",true);
+          searchBox.classed("focused",true);
         })
         .on("blur",function(){
-          searchBox.classed("shadowed",false);
-        })
-        .on("keydown",function(){
-          var key = getKey(d3.event);
-          if(key == "Tab" && !dropdownList.selectAll("li").empty()){
-            dropdownList.select("li.active").dispatch("click");
-          }
+          searchBox.classed("focused",false);
         })
         .on("keyup",function(){
-          var key = getKey(d3.event),
-              searchBoxInput = this,
-              column = options.nodeLabel ? options.nodeLabel : options.nodeName,
-              searchNodes = function(callback){
-                if(searchBoxInput.value.length>1){
-                  Graph.nodes.filter(checkSelectable).forEach(function(node){
-                    if(String(node[column]).toLowerCase().search(searchBoxInput.value.toLowerCase())!=-1){
-                      callback(node);
-                    }
-                  });
-                }
-              };
-
-          if(key == "Enter" && !dropdownList.selectAll("li").empty()){
-            if(d3.event.shiftKey){
-              searchNodes(function(node){
-                node.selected = true;
-              });
-              closeDropDownList();
-              showTables();
-            }else{
-              dropdownList.select("li.active").dispatch("click");
-            }
-            d3.event.stopPropagation();
-            return;
-          }
-          if(key == "ArrowUp" || key == "ArrowDown"){
-            var li = dropdownList.selectAll('li');
-            if(li.size() > 1){
-              var current = 0;
-              li.each(function(d,i){
-                if(d3.select(this).classed("active"))
-                  current = i;
-              });
-              li.classed("active",false);
-              if(key == "ArrowUp") current--;
-              if(key == "ArrowDown") current++;
-              if(current<0) current = li.size()-1;
-              if(current>=li.size()) current = 0;
-             li.filter(function (d, i) { return i === current; }).classed("active",true);
-            }
+          if(d3.event.shiftKey && getKey(d3.event)=="Enter"){
+            searchIcon.dispatch("click");
+            this.blur();
             return;
           }
 
-          dropdownList.selectAll("*").remove();
-          searchNodes(function(node){
-                dropdownList
-                  .append("li")
-                  .text(node[column])
-                  .on("click",function(){
-                    closeDropDownList();
-                    Graph.nodes.forEach(function(node){
-                      delete node.selected;
-                    })
-                    node.selected = true;
-                    if(options.nodeInfo){
-                      displayInfoPanel(node[options.nodeInfo]);
-                    }
-                    showTables();
-                  });
-          })
-          dropdownList.select("li").classed("active","true");
-          dropdownList.style("display",dropdownList.selectAll("li").empty()?"none":"block");
-          searchIcon.classed("disabled",dropdownList.selectAll("li").empty())
+          var searchBoxInput = this,
+              values = searchBoxInput.value.split("\n"),
+              column = options.nodeLabel ? options.nodeLabel : options.nodeName;
+
+          selectedNodes = [];
+          checkContainer.selectAll("span").remove();
+
+          values.forEach(function(value){
+            var found = false;
+            value = new RegExp("^"+value+"$",'i');
+            Graph.nodes.filter(checkSelectable).forEach(function(node){
+              if(String(node[column]).match(value)){
+                found = true;
+                selectedNodes.push(node[options.nodeName]);
+              }
+            });
+            checkContainer.append("span")
+              .attr("class",found ? "yes": "no")
+          });
+
+          searchIcon.classed("disabled",!selectedNodes.length);
         })
+
+    searchBox.append("p").text("shift + Enter to search")
 
     var searchIcon = searchSel.append("button")
       .attr("class","search-icon disabled")
@@ -938,19 +903,18 @@ function displaySidebar(){
         .d(d4paths.search)
         .width(16).height(16))
       .on("click",function(){
-          dropdownList.select("li.active").dispatch("click");
+        Graph.nodes.forEach(function(node){
+          delete node.selected;
+          if(selectedNodes.indexOf(node[options.nodeName])!=-1){
+            node.selected = true;
+          }
+        });
+        selectedNodes = [];
+        checkContainer.selectAll("span").remove();
+        searchIcon.classed("disabled",!selectedNodes.length);
+        searchBox.select("textarea").property("value","");
+        showTables();
       })
-
-    var dropdownList = searchSel.append("ul").attr("class","dropdown-list"),
-        closeDropDownList = function(){
-          searchBox.select("input").property("value","");
-          searchIcon.classed("disabled",true);
-          dropdownList.style("display","none").selectAll("*").remove();
-        };
-
-    body.on("click.dropdownlist",function(){
-      closeDropDownList();
-    })
 
   }else{
     sidebar.selectAll("div.sidebar>div:not(.subSearch)").remove();
@@ -3877,7 +3841,7 @@ function addGradient(defs,id, stops){
 }
 
 function displayVisualPicker(type){
-  var win = displayWindow(300),
+  var win = displayWindow(400),
       attrData = Graph.nodenames.filter(function(d){ return hiddenFields.indexOf(d)==-1; });
   attrData.unshift("-"+texts.none+"-");
   win.append("h2")
@@ -3895,12 +3859,10 @@ function displayVisualPicker(type){
       .on("click",function(attr){
         ul.selectAll("li").classed("active",false);
         d3.select(this).classed("active",true);
+        applyAuto("node"+type,attr);
+        displaySidebar();
+        d3.select("div.window-background").remove();
       })
-
-  pickerSelectButton(win, function(){
-    applyAuto("node"+type,ul.select("li.active").property("val"));
-    displaySidebar();
-  });
 }
 
 function displayInfoPanel(info){
@@ -4166,7 +4128,7 @@ function displayLegend(){
         .attr("class","title")
         .text(texts[type] + " / " + (typeof title == "undefined" ? key : title))
         .on("click",function(){
-          displayVisualPicker(type);
+          displayVisualPicker(type=="Image"?"Shape":type);
         })
 
     legend.append("hr")
