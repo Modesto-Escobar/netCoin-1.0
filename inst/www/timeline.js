@@ -113,6 +113,11 @@ function timeline(json){
     .data(nodes)
     .attr(options.name)
     .displayGraph(function(f){
+      if(filter && f){
+        f = f.filter(function(d){
+          return filter.indexOf(d)!=-1;
+        })
+      }
       filter = f;
       displayGraph();
     });

@@ -881,7 +881,7 @@ function displaySidebar(){
 
           values.forEach(function(value){
             var found = false;
-            value = new RegExp("^"+value+"$",'i');
+            value = new RegExp("^"+value+(value.length<3?"$":""),'i');
             Graph.nodes.filter(checkSelectable).forEach(function(node){
               if(String(node[column]).match(value)){
                 found = true;
