@@ -1045,3 +1045,115 @@ function getSVG(d,w,h){
 
   return exports;
 }
+
+function displayMultiSearch(sel, data, column, update, filterData){
+  var data = [],
+      column = "name",
+      update = function(){},
+      update2 = function(){},
+      filterData = function(){ return true; };
+
+  function exports(sel){
+
+    var searchSel = sel.append("div")
+        .attr("class","multi-search");
+
+    var searchBox = searchSel.append("div")
+      .attr("class","search-box")
+
+    var checkContainer = searchBox.append("div")
+      .attr("class","check-container")
+
+    searchBox.append("div")
+      .attr("class","text-wrapper")
+      .append("div")
+      .attr("class","text-content")
+      .append("textarea")
+        .attr("placeholder",texts.searchanode)
+        .on("focus",function(){
+          searchBox.classed("focused",true);
+        })
+        .on("blur",function(){
+          searchBox.classed("focused",false);
+        })
+        .on("keyup",function(){
+          if(getKey(d3.event)=="Enter"){
+            if(d3.event.shiftKey){
+              searchIcon.dispatch("click");
+              this.blur();
+              return;
+            }else{
+              d3.event.stopPropagation();
+            }
+          }
+
+          var searchBoxInput = this,
+              values = searchBoxInput.value.split("\n");
+
+          checkContainer.selectAll("span").remove();
+          data.forEach(function(node){ delete node.selected; });
+
+          values.forEach(function(value){
+            var found = false;
+            value = new RegExp("^"+value+(value.length<3?"$":""),'i');
+            data.filter(filterData).forEach(function(node){
+              if(String(node[column]).match(value)){
+                node.selected = found = true;
+              }
+            });
+            checkContainer.append("span")
+              .attr("class",found ? "yes": "no")
+          });
+
+          update();
+
+          searchIcon.classed("disabled",!checkContainer.selectAll("span.yes").size());
+        })
+
+    searchBox.append("p").text("shift + Enter to filter")
+
+    var searchIcon = searchSel.append("button")
+      .attr("class","search-icon disabled")
+      .call(getSVG()
+        .d(d4paths.search)
+        .width(16).height(16))
+      .on("click",function(){
+        update2();
+        checkContainer.selectAll("span").remove();
+        searchIcon.classed("disabled",true);
+        searchBox.select("textarea").property("value","");
+      })
+  }
+
+  exports.data = function(x) {
+    if (!arguments.length) return data;
+    data = x;
+    return exports;
+  };
+
+  exports.column = function(x) {
+    if (!arguments.length) return column;
+    column = x;
+    return exports;
+  };
+
+  exports.update = function(x) {
+    if (!arguments.length) return update;
+    update = x;
+    return exports;
+  };
+
+  exports.update2 = function(x) {
+    if (!arguments.length) return update2;
+    update2 = x;
+    return exports;
+  };
+
+  exports.filterData = function(x) {
+    if (!arguments.length) return filterData;
+    filterData = x;
+    return exports;
+  };
+
+  return exports;
+}

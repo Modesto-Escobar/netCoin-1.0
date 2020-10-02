@@ -588,7 +588,7 @@ surCoin<-function(data,variables=names(data), commonlabel=NULL,
 
 # surScat is a wrapper to build a netCoin object from an original non-dichotomized data.frame and see frequencies.
 
-surScat <- function(data, variables=names(data), active=names(data), nclusters=2, maxN=2000, ...) {
+surScat <- function(data, variables=names(data), active=variables, nclusters=2, maxN=2000, ...) {
   B <- as.data.frame(droplevels(as_factor(na.omit(data[,variables]))))
   b <- B[,active]
   m <- as.matrix(dichotomize(b,variables=names(b), sort=F, add=F, nas=NULL))

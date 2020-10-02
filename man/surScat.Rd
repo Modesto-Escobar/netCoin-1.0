@@ -9,7 +9,7 @@ This function creates a netCoin object (or igraph) and, if stated, a folder in t
 }
 
 \usage{
-surScat(data, variables=names(data), active=names(data), nclusters=2,
+surScat(data, variables=names(data), active=variables, nclusters=2,
         maxN=2000, ...)
 }
 \arguments{

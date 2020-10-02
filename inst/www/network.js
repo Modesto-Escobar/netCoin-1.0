@@ -842,79 +842,14 @@ function displaySidebar(){
 
   if(sidebar.select(".subSearch").empty()){
 
-    var selectedNodes = [];
-
-    var searchSel = sidebar.append("div")
+    sidebar.append("div")
       .attr("class","subSearch")
-      .append("div")
-        .attr("class","search");
-
-    var searchBox = searchSel.append("div")
-      .attr("class","search-box")
-
-    var checkContainer = searchBox.append("div")
-      .attr("class","check-container")
-
-    searchBox.append("div")
-      .attr("class","text-wrapper")
-      .append("textarea")
-        .attr("placeholder",texts.searchanode)
-        .on("focus",function(){
-          searchBox.classed("focused",true);
-        })
-        .on("blur",function(){
-          searchBox.classed("focused",false);
-        })
-        .on("keyup",function(){
-          if(d3.event.shiftKey && getKey(d3.event)=="Enter"){
-            searchIcon.dispatch("click");
-            this.blur();
-            return;
-          }
-
-          var searchBoxInput = this,
-              values = searchBoxInput.value.split("\n"),
-              column = options.nodeLabel ? options.nodeLabel : options.nodeName;
-
-          selectedNodes = [];
-          checkContainer.selectAll("span").remove();
-
-          values.forEach(function(value){
-            var found = false;
-            value = new RegExp("^"+value+(value.length<3?"$":""),'i');
-            Graph.nodes.filter(checkSelectable).forEach(function(node){
-              if(String(node[column]).match(value)){
-                found = true;
-                selectedNodes.push(node[options.nodeName]);
-              }
-            });
-            checkContainer.append("span")
-              .attr("class",found ? "yes": "no")
-          });
-
-          searchIcon.classed("disabled",!selectedNodes.length);
-        })
-
-    searchBox.append("p").text("shift + Enter to search")
-
-    var searchIcon = searchSel.append("button")
-      .attr("class","search-icon disabled")
-      .call(getSVG()
-        .d(d4paths.search)
-        .width(16).height(16))
-      .on("click",function(){
-        Graph.nodes.forEach(function(node){
-          delete node.selected;
-          if(selectedNodes.indexOf(node[options.nodeName])!=-1){
-            node.selected = true;
-          }
-        });
-        selectedNodes = [];
-        checkContainer.selectAll("span").remove();
-        searchIcon.classed("disabled",!selectedNodes.length);
-        searchBox.select("textarea").property("value","");
-        showTables();
-      })
+      .call(displayMultiSearch()
+        .data(Graph.nodes)
+        .column(options.nodeLabel ? options.nodeLabel : options.nodeName)
+        .update(showTables)
+        .update2(switchEgoNet)
+        .filterData(checkSelectable));
 
   }else{
     sidebar.selectAll("div.sidebar>div:not(.subSearch)").remove();
