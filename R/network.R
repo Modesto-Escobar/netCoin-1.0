@@ -118,7 +118,7 @@ getRawName <- function(filepath){
 }
 
 #copy images to net graph
-imgWrapper <- function(net,dir){
+imgWrapper <- function(net,callback,dir){
   imgDir <- paste(dir,"images",sep="/")
   if("imageItems" %in% names(net$options)){
     dir.create(imgDir, showWarnings = FALSE)
@@ -147,7 +147,7 @@ imgWrapper <- function(net,dir){
       net$options[["background"]] <- paste0('url("',paste("images",rawname,sep="/"),'")')
     }
   }
-  return(networkJSON(net))
+  return(callback(net))
 }
 
 #create html wrapper for network graph
@@ -155,5 +155,5 @@ netCreate <- function(net, dir = "netCoin"){
   #get language
   language <- getLanguageScript(net)
 
-  createHTML(dir, c("reset.css","styles.css"), c("d3.min.js","jspdf.min.js","jszip.min.js","iro.min.js","functions.js",language,"colorScales.js","network.js"),function(){ return(imgWrapper(net,dir)) })
+  createHTML(dir, c("reset.css","styles.css"), c("d3.min.js","jspdf.min.js","jszip.min.js","iro.min.js","functions.js",language,"colorScales.js","network.js"),function(){ return(imgWrapper(net,networkJSON,dir)) })
 }

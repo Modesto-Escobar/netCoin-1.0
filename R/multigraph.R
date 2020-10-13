@@ -9,7 +9,7 @@ for(item in names(multi)){
   jsongraph <- "{}"
   if(inherits(graph,"netCoin")){
     gClass <- "netCoin"
-    jsongraph <- imgWrapper(graph,dir)
+    jsongraph <- imgWrapper(graph,networkJSON,dir)
   }else if(inherits(graph,"timeCoin")){
     gClass <- "timeCoin"
     jsongraph <- timelineJSON(graph)

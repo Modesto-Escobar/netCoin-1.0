@@ -10,20 +10,20 @@ If the 'dir' attribute is specified, the function creates a folder in the comput
 }
 
 \usage{
-netCoin(nodes, links = NULL, tree = NULL, name = NULL, label = NULL,
-        labelSize = NULL, size = NULL, color = NULL, shape = NULL,
-        legend = NULL, ntext = NULL, info = NULL,
-        orderA = NULL, orderD = NULL, group = NULL, community = NULL,
-        lwidth = NULL, lweight = NULL, lcolor = NULL, ltext = NULL,
-        nodeFilter = NULL, linkFilter = NULL, degreeFilter = NULL,
-        nodeBipolar = FALSE, linkBipolar = FALSE, defaultColor = "#1f77b4",
-        distance = 10, repulsion = 25, zoom = 1, fixed = showCoordinates,
-        scenarios = NULL, main = NULL, note = NULL, frequencies = FALSE,
-        help = NULL, helpOn = FALSE, cex = 1, background = NULL, layout = NULL,
-        limits = NULL, controls = 1:4, mode = c("network","heatmap"),
-        showCoordinates = FALSE, showArrows = FALSE, showLegend = TRUE,
-        showAxes = FALSE, axesLabels = NULL, language = c("en","es","ca"),
-        image = NULL, imageNames = NULL, dir = NULL)
+netCoin(nodes, links = NULL, tree = NULL, community = NULL, layout = NULL,
+        name = NULL, label = NULL, group = NULL, labelSize = NULL, size = NULL,
+        color = NULL, shape = NULL, legend = NULL, orderA = NULL,
+        orderD = NULL, ntext = NULL, info = NULL, image = NULL,
+        imageNames = NULL, nodeBipolar = FALSE, nodeFilter = NULL,
+        degreeFilter = NULL, lwidth = NULL, lweight = NULL, lcolor = NULL,
+        ltext = NULL, linkBipolar = FALSE, linkFilter = NULL,
+        repulsion = 25, distance = 10, zoom = 1, fixed = showCoordinates,
+        limits = NULL, main = NULL, note = NULL, showCoordinates = FALSE,
+        showArrows = FALSE, showLegend = TRUE, frequencies = FALSE,
+        showAxes = FALSE, axesLabels = NULL, scenarios = NULL, help = NULL,
+        helpOn = FALSE, mode = c("network","heatmap"), controls = 1:4, cex = 1,
+        background = NULL, defaultColor = "#1f77b4",
+        language = c("en","es","ca"), dir = NULL)
 }
 \arguments{
 \item{nodes}{a data frame with at least one vector of names.}
