@@ -2,18 +2,21 @@
 # Image is a files vector with length and order equal to nrow(nodes). Place as nodes field
 # Batch
 
-netCoin <- function(nodes, links = NULL, tree = NULL, community = NULL, layout = NULL,
-        name = NULL, label = NULL, group = NULL, labelSize = NULL, size = NULL,
-        color = NULL, shape = NULL, legend = NULL, orderA = NULL,
-        orderD = NULL, ntext = NULL, info = NULL, image = NULL,
-        imageNames = NULL, nodeBipolar = FALSE, nodeFilter = NULL,
-        degreeFilter = NULL, lwidth = NULL, lweight = NULL, lcolor = NULL,
-        ltext = NULL, linkBipolar = FALSE, linkFilter = NULL,
-        repulsion = 25, distance = 10, zoom = 1, fixed = showCoordinates,
-        limits = NULL, main = NULL, note = NULL, showCoordinates = FALSE,
-        showArrows = FALSE, showLegend = TRUE, frequencies = FALSE,
-        showAxes = FALSE, axesLabels = NULL, scenarios = NULL, help = NULL,
-        helpOn = FALSE, mode = c("network","heatmap"), controls = 1:4, cex = 1,
+netCoin <- function(nodes = NULL, links = NULL, tree = NULL,
+        community = NULL, layout = NULL,
+        name = NULL, label = NULL, group = NULL, labelSize = NULL,
+        size = NULL, color = NULL, shape = NULL, legend = NULL,
+        orderA = NULL, orderD = NULL, ntext = NULL, info = NULL,
+        image = NULL, imageNames = NULL,
+        nodeBipolar = FALSE, nodeFilter = NULL, degreeFilter = NULL,
+        lwidth = NULL, lweight = NULL, lcolor = NULL, ltext = NULL,
+        linkBipolar = FALSE, linkFilter = NULL,
+        repulsion = 25, distance = 10, zoom = 1,
+        fixed = showCoordinates, limits = NULL,
+        main = NULL, note = NULL, showCoordinates = FALSE, showArrows = FALSE,
+        showLegend = TRUE, frequencies = FALSE, showAxes = FALSE,
+        axesLabels = NULL, scenarios = NULL, help = NULL, helpOn = FALSE,
+        mode = c("network","heatmap"), controls = 1:4, cex = 1,
         background = NULL, defaultColor = "#1f77b4",
         language = c("en","es","ca"), dir = NULL)
 {
