@@ -513,7 +513,7 @@ function network(Graph){
     if(options.imageItems){
       if(!Array.isArray(options.imageItems))
         options.imageItems = [options.imageItems];
-      options.nodeShape = options.imageNames[0];
+      options.nodeImage = options.imageNames[0];
       images = {};
       Graph.nodes.forEach(function(node){
         options.imageItems.forEach(function(col){
@@ -921,7 +921,7 @@ function displaySidebar(){
     if(options.heatmap){
       visData = ["Label","Color","Shape","Legend","OrderA","OrderD"];
     }else{
-      visData = ["Label","Size","LabelSize","Color","Shape","Legend","Group"];
+      visData = ["Label","Size","LabelSize","Color","Shape","Image","Legend","Group"];
     }
     divControl = sideNodes.append("div")
       .attr("class", "nodeAuto")
@@ -1335,8 +1335,9 @@ function addVisualController(){
     sels.each(function(visual){
       var tmpData = attrData.filter(function(d){
           var t = dataType(data,d,true);
-          if(onlyNumeric.indexOf(visual)!=-1 && t!="number")
-              return false;
+          if((onlyNumeric.indexOf(visual)!=-1 && t!="number") || (visual=="Image" && options.imageNames.indexOf(d)==-1)){
+            return false;
+          }
           return true;
         });
       tmpData.unshift("-"+texts.none+"-");
@@ -1538,8 +1539,16 @@ function addFilterController(){
               })
             Graph.nodes.forEach(function(d){
               delete d.selected;
-              if(items=="nodes" && checkSelectable(d) && values.indexOf(String(d[val]))!=-1){
-                d.selected = true;
+              if(items=="nodes" && checkSelectable(d)){
+                if(typeof d[val] == "object"){
+                  if(intersection(values,d[val]).length){
+                    d.selected = true;
+                  }
+                }else{
+                  if(values.indexOf(String(d[val]))!=-1){
+                    d.selected = true;
+                  }
+                }
               }
             });
             if(items=="links"){
@@ -1560,15 +1569,24 @@ function addFilterController(){
             this.selected = true;
             for(var i=0; i<tmpData.length; i++){
               if(items=="nodes"){
-                if(!tmpData[i].selected && String(tmpData[i][val])==d){
-                  this.selected = false;
-                  break;
+                if(!tmpData[i].selected){
+                  if(typeof tmpData[i][val] == "object"){
+                    if(tmpData[i][val].indexOf(d)!=-1){
+                      this.selected = false;
+                    }
+                  }else{
+                    if(String(tmpData[i][val])==d){
+                      this.selected = false;
+                    }
+                  }
                 }
               }else{
                 if(!(tmpData[i].source.selected && tmpData[i].target.selected) && String(tmpData[i][val])==d){
                   this.selected = false;
-                  break;
                 }
+              }
+              if(!this.selected){
+                break;
               }
             }
           })
@@ -2285,7 +2303,7 @@ function drawNet(){
     link.target.degree = +link.target.degree+1;
   })
 
-  var imgidx = options.imageNames.indexOf(options.nodeShape);
+  var imgidx = options.imageNames.indexOf(options.nodeImage);
   options.imageItem = imgidx!=-1 ? options.imageItems[imgidx] : false;
 
   // compute colors
@@ -2892,12 +2910,36 @@ function drawNet(){
       if(options.imageItem){
         var img = images[node[options.imageItem]],
             imgHeight = img.height*2/img.width;
+        if(options.nodeShape){
+          var renderShape = function(){
+            d3.symbol().type(VisualHandlers.nodeShape(node)).size(nodeSize * nodeSize * Math.PI / 2.4).context(ctx)();
+          }
+          ctx.save();
+          renderShape();
+          ctx.clip();
+        }
         try{
           ctx.drawImage(img, -nodeSize, -(imgHeight/2)*nodeSize, nodeSize * 2, nodeSize * imgHeight);
         }catch(e){}
+        if(options.nodeShape){
+          ctx.restore();
+        }
+        if(!strokeStyle && (options.nodeColor || options.nodeShape)){
+          if(options.nodeColor){
+            strokeStyle = VisualHandlers.nodeColor(node);
+          }else{
+            strokeStyle = "#777777";
+          }
+          ctx.strokeStyle = strokeStyle;
+          ctx.lineWidth = 2;
+        }
         if(strokeStyle){
           ctx.beginPath();
-          ctx.arc(0, 0, nodeSize, 0, 2 * Math.PI);
+          if(options.nodeShape){
+            renderShape();
+          }else{
+            ctx.arc(0, 0, nodeSize, 0, 2 * Math.PI);
+          }
           ctx.closePath();
           ctx.stroke();
         }
@@ -4064,7 +4106,7 @@ function displayLegend(){
         .attr("class","title")
         .text(texts[type] + " / " + (typeof title == "undefined" ? key : title))
         .on("click",function(){
-          displayVisualPicker(type=="Image"?"Shape":type);
+          displayVisualPicker(type);
         })
 
     legend.append("hr")
@@ -4894,7 +4936,7 @@ function displayFreqBars(){
       }
 
       if(keyvalues.length!=GraphNodesLength){
-        var barplot = getBarPlot(name);
+        var barplot = getBarPlot(name,true);
 
         keyvalues.forEach(function(v){
           var percentage = values[v]/maxvalue*100,
@@ -4953,7 +4995,7 @@ function displayFreqBars(){
       var values = Graph.nodes.map(function(node){ return +node[name]; }),
           selectedValues = Graph.nodes.filter(function(n){ return n.selected; }).map(function(node){ return +node[name]; });
 
-      var histogram = getBarPlot(name);
+      var barplot = getBarPlot(name);
 
       // set the dimensions and margins of the graph
       var margin = {top: 10, right: 10, bottom: 30, left: 40},
@@ -4961,7 +5003,7 @@ function displayFreqBars(){
           h = 200 - margin.top - margin.bottom;
 
       // append the svg object
-      var svg = histogram.append("svg")
+      var svg = barplot.append("svg")
           .attr("width", w + margin.left + margin.right)
           .attr("height", h + margin.top + margin.bottom)
         .append("g")
@@ -5022,13 +5064,17 @@ function displayFreqBars(){
               showTables();
           })
 
+      var colorScale = options.nodeColor==name ? VisualHandlers.nodeColor.getScale() : false;
+
       columns.append("rect")
           .attr("class","freq1")
           .attr("x", 1)
           .attr("y", function(d) { return y(d.y); })
           .attr("width", function(d) { return x(d.x1) - x(d.x0) -1 ; })
           .attr("height", function(d) { return h - y(d.y); })
-          .style("fill", "#cbdefb")
+          .style("fill", colorScale ? function(d){
+            return colorScale((d.x0+d.x1)/2);
+          } : "#cbdefb")
 
       if(selectedValues.length){
         columns.append("rect")
@@ -5042,13 +5088,27 @@ function displayFreqBars(){
     }
   })
 
-  function getBarPlot(name){
+  function getBarPlot(name,shape){
       var barplot = div.selectAll("div.bar-plot").filter(function(){ return this.variable==name; });
       if(barplot.empty()){
         barplot = div.append("div")
           .attr("class","bar-plot")
           .property("variable",name);
-        barplot.append("h2").text(name);
+        var h2 = barplot.append("h2").text(name);
+        if(shape){
+          h2.append("img")
+          .attr("title",texts.Shape)
+          .attr("src",b64Icons.shapes)
+          .on("click",function(){
+            applyAuto("nodeShape",name);
+          })
+        }
+        h2.append("img")
+          .attr("title",texts.Color)
+          .attr("src",b64Icons.drop)
+          .on("click",function(){
+            applyAuto("nodeColor",name);
+          })
       }else{
         barplot.selectAll("*:not(h2)").remove();
       }

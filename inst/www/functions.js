@@ -936,7 +936,11 @@ var b64Icons = {
 
   edit: "data:image/svg+xml;base64,"+btoa('<svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24" ><path d="M0 0H24V24H0V0Z" fill="none"/><path d="M14.06 9.02L14.98 9.94L5.92 19H5V18.08L14.06 9.02V9.02ZM17.66 3C17.41 3 17.15 3.1 16.96 3.29L15.13 5.12L18.88 8.87L20.71 7.04C21.1 6.65 21.1 6.02 20.71 5.63L18.37 3.29C18.17 3.09 17.92 3 17.66 3V3ZM14.06 6.19L3 17.25V21H6.75L17.81 9.94L14.06 6.19V6.19Z" fill="#2F7BEE"/></svg>'),
 
-  chart: "data:image/svg+xml;base64,"+btoa('<svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24"><path d="M0 0h24v24H0V0z" fill="none"/><path fill="#777777" d="M5 9.2h3V19H5V9.2zM10.6 5h2.8v14h-2.8V5zm5.6 8H19v6h-2.8v-6z"/></svg>')
+  chart: "data:image/svg+xml;base64,"+btoa('<svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24"><path d="M0 0h24v24H0V0z" fill="none"/><path fill="#777777" d="M5 9.2h3V19H5V9.2zM10.6 5h2.8v14h-2.8V5zm5.6 8H19v6h-2.8v-6z"/></svg>'),
+
+  drop: "data:image/svg+xml;base64,"+btoa('<svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24"><path d="M0 0h24v24H0z" fill="none"/><path transform="rotate(180)" transform-origin="50% 50%" fill="#2F7BEE" d="M12 4c1.93 0 5 1.4 5 5.15 0 2.16-1.72 4.67-5 7.32-3.28-2.65-5-5.17-5-7.32C7 5.4 10.07 4 12 4m0-2C8.73 2 5 4.46 5 9.15c0 3.12 2.33 6.41 7 9.85 4.67-3.44 7-6.73 7-9.85C19 4.46 15.27 2 12 2z"/></svg>'),
+
+  shapes: "data:image/svg+xml;base64,"+btoa('<?xml version="1.0" encoding="UTF-8" standalone="no"?><svg xmlns="http://www.w3.org/2000/svg" height="24" width="24" version="1.1" viewBox="0 0 24 24"><path d="m0 0h24v24h-24v-24z" fill="none"/><circle fill="none" stroke="#2F7BEE" cx="6.4068" cy="17.39" r="4.0887" stroke-width="2"/><rect fill="none" stroke="#2F7BEE" height="7.6271" width="7.6271" y="13.322" x="13.627" stroke-width="2"/><path fill="none" stroke="#2F7BEE" stroke-width="2" d="m17.905 10.202h-8.2165l4.1083-7.1157z"/></svg>')
 }
 
 function iconButton(){
@@ -1095,12 +1099,14 @@ function displayMultiSearch(sel, data, column, update, filterData){
 
           values.forEach(function(value){
             var found = false;
-            value = new RegExp("^"+value+(value.length<3?"$":""),'i');
-            data.filter(filterData).forEach(function(node){
-              if(String(node[column]).match(value)){
-                node.selected = found = true;
-              }
-            });
+            if(value.length){
+              value = new RegExp(value,'i');
+              data.filter(filterData).forEach(function(node){
+                if(String(node[column]).match(value)){
+                  node.selected = found = true;
+                }
+              });
+            }
             checkContainer.append("span")
               .attr("class",found ? "yes": "no")
           });
@@ -1156,4 +1162,21 @@ function displayMultiSearch(sel, data, column, update, filterData){
   };
 
   return exports;
+}
+
+function intersection(a, b){
+    var ai=0, bi=0;
+    var result = [];
+
+    while( ai < a.length && bi < b.length ){
+       if      (a[ai] < b[bi] ){ ai++; }
+       else if (a[ai] > b[bi] ){ bi++; }
+       else{
+         result.push(a[ai]);
+         ai++;
+         bi++;
+       }
+    }
+
+    return result;
 }
