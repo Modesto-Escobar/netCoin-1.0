@@ -1,0 +1,11 @@
+pandoc: 2.7.3
+pkgdown: 1.5.1
+pkgdown_sha: ~
+articles:
+  netCoin: netCoin.html
+  examples: pkgdown/examples/examples.html
+  netCoin: pkgdown/vignettes/netCoin.html
+  surCoin: pkgdown/vignettes/surCoin.html
+  surCoin: surCoin.html
+last_built: 2020-09-14T10:15Z
+

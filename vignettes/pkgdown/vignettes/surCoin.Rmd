@@ -1,11 +1,9 @@
 ---
 title: "surCoin"
 author: Pablo Cabrera-Álvarez and Modesto Escobar
-output: rmarkdown::html_vignette
-vignette: >
-  %\VignetteIndexEntry{surCoin}
-  %\VignetteEngine{knitr::rmarkdown}
-  %\VignetteEncoding{UTF-8}
+output: 
+  html_document:
+    toc: true
 ---
 
 ```{r setup, include = FALSE}
@@ -50,9 +48,14 @@ An **interactive plot** of the coincidence analysis can be produced using the `p
 plot(essCoin)
 ```
 
-```{r echo=FALSE, out.width='98%'}
-knitr::include_graphics("ess-a.png")
+```{r include = FALSE}
+surCoin(data = ess, 
+        variables = set, 
+        dir = "../../../docs/articles/pkgdown/vignettes/html/surCoin1")
 ```
+
+<iframe width="850" height="850" src="html/surCoin1/index.html" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+
 
 # Customising surCoin
 
@@ -69,9 +72,16 @@ essCoin <- surCoin(data = ess,
 plot(essCoin)
 ```
 
-```{r echo=FALSE, out.width='98%'}
-knitr::include_graphics("ess-b.png")
+```{r include = FALSE}
+ surCoin(data = ess, 
+        variables = set,
+        dichotomies = c("Social participation", "Political participation"),
+        valueDicho = "Yes", 
+        dir = "../../../docs/articles/pkgdown/vignettes/html/surCoin2")
 ```
+
+<iframe width="850" height="850" src="html/surCoin2/index.html" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+
 
 ## Analysis and stats
 
@@ -83,14 +93,22 @@ essCoin <- surCoin(data = ess,
                     dichotomies = c("Social participation", "Political participation"),
                     valueDicho = "Yes",
                     weight = "cweight",
-                    procedures = c("f", "i", "h"),
+                    procedures = c("f", "i", "h")
                     )
 plot(essCoin)
 ```
 
-```{r echo=FALSE, out.width='98%'}
-knitr::include_graphics("ess-c.png")
+```{r include = FALSE}
+ surCoin(data = ess, 
+                    variables = set,
+                    dichotomies = c("Social participation", "Political participation"),
+                    valueDicho = "Yes",
+                    weight = "cweight",
+                    procedures = c("f", "i", "h"), 
+        dir = "../../../docs/articles/pkgdown/vignettes/html/surCoin3")
 ```
+
+<iframe width="850" height="850" src="html/surCoin3/index.html" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
 
 ## Output
 
@@ -109,9 +127,21 @@ essCoin <- surCoin(data = ess,
 plot(essCoin)
 ```
 
-```{r echo=FALSE, out.width='98%'}
-knitr::include_graphics("ess-d.png")
+
+```{r include = FALSE}
+surCoin(data = ess, 
+                    variables = set,
+                    dichotomies = c("Social participation", "Political participation"),
+                    valueDicho = "Yes",
+                    weight = "cweight",
+                    procedures = c("f", "i", "h"),
+                    exogenous = c("Gender", "Age"),
+                    degreeFilter = 1,
+        dir = "../../../docs/articles/pkgdown/vignettes/html/surCoin4")
 ```
+
+<iframe width="850" height="850" src="html/surCoin4/index.html" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+
 
 # Using netCoin to enhance output
 
@@ -126,9 +156,16 @@ print(essCoin$nodes[1:5,], row.names=FALSE)
 plot(essCoin)
 ```
 
-```{r eval=FALSE, echo=FALSE, out.width='98%'}
-knitr::include_graphics("ess-e.png")
+
+```{r include = FALSE}
+netCoin(essCoin, 
+                    color = "variable",
+                    size = "%",
+        dir = "../../../docs/articles/pkgdown/vignettes/html/surCoin5")
 ```
+
+<iframe width="850" height="850" src="html/surCoin5/index.html" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+
 
 ## Differentiate variables using  netCoin aesthetics
 
@@ -139,10 +176,6 @@ essCoin <- netCoin(essCoin,
                     shape = "degree")
 
 plot(essCoin)
-```
-
-```{r echo=FALSE, out.width='98%'}
-knitr::include_graphics("ess-f.png")
 ```
 
 # Save and transform surCoin
@@ -161,7 +194,7 @@ essCoin <- netCoin(essCoin,
 
 ## Export as an igraph object
 
-Finally, if you wanted to generate an **igraph object** , you could use the function `toIgraph` applied to the `netCoin` object, named `essCoin` in this example.
+Finally, if you wanted to generate an **igraph object**, you could use the function `toIgraph` applied to the `netCoin` object, named `essCoin` in this example.
 
 ```{r eval=FALSE}
 essCoin.igraph <- toIgraph(essCoin)
