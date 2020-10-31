@@ -72,7 +72,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">netCoin</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">1.2.13</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">1.2.18</span>
       </span>
     </div>
 
@@ -135,12 +135,12 @@
     <p>produces a netCoin object from a set of glm regressions.</p>
     </div>
 
-    <pre class="usage"><span class='fu'>glmCoin</span>(<span class='no'>formulas</span>, <span class='no'>data</span>, <span class='kw'>weights</span><span class='kw'>=</span><span class='kw'>NULL</span>, <span class='kw'>pmax</span><span class='kw'>=</span><span class='fl'>.05</span>,
-                    <span class='kw'>twotail</span><span class='kw'>=</span><span class='fl'>FALSE</span>, <span class='kw'>showArrows</span><span class='kw'>=</span><span class='fl'>TRUE</span>,
-                    <span class='kw'>frequency</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>percentage</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
-                    <span class='kw'>color</span><span class='kw'>=</span><span class='st'>"variable"</span>, <span class='kw'>lwidth</span><span class='kw'>=</span><span class='st'>"z.value"</span>,
-                    <span class='kw'>circle</span><span class='kw'>=</span> <span class='fl'>NA</span>, <span class='kw'>language</span><span class='kw'>=</span><span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>"en"</span>,<span class='st'>"es"</span>,<span class='st'>"ca"</span>),
-                    <span class='kw'>igraph</span><span class='kw'>=</span><span class='fl'>FALSE</span>, <span class='no'>...</span>)</pre>
+    <pre class="usage"><span class='fu'>glmCoin</span><span class='op'>(</span><span class='va'>formulas</span>, <span class='va'>data</span>, weights<span class='op'>=</span><span class='cn'>NULL</span>, pmax<span class='op'>=</span><span class='fl'>.05</span>, 
+                    twotail<span class='op'>=</span><span class='cn'>FALSE</span>, showArrows<span class='op'>=</span><span class='cn'>TRUE</span>,
+                    frequency <span class='op'>=</span> <span class='cn'>FALSE</span>, percentage <span class='op'>=</span> <span class='cn'>TRUE</span>, 
+                    color<span class='op'>=</span><span class='st'>"variable"</span>, lwidth<span class='op'>=</span><span class='st'>"z.value"</span>, 
+                    circle<span class='op'>=</span> <span class='cn'>NA</span>, language<span class='op'>=</span><span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='st'>"en"</span>,<span class='st'>"es"</span>,<span class='st'>"ca"</span><span class='op'>)</span>,
+                    igraph<span class='op'>=</span><span class='cn'>FALSE</span>, <span class='va'>...</span><span class='op'>)</span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -209,15 +209,19 @@ model &lt;- "counts ~ outcome + treatment, poisson
     <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
     <p>This function creates a netCoin object (or igraph) and, if stated, a folder in the computer with an HTML document named index.html which contains the produced graph. This file can be directly opened with your browser and sent to a web server to work properly.</p>
+    <h2 class="hasAnchor" id="author"><a class="anchor" href="#author"></a>Author</h2>
+
+    <p>Modesto Escobar, Department of Sociology and Communication, University of Salamanca. See <a href='https://sociocav.usal.es/blog/modesto-escobar/'>https://sociocav.usal.es/blog/modesto-escobar/</a></p>
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
     <pre class="examples"><div class='input'><span class='co'>## Dobson (1990) Page 93: Randomized Controlled Trial :</span>
-<span class='no'>counts</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='fl'>18</span>,<span class='fl'>17</span>,<span class='fl'>15</span>,<span class='fl'>20</span>,<span class='fl'>10</span>,<span class='fl'>20</span>,<span class='fl'>25</span>,<span class='fl'>13</span>,<span class='fl'>12</span>)
-<span class='no'>outcome</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/gl.html'>gl</a></span>(<span class='fl'>3</span>,<span class='fl'>1</span>,<span class='fl'>9</span>)
-<span class='no'>treatment</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/gl.html'>gl</a></span>(<span class='fl'>3</span>,<span class='fl'>3</span>)
-<span class='no'>Dobson</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/data.frame.html'>data.frame</a></span>(<span class='kw'>counts</span><span class='kw'>=</span><span class='no'>counts</span>, <span class='kw'>outcome</span><span class='kw'>=</span><span class='no'>outcome</span>, <span class='kw'>treatment</span><span class='kw'>=</span><span class='no'>treatment</span>)
-<span class='no'>model</span> <span class='kw'>&lt;-</span> <span class='st'>"counts ~ outcome + treatment, poisson"</span>
-<span class='fu'>glmCoin</span>(<span class='no'>model</span>,<span class='no'>Dobson</span>)</div><div class='output co'>#&gt; 
+<span class='va'>counts</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='fl'>18</span>,<span class='fl'>17</span>,<span class='fl'>15</span>,<span class='fl'>20</span>,<span class='fl'>10</span>,<span class='fl'>20</span>,<span class='fl'>25</span>,<span class='fl'>13</span>,<span class='fl'>12</span><span class='op'>)</span>
+<span class='va'>outcome</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/gl.html'>gl</a></span><span class='op'>(</span><span class='fl'>3</span>,<span class='fl'>1</span>,<span class='fl'>9</span><span class='op'>)</span>
+<span class='va'>treatment</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/gl.html'>gl</a></span><span class='op'>(</span><span class='fl'>3</span>,<span class='fl'>3</span><span class='op'>)</span>
+<span class='va'>Dobson</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/data.frame.html'>data.frame</a></span><span class='op'>(</span>counts<span class='op'>=</span><span class='va'>counts</span>, outcome<span class='op'>=</span><span class='va'>outcome</span>, treatment<span class='op'>=</span><span class='va'>treatment</span><span class='op'>)</span>
+<span class='va'>model</span> <span class='op'>&lt;-</span> <span class='st'>"counts ~ outcome + treatment, poisson"</span>
+<span class='fu'>glmCoin</span><span class='op'>(</span><span class='va'>model</span>,<span class='va'>Dobson</span><span class='op'>)</span>
+</div><div class='output co'>#&gt; 
 #&gt; Nodes(2):
 #&gt;       name        % variable
 #&gt;  outcome:1 33.33333  outcome
@@ -240,11 +244,11 @@ model &lt;- "counts ~ outcome + treatment, poisson
 
       <footer>
       <div class="copyright">
-  <p>Developed by Modesto Escobar, David Barrios, Carlos Prieto, Luis Martinez-Barrios.</p>
+  <p>Developed by Modesto Escobar, David Barrios, Carlos Prieto, Luis Martinez-Barrios, Pablo Cabrera-Álvarez.</p>
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.5.1.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.6.1.</p>
 </div>
 
       </footer>

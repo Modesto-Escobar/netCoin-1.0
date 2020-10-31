@@ -72,7 +72,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">netCoin</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">1.2.13</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">1.2.18</span>
       </span>
     </div>
 
@@ -135,10 +135,10 @@
     <p>A coincidence object consists of a list with two elements: 1) the number of scenarios ($n), and 2) a coincidence matrix of events, whose main diagonal figures are the frequency of events and outside this diagonal there are conjoint frequencies of these events ($f)</p>
     </div>
 
-    <pre class="usage"><span class='fu'>coin</span>(<span class='no'>incidences</span>, <span class='kw'>minimum</span> <span class='kw'>=</span> <span class='fl'>1</span>, <span class='kw'>maximum</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/nrow.html'>nrow</a></span>(<span class='no'>incidences</span>),
-     <span class='kw'>sort</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>decreasing</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
-     <span class='kw'>total</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>subsample</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
-     <span class='kw'>weight</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>pairwise</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)</pre>
+    <pre class="usage"><span class='fu'>coin</span><span class='op'>(</span><span class='va'>incidences</span>, minimum <span class='op'>=</span> <span class='fl'>1</span>, maximum <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/nrow.html'>nrow</a></span><span class='op'>(</span><span class='va'>incidences</span><span class='op'>)</span>,
+     sort <span class='op'>=</span> <span class='cn'>FALSE</span>, decreasing <span class='op'>=</span> <span class='cn'>TRUE</span>, 
+     total <span class='op'>=</span> <span class='cn'>FALSE</span>, subsample <span class='op'>=</span> <span class='cn'>FALSE</span>,
+     weight <span class='op'>=</span> <span class='cn'>NULL</span>, pairwise <span class='op'>=</span> <span class='cn'>FALSE</span><span class='op'>)</span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -197,23 +197,28 @@
   <em>Journal of Statistical Software</em>, <b>93</b>, 1-32.
   doi: <a href='https://doi.org/10.18637/jss.v093.i11'>10.18637/jss.v093.i11</a>
 .</p>
+    <h2 class="hasAnchor" id="author"><a class="anchor" href="#author"></a>Author</h2>
+
+    <p>Modesto Escobar, Department of Sociology and Communication, University of Salamanca. See <a href='https://sociocav.usal.es/blog/modesto-escobar/'>https://sociocav.usal.es/blog/modesto-escobar/</a></p>
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
     <pre class="examples"><div class='input'><span class='co'>## Random incidence matrix: 25 scenarios, 4 events.</span>
-<span class='no'>I</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/matrix.html'>matrix</a></span>(<span class='fu'><a href='https://rdrr.io/r/stats/Binomial.html'>rbinom</a></span>(<span class='fl'>100</span>, <span class='fl'>1</span>, <span class='fl'>.5</span>), <span class='kw'>nrow</span> <span class='kw'>=</span> <span class='fl'>25</span>, <span class='kw'>ncol</span> <span class='kw'>=</span> <span class='fl'>4</span>,
-            <span class='kw'>dimnames</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/list.html'>list</a></span>(<span class='kw'>NULL</span>, <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>"A"</span>, <span class='st'>"B"</span>, <span class='st'>"C"</span>, <span class='st'>"D"</span>)))
-<span class='fu'>coin</span>(<span class='no'>I</span>, <span class='kw'>sort</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)</div><div class='output co'>#&gt; n= 25
+<span class='va'>I</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/matrix.html'>matrix</a></span><span class='op'>(</span><span class='fu'><a href='https://rdrr.io/r/stats/Binomial.html'>rbinom</a></span><span class='op'>(</span><span class='fl'>100</span>, <span class='fl'>1</span>, <span class='fl'>.5</span><span class='op'>)</span>, nrow <span class='op'>=</span> <span class='fl'>25</span>, ncol <span class='op'>=</span> <span class='fl'>4</span>,
+            dimnames <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/list.html'>list</a></span><span class='op'>(</span><span class='cn'>NULL</span>, <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='st'>"A"</span>, <span class='st'>"B"</span>, <span class='st'>"C"</span>, <span class='st'>"D"</span><span class='op'>)</span><span class='op'>)</span><span class='op'>)</span>
+<span class='fu'>coin</span><span class='op'>(</span><span class='va'>I</span>, sort <span class='op'>=</span> <span class='cn'>TRUE</span><span class='op'>)</span>
+</div><div class='output co'>#&gt; n= 25
 #&gt;    A  B  C  D
 #&gt; A 19         
 #&gt; B 12 14      
 #&gt; C 11  9 14   
 #&gt; D 11  5  5 13</div><div class='input'>
 <span class='co'>## Hair by Eye by Sex table from M. Friendly (2000)</span>
-<span class='fu'><a href='https://rdrr.io/r/utils/data.html'>data</a></span>(<span class='no'>HairEyeColor</span>)
-<span class='no'>H</span><span class='kw'>&lt;-</span><span class='fu'><a href='https://rdrr.io/r/base/as.data.frame.html'>as.data.frame</a></span>(<span class='no'>HairEyeColor</span>)
-<span class='no'>W</span><span class='kw'>&lt;-</span><span class='no'>H</span>$<span class='no'>Freq</span>
-<span class='no'>I</span><span class='kw'>&lt;-</span><span class='fu'><a href='dichotomize.html'>dichotomize</a></span>(<span class='no'>H</span>,<span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>"Hair"</span>,<span class='st'>"Eye"</span>,<span class='st'>"Sex"</span>),<span class='kw'>add</span><span class='kw'>=</span><span class='fl'>FALSE</span>)
-<span class='fu'>coin</span>(<span class='no'>I</span>,<span class='kw'>w</span><span class='kw'>=</span><span class='no'>W</span>)</div><div class='output co'>#&gt; n= 592
+<span class='fu'><a href='https://rdrr.io/r/utils/data.html'>data</a></span><span class='op'>(</span><span class='va'>HairEyeColor</span><span class='op'>)</span>
+<span class='va'>H</span><span class='op'>&lt;-</span><span class='fu'><a href='https://rdrr.io/r/base/as.data.frame.html'>as.data.frame</a></span><span class='op'>(</span><span class='va'>HairEyeColor</span><span class='op'>)</span>
+<span class='va'>W</span><span class='op'>&lt;-</span><span class='va'>H</span><span class='op'>$</span><span class='va'>Freq</span>
+<span class='va'>I</span><span class='op'>&lt;-</span><span class='fu'><a href='dichotomize.html'>dichotomize</a></span><span class='op'>(</span><span class='va'>H</span>,<span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='st'>"Hair"</span>,<span class='st'>"Eye"</span>,<span class='st'>"Sex"</span><span class='op'>)</span>,add<span class='op'>=</span><span class='cn'>FALSE</span><span class='op'>)</span>
+<span class='fu'>coin</span><span class='op'>(</span><span class='va'>I</span>,w<span class='op'>=</span><span class='va'>W</span><span class='op'>)</span>
+</div><div class='output co'>#&gt; n= 592
 #&gt;            Hair:Black Hair:Blond Hair:Brown Hair:Red Eye:Blue Eye:Brown
 #&gt; Hair:Black        108                                                  
 #&gt; Hair:Blond          0        127                                       
@@ -247,11 +252,11 @@
 
       <footer>
       <div class="copyright">
-  <p>Developed by Modesto Escobar, David Barrios, Carlos Prieto, Luis Martinez-Barrios.</p>
+  <p>Developed by Modesto Escobar, David Barrios, Carlos Prieto, Luis Martinez-Barrios, Pablo Cabrera-Álvarez.</p>
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.5.1.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.6.1.</p>
 </div>
 
       </footer>

@@ -72,7 +72,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">netCoin</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">1.2.13</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">1.2.18</span>
       </span>
     </div>
 
@@ -135,8 +135,8 @@
     <p><code>pathCoin</code> produces a netCoin object from a lavaan object, i.e., parameters of structural equation model.</p>
     </div>
 
-    <pre class="usage"><span class='fu'>pathCoin</span>(<span class='no'>model</span>, <span class='kw'>estimates</span><span class='kw'>=</span><span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>"b"</span>,<span class='st'>"se"</span>,<span class='st'>"z"</span>,<span class='st'>"pvalue"</span>,<span class='st'>"beta"</span>),
-         <span class='kw'>fitMeasures</span><span class='kw'>=</span><span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>"chisq"</span>, <span class='st'>"cfi"</span>, <span class='st'>"rmsea"</span>), <span class='no'>...</span>)</pre>
+    <pre class="usage"><span class='fu'>pathCoin</span><span class='op'>(</span><span class='va'>model</span>, estimates<span class='op'>=</span><span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='st'>"b"</span>,<span class='st'>"se"</span>,<span class='st'>"z"</span>,<span class='st'>"pvalue"</span>,<span class='st'>"beta"</span><span class='op'>)</span>, 
+         fitMeasures<span class='op'>=</span><span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='st'>"chisq"</span>, <span class='st'>"cfi"</span>, <span class='st'>"rmsea"</span><span class='op'>)</span>, <span class='va'>...</span><span class='op'>)</span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -162,19 +162,24 @@
     <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
     <p>The function creates a netCoin object and eventually a folder in the computer with an HTML document named index.html which contains the produced graph. This file can be directly opened with your browser and sent to a web server to work properly.</p>
+    <h2 class="hasAnchor" id="author"><a class="anchor" href="#author"></a>Author</h2>
+
+    <p>Modesto Escobar, Department of Sociology and Communication, University of Salamanca. See <a href='https://sociocav.usal.es/blog/modesto-escobar/'>https://sociocav.usal.es/blog/modesto-escobar/</a></p>
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
     <pre class="examples"><div class='input'><span class='co'># Classic Wheaton et al. model</span>
-<span class='fu'><a href='https://rdrr.io/r/base/library.html'>library</a></span>(<span class='no'>lavaan</span>)</div><div class='output co'>#&gt; <span class='error'>Error in library(lavaan): there is no package called ‘lavaan’</span></div><div class='input'><span class='no'>lower</span> <span class='kw'>&lt;-</span> <span class='st'>'
+<span class='kw'><a href='https://rdrr.io/r/base/library.html'>library</a></span><span class='op'>(</span><span class='va'><a href='http://lavaan.org'>lavaan</a></span><span class='op'>)</span>
+</div><div class='output co'>#&gt; <span class='message'>This is lavaan 0.6-7</span></div><div class='output co'>#&gt; <span class='message'>lavaan is BETA software! Please report any bugs.</span></div><div class='input'><span class='va'>lower</span> <span class='op'>&lt;-</span> <span class='st'>'
 11.834
 6.947 9.364
 6.819 5.091 12.532
 4.783 5.028 7.495 9.986
 -3.839 -3.889 -3.841 -3.625 9.610
 -21.899 -18.831 -21.748 -18.775 35.522 450.288 '</span>
-<span class='no'>wheaton.cov</span> <span class='kw'>&lt;-</span> <span class='fu'>getCov</span>(<span class='no'>lower</span>,
-               <span class='kw'>names</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>"anomia67"</span>, <span class='st'>"powerless67"</span>,<span class='st'>"anomia71"</span>, <span class='st'>"powerless71"</span>,
-                         <span class='st'>"education"</span>, <span class='st'>"sei"</span>))</div><div class='output co'>#&gt; <span class='error'>Error in getCov(lower, names = c("anomia67", "powerless67", "anomia71",     "powerless71", "education", "sei")): could not find function "getCov"</span></div><div class='input'><span class='no'>wheaton.model</span> <span class='kw'>&lt;-</span> <span class='st'>'
+<span class='va'>wheaton.cov</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/pkg/lavaan/man/getCov.html'>getCov</a></span><span class='op'>(</span><span class='va'>lower</span>, 
+               names <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='st'>"anomia67"</span>, <span class='st'>"powerless67"</span>,<span class='st'>"anomia71"</span>, <span class='st'>"powerless71"</span>,
+                         <span class='st'>"education"</span>, <span class='st'>"sei"</span><span class='op'>)</span><span class='op'>)</span>
+<span class='va'>wheaton.model</span> <span class='op'>&lt;-</span> <span class='st'>'
 # latent variables
 ses =~ education + sei
 alien67 =~ anomia67 + powerless67
@@ -186,8 +191,23 @@ alien67 ~ ses
 anomia67 ~~ anomia71
 powerless67 ~~ powerless71
 '</span>
-<span class='no'>fit</span> <span class='kw'>&lt;-</span> <span class='fu'>sem</span>(<span class='no'>wheaton.model</span>, <span class='kw'>sample.cov</span> <span class='kw'>=</span> <span class='no'>wheaton.cov</span>, <span class='kw'>sample.nobs</span> <span class='kw'>=</span> <span class='fl'>932</span>)</div><div class='output co'>#&gt; <span class='error'>Error in sem(wheaton.model, sample.cov = wheaton.cov, sample.nobs = 932): could not find function "sem"</span></div><div class='input'>
-<span class='fu'>pathCoin</span>(<span class='no'>fit</span>)</div><div class='output co'>#&gt; <span class='error'>Error in pathParameter(model, estimates = estimates): object 'fit' not found</span></div></pre>
+<span class='va'>fit</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/pkg/lavaan/man/sem.html'>sem</a></span><span class='op'>(</span><span class='va'>wheaton.model</span>, sample.cov <span class='op'>=</span> <span class='va'>wheaton.cov</span>, sample.nobs <span class='op'>=</span> <span class='fl'>932</span><span class='op'>)</span>
+
+<span class='fu'>pathCoin</span><span class='op'>(</span><span class='va'>fit</span><span class='op'>)</span>
+</div><div class='output co'>#&gt; 
+#&gt; Nodes(3):
+#&gt;     name
+#&gt;  alien67
+#&gt;      ses
+#&gt;  alien71
+#&gt; 
+#&gt; Links(3):
+#&gt;   Source  Target          b         se          z       pvalue       beta
+#&gt;  alien67 alien71  0.6070472 0.05102066  11.898066 0.000000e+00  0.5671588
+#&gt;      ses alien71 -0.2267661 0.05232648  -4.333678 1.466384e-05 -0.2074733
+#&gt;      ses alien67 -0.5750068 0.05640204 -10.194788 0.000000e+00 -0.5630861
+#&gt; 
+#&gt; &lt;p&gt;Chi2=4.735 (4 df), pvalue=0.32. CFI= 1. RMSEA= 0.014.&lt;/p&gt;</div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
     <nav id="toc" data-toggle="toc" class="sticky-top">
@@ -199,11 +219,11 @@ powerless67 ~~ powerless71
 
       <footer>
       <div class="copyright">
-  <p>Developed by Modesto Escobar, David Barrios, Carlos Prieto, Luis Martinez-Barrios.</p>
+  <p>Developed by Modesto Escobar, David Barrios, Carlos Prieto, Luis Martinez-Barrios, Pablo Cabrera-Álvarez.</p>
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.5.1.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.6.1.</p>
 </div>
 
       </footer>

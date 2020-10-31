@@ -72,7 +72,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">netCoin</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">1.2.13</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">1.2.18</span>
       </span>
     </div>
 
@@ -135,13 +135,13 @@
     <p><code>netCorr</code> produces a network object of correlations. Its input has to be at least one set of quantitative variables.</p>
     </div>
 
-    <pre class="usage"><span class='fu'>netCorr</span>(<span class='no'>variables</span>, <span class='kw'>weight</span><span class='kw'>=</span><span class='kw'>NULL</span>, <span class='kw'>pairwise</span><span class='kw'>=</span><span class='fl'>FALSE</span>,
-        <span class='kw'>minimum</span><span class='kw'>=</span>-<span class='fl'>Inf</span>, <span class='kw'>maximum</span><span class='kw'>=</span><span class='fl'>Inf</span>, <span class='kw'>sort</span><span class='kw'>=</span><span class='fl'>FALSE</span>, <span class='kw'>decreasing</span><span class='kw'>=</span><span class='fl'>TRUE</span>,
-        <span class='kw'>frequency</span><span class='kw'>=</span><span class='fl'>FALSE</span>, <span class='kw'>means</span><span class='kw'>=</span><span class='fl'>TRUE</span>,
-        <span class='kw'>method</span><span class='kw'>=</span><span class='st'>"pearson"</span>, <span class='kw'>criteria</span><span class='kw'>=</span><span class='st'>"p"</span>, <span class='kw'>Bonferroni</span><span class='kw'>=</span><span class='fl'>FALSE</span>,
-        <span class='kw'>minL</span><span class='kw'>=</span><span class='fl'>0</span>, <span class='kw'>maxL</span><span class='kw'>=</span><span class='fl'>Inf</span>,
-        <span class='kw'>sortL</span><span class='kw'>=</span><span class='kw'>NULL</span>, <span class='kw'>decreasingL</span><span class='kw'>=</span><span class='fl'>TRUE</span>,
-        <span class='kw'>igraph</span><span class='kw'>=</span><span class='fl'>FALSE</span>, <span class='no'>...</span>)</pre>
+    <pre class="usage"><span class='fu'>netCorr</span><span class='op'>(</span><span class='va'>variables</span>, weight<span class='op'>=</span><span class='cn'>NULL</span>, pairwise<span class='op'>=</span><span class='cn'>FALSE</span>,
+        minimum<span class='op'>=</span><span class='op'>-</span><span class='cn'>Inf</span>, maximum<span class='op'>=</span><span class='cn'>Inf</span>, sort<span class='op'>=</span><span class='cn'>FALSE</span>, decreasing<span class='op'>=</span><span class='cn'>TRUE</span>,
+        frequency<span class='op'>=</span><span class='cn'>FALSE</span>, means<span class='op'>=</span><span class='cn'>TRUE</span>, 
+        method<span class='op'>=</span><span class='st'>"pearson"</span>, criteria<span class='op'>=</span><span class='st'>"p"</span>, Bonferroni<span class='op'>=</span><span class='cn'>FALSE</span>,
+        minL<span class='op'>=</span><span class='fl'>0</span>, maxL<span class='op'>=</span><span class='cn'>Inf</span>,
+        sortL<span class='op'>=</span><span class='cn'>NULL</span>, decreasingL<span class='op'>=</span><span class='cn'>TRUE</span>,
+        igraph<span class='op'>=</span><span class='cn'>FALSE</span>, <span class='va'>...</span><span class='op'>)</span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -223,13 +223,17 @@
     <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
     <p>The function creates a netCoin object and eventually a folder in the computer with an HTML document named index.html which contains the produced graph. This file can be directly opened with your browser and sent to a web server to work properly.</p>
+    <h2 class="hasAnchor" id="author"><a class="anchor" href="#author"></a>Author</h2>
+
+    <p>Modesto Escobar, Department of Sociology and Communication, University of Salamanca. See <a href='https://sociocav.usal.es/blog/modesto-escobar/'>https://sociocav.usal.es/blog/modesto-escobar/</a></p>
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
     <pre class="examples"><div class='input'><span class='co'># A character column (with separator)</span>
-<span class='fu'><a href='https://rdrr.io/r/utils/data.html'>data</a></span>(<span class='no'>iris</span>)
-<span class='fu'>netCorr</span>(<span class='no'>iris</span>[,<span class='fl'>1</span>:<span class='fl'>4</span>],<span class='kw'>ltext</span><span class='kw'>=</span><span class='st'>"value"</span>,
- <span class='kw'>main</span><span class='kw'>=</span><span class='st'>"Correlations between measurements of Iris Species"</span>,
- <span class='kw'>note</span><span class='kw'>=</span><span class='st'>"Anderson, Edgar (1935) y Fisher, R. A. (1936)"</span>) <span class='co'># network object</span></div><div class='output co'>#&gt; Title: Correlations between measurements of Iris Species 
+<span class='fu'><a href='https://rdrr.io/r/utils/data.html'>data</a></span><span class='op'>(</span><span class='va'>iris</span><span class='op'>)</span>
+<span class='fu'>netCorr</span><span class='op'>(</span><span class='va'>iris</span><span class='op'>[</span>,<span class='fl'>1</span><span class='op'>:</span><span class='fl'>4</span><span class='op'>]</span>,ltext<span class='op'>=</span><span class='st'>"value"</span>,
+ main<span class='op'>=</span><span class='st'>"Correlations between measurements of Iris Species"</span>,
+ note<span class='op'>=</span><span class='st'>"Anderson, Edgar (1935) y Fisher, R. A. (1936)"</span><span class='op'>)</span> <span class='co'># network object</span>
+</div><div class='output co'>#&gt; Title: Correlations between measurements of Iris Species 
 #&gt; 
 #&gt; Nodes(4):
 #&gt;          name mean  std min max
@@ -256,11 +260,11 @@
 
       <footer>
       <div class="copyright">
-  <p>Developed by Modesto Escobar, David Barrios, Carlos Prieto, Luis Martinez-Barrios.</p>
+  <p>Developed by Modesto Escobar, David Barrios, Carlos Prieto, Luis Martinez-Barrios, Pablo Cabrera-Álvarez.</p>
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.5.1.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.6.1.</p>
 </div>
 
       </footer>

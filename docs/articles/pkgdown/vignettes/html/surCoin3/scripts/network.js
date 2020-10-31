@@ -513,7 +513,7 @@ function network(Graph){
     if(options.imageItems){
       if(!Array.isArray(options.imageItems))
         options.imageItems = [options.imageItems];
-      options.nodeShape = options.imageNames[0];
+      options.nodeImage = options.imageNames[0];
       images = {};
       Graph.nodes.forEach(function(node){
         options.imageItems.forEach(function(col){
@@ -842,115 +842,14 @@ function displaySidebar(){
 
   if(sidebar.select(".subSearch").empty()){
 
-    var searchSel = sidebar.append("div")
+    sidebar.append("div")
       .attr("class","subSearch")
-      .append("div")
-        .attr("class","search");
-
-    var searchBox = searchSel.append("div")
-      .attr("class","search-box")
-    searchBox.append("div")
-      .append("input")
-        .attr("type","text")
-        .attr("placeholder",texts.searchanode)
-        .on("focus",function(){
-          searchBox.classed("shadowed",true);
-        })
-        .on("blur",function(){
-          searchBox.classed("shadowed",false);
-        })
-        .on("keydown",function(){
-          var key = getKey(d3.event);
-          if(key == "Tab" && !dropdownList.selectAll("li").empty()){
-            dropdownList.select("li.active").dispatch("click");
-          }
-        })
-        .on("keyup",function(){
-          var key = getKey(d3.event),
-              searchBoxInput = this,
-              column = options.nodeLabel ? options.nodeLabel : options.nodeName,
-              searchNodes = function(callback){
-                if(searchBoxInput.value.length>1){
-                  Graph.nodes.filter(checkSelectable).forEach(function(node){
-                    if(String(node[column]).toLowerCase().search(searchBoxInput.value.toLowerCase())!=-1){
-                      callback(node);
-                    }
-                  });
-                }
-              };
-
-          if(key == "Enter" && !dropdownList.selectAll("li").empty()){
-            if(d3.event.shiftKey){
-              searchNodes(function(node){
-                node.selected = true;
-              });
-              closeDropDownList();
-              showTables();
-            }else{
-              dropdownList.select("li.active").dispatch("click");
-            }
-            d3.event.stopPropagation();
-            return;
-          }
-          if(key == "ArrowUp" || key == "ArrowDown"){
-            var li = dropdownList.selectAll('li');
-            if(li.size() > 1){
-              var current = 0;
-              li.each(function(d,i){
-                if(d3.select(this).classed("active"))
-                  current = i;
-              });
-              li.classed("active",false);
-              if(key == "ArrowUp") current--;
-              if(key == "ArrowDown") current++;
-              if(current<0) current = li.size()-1;
-              if(current>=li.size()) current = 0;
-             li.filter(function (d, i) { return i === current; }).classed("active",true);
-            }
-            return;
-          }
-
-          dropdownList.selectAll("*").remove();
-          searchNodes(function(node){
-                dropdownList
-                  .append("li")
-                  .text(node[column])
-                  .on("click",function(){
-                    closeDropDownList();
-                    Graph.nodes.forEach(function(node){
-                      delete node.selected;
-                    })
-                    node.selected = true;
-                    if(options.nodeInfo){
-                      displayInfoPanel(node[options.nodeInfo]);
-                    }
-                    showTables();
-                  });
-          })
-          dropdownList.select("li").classed("active","true");
-          dropdownList.style("display",dropdownList.selectAll("li").empty()?"none":"block");
-          searchIcon.classed("disabled",dropdownList.selectAll("li").empty())
-        })
-
-    var searchIcon = searchSel.append("button")
-      .attr("class","search-icon disabled")
-      .call(getSVG()
-        .d(d4paths.search)
-        .width(16).height(16))
-      .on("click",function(){
-          dropdownList.select("li.active").dispatch("click");
-      })
-
-    var dropdownList = searchSel.append("ul").attr("class","dropdown-list"),
-        closeDropDownList = function(){
-          searchBox.select("input").property("value","");
-          searchIcon.classed("disabled",true);
-          dropdownList.style("display","none").selectAll("*").remove();
-        };
-
-    body.on("click.dropdownlist",function(){
-      closeDropDownList();
-    })
+      .call(displayMultiSearch()
+        .data(Graph.nodes)
+        .column(options.nodeLabel ? options.nodeLabel : options.nodeName)
+        .update(showTables)
+        .update2(switchEgoNet)
+        .filterData(checkSelectable));
 
   }else{
     sidebar.selectAll("div.sidebar>div:not(.subSearch)").remove();
@@ -1022,7 +921,7 @@ function displaySidebar(){
     if(options.heatmap){
       visData = ["Label","Color","Shape","Legend","OrderA","OrderD"];
     }else{
-      visData = ["Label","Size","LabelSize","Color","Shape","Legend","Group"];
+      visData = ["Label","Size","LabelSize","Color","Shape","Image","Legend","Group"];
     }
     divControl = sideNodes.append("div")
       .attr("class", "nodeAuto")
@@ -1436,8 +1335,9 @@ function addVisualController(){
     sels.each(function(visual){
       var tmpData = attrData.filter(function(d){
           var t = dataType(data,d,true);
-          if(onlyNumeric.indexOf(visual)!=-1 && t!="number")
-              return false;
+          if((onlyNumeric.indexOf(visual)!=-1 && t!="number") || (visual=="Image" && options.imageNames.indexOf(d)==-1)){
+            return false;
+          }
           return true;
         });
       tmpData.unshift("-"+texts.none+"-");
@@ -1639,8 +1539,16 @@ function addFilterController(){
               })
             Graph.nodes.forEach(function(d){
               delete d.selected;
-              if(items=="nodes" && checkSelectable(d) && values.indexOf(String(d[val]))!=-1){
-                d.selected = true;
+              if(items=="nodes" && checkSelectable(d)){
+                if(typeof d[val] == "object"){
+                  if(intersection(values,d[val]).length){
+                    d.selected = true;
+                  }
+                }else{
+                  if(values.indexOf(String(d[val]))!=-1){
+                    d.selected = true;
+                  }
+                }
               }
             });
             if(items=="links"){
@@ -1661,15 +1569,24 @@ function addFilterController(){
             this.selected = true;
             for(var i=0; i<tmpData.length; i++){
               if(items=="nodes"){
-                if(!tmpData[i].selected && String(tmpData[i][val])==d){
-                  this.selected = false;
-                  break;
+                if(!tmpData[i].selected){
+                  if(typeof tmpData[i][val] == "object"){
+                    if(tmpData[i][val].indexOf(d)!=-1){
+                      this.selected = false;
+                    }
+                  }else{
+                    if(String(tmpData[i][val])==d){
+                      this.selected = false;
+                    }
+                  }
                 }
               }else{
                 if(!(tmpData[i].source.selected && tmpData[i].target.selected) && String(tmpData[i][val])==d){
                   this.selected = false;
-                  break;
                 }
+              }
+              if(!this.selected){
+                break;
               }
             }
           })
@@ -1861,6 +1778,7 @@ function drawSVG(){
     .attr("class","net")
 
   var brush = d3.brush()
+      .keyModifiers(false)
       .filter(function(){
         return !d3.event.button && d3.event.shiftKey;
       })
@@ -2385,7 +2303,7 @@ function drawNet(){
     link.target.degree = +link.target.degree+1;
   })
 
-  var imgidx = options.imageNames.indexOf(options.nodeShape);
+  var imgidx = options.imageNames.indexOf(options.nodeImage);
   options.imageItem = imgidx!=-1 ? options.imageItems[imgidx] : false;
 
   // compute colors
@@ -2992,12 +2910,36 @@ function drawNet(){
       if(options.imageItem){
         var img = images[node[options.imageItem]],
             imgHeight = img.height*2/img.width;
+        if(options.nodeShape){
+          var renderShape = function(){
+            d3.symbol().type(VisualHandlers.nodeShape(node)).size(nodeSize * nodeSize * Math.PI / 2.4).context(ctx)();
+          }
+          ctx.save();
+          renderShape();
+          ctx.clip();
+        }
         try{
           ctx.drawImage(img, -nodeSize, -(imgHeight/2)*nodeSize, nodeSize * 2, nodeSize * imgHeight);
         }catch(e){}
+        if(options.nodeShape){
+          ctx.restore();
+        }
+        if(!strokeStyle && (options.nodeColor || options.nodeShape)){
+          if(options.nodeColor){
+            strokeStyle = VisualHandlers.nodeColor(node);
+          }else{
+            strokeStyle = "#777777";
+          }
+          ctx.strokeStyle = strokeStyle;
+          ctx.lineWidth = 2;
+        }
         if(strokeStyle){
           ctx.beginPath();
-          ctx.arc(0, 0, nodeSize, 0, 2 * Math.PI);
+          if(options.nodeShape){
+            renderShape();
+          }else{
+            ctx.arc(0, 0, nodeSize, 0, 2 * Math.PI);
+          }
           ctx.closePath();
           ctx.stroke();
         }
@@ -3396,7 +3338,7 @@ function dblClickNet(){
     }
   }else{
     d3.select(this).transition()
-      .call(zoom.scaleBy,2);
+      .call(zoom.scaleBy,2,d3.mouse(this));
   }
 }
 
@@ -3877,7 +3819,7 @@ function addGradient(defs,id, stops){
 }
 
 function displayVisualPicker(type){
-  var win = displayWindow(300),
+  var win = displayWindow(400),
       attrData = Graph.nodenames.filter(function(d){ return hiddenFields.indexOf(d)==-1; });
   attrData.unshift("-"+texts.none+"-");
   win.append("h2")
@@ -3895,12 +3837,10 @@ function displayVisualPicker(type){
       .on("click",function(attr){
         ul.selectAll("li").classed("active",false);
         d3.select(this).classed("active",true);
+        applyAuto("node"+type,attr);
+        displaySidebar();
+        d3.select("div.window-background").remove();
       })
-
-  pickerSelectButton(win, function(){
-    applyAuto("node"+type,ul.select("li.active").property("val"));
-    displaySidebar();
-  });
 }
 
 function displayInfoPanel(info){
@@ -4577,8 +4517,7 @@ function showTables() {
   }
 
   // update frequency bars
-  if(!body.select("div.infopanel .freq-bars").empty()){
-    body.select("div.infopanel > div.close-button").dispatch("click");
+  if(!body.select("div.frequency-barplots").empty()){
     displayFreqBars();
   }
 
@@ -4927,10 +4866,12 @@ function displayFreqBars(){
     options.frequencies = "relative";
   }
 
-  displayInfoPanel("<div class=\"freq-bars\"><div>");
+  var div = body.select(".frequency-barplots");
 
-  var div = body.select(".infopanel .freq-bars");
-  div.append("div")
+  if(div.empty()){
+    displayInfoPanel("<div class=\"frequency-barplots\"><div>");
+    div = body.select(".frequency-barplots");
+    div.append("div")
     .attr("class","select-wrapper")
     .append("select")
     .on("change",function(){
@@ -4943,24 +4884,35 @@ function displayFreqBars(){
       .property("selected",function(d){ return options.frequencies==d; })
       .property("value",String)
       .text(String)
+  }
+
+  var renderPercentage = options.frequencies=="relative" ? "%" : "";
 
   Graph.nodenames.filter(function(d){ return hiddenFields.indexOf(d)==-1; }).forEach(function(name){
-    if(dataType(Graph.nodes,name)=="string"){
+    var type = dataType(Graph.nodes,name);
+    if(type=="string" || type=="object"){
       var values = {},
           selectedValues = {};
       Graph.nodes.forEach(function(node){
-        var val = String(node[name]);
-        if(!values.hasOwnProperty(val)){
-          values[val] = 1;
-        }else{
-          values[val] += 1;
+        var loadValue = function(val){
+            val = String(val);
+            if(!values.hasOwnProperty(val)){
+              values[val] = 1;
+            }else{
+              values[val] += 1;
+            }
+            if(node.selected){
+              if(!selectedValues.hasOwnProperty(val)){
+                selectedValues[val] = 1;
+              }else{
+                selectedValues[val] += 1;
+              }
+            }
         }
-        if(node.selected){
-          if(!selectedValues.hasOwnProperty(val)){
-            selectedValues[val] = 1;
-          }else{
-            selectedValues[val] += 1;
-          }
+        if(type=="object" && typeof node[name] == "object"){
+          node[name].forEach(loadValue);
+        }else{
+          loadValue(node[name]);
         }
       });
 
@@ -4984,8 +4936,7 @@ function displayFreqBars(){
       }
 
       if(keyvalues.length!=GraphNodesLength){
-        var barplot = div.append("div").attr("class","bar-plot");
-        barplot.append("h2").text(name);
+        var barplot = getBarPlot(name,true);
 
         keyvalues.forEach(function(v){
           var percentage = values[v]/maxvalue*100,
@@ -5005,8 +4956,14 @@ function displayFreqBars(){
             .on("click",function(){
               Graph.nodes.filter(checkSelectable).forEach(function(node){
                 delete node.selected;
-                if(node[name]==v){
-                  node.selected = true;
+                if(type=="object" && typeof node[name] == "object"){
+                  if(node[name].indexOf(v)!=-1){
+                    node.selected = true;
+                  }
+                }else{
+                  if(node[name]==v){
+                    node.selected = true;
+                  }
                 }
               })
               showTables();
@@ -5023,27 +4980,140 @@ function displayFreqBars(){
           row.append("span")
             .text(v)
         })
+
         var axis = barplot.append("div")
           .attr("class","freq-axis")
 
-        var step = 1,
-            half = false;
-        while(maxvalue/step>10){
-          if(half){
-            step = step*2;
-          }else{
-            step = step*5;
-          }
-          half = !half;
-        }
-        for(var i = 0; i<maxvalue; i += step){
-          axis.append("span").style("left",(i/maxvalue*100)+"%").text(i+(options.frequencies=="relative"?"%":""));
-        }
+        var x = d3.scaleLinear()
+          .domain([0,maxvalue])
+
+        x.ticks(5).forEach(function(t){
+          axis.append("span").style("left",(t/maxvalue*100)+"%").text(t+renderPercentage);
+        })
       }
-    }else{
-      //TODO: histogram
+    }else if(type=="number"){
+      var values = Graph.nodes.map(function(node){ return +node[name]; }),
+          selectedValues = Graph.nodes.filter(function(n){ return n.selected; }).map(function(node){ return +node[name]; });
+
+      var barplot = getBarPlot(name);
+
+      // set the dimensions and margins of the graph
+      var margin = {top: 10, right: 10, bottom: 30, left: 40},
+          w = ((infoLeft ? docSize.width - infoLeft : docSize.width * 1/3) - 72) - margin.left - margin.right,
+          h = 200 - margin.top - margin.bottom;
+
+      // append the svg object
+      var svg = barplot.append("svg")
+          .attr("width", w + margin.left + margin.right)
+          .attr("height", h + margin.top + margin.bottom)
+        .append("g")
+          .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+      // X axis: scale and draw
+      var x = d3.scaleLinear()
+        .domain(d3.extent(values,function(d) { return d; }))
+        .range([0, w]);
+
+      svg.append("g")
+      .attr("transform", "translate(0," + h + ")")
+      .call(d3.axisBottom(x));
+
+      // set the parameters for the histogram
+      var histogram = d3.histogram()
+        .value(function(d) { return d; })
+        .domain(x.domain())
+        .thresholds(x.ticks(10));
+
+      // And apply this function to data to get the bins
+      var bins = histogram(values),
+          bins2 = selectedValues.length ? histogram(selectedValues) : [];
+
+      for(var i = 0; i<bins.length; i++){
+          bins[i].y = options.frequencies=="relative" ? bins[i].length/GraphNodesLength*100 : bins[i].length;
+          if(selectedValues.length){
+            bins[i].y2 = options.frequencies=="relative" ? bins2[i].length/selectedValues.length*100 : bins2[i].length;
+          }
+      }
+
+      // Y axis: scale and draw
+      var y = d3.scaleLinear()
+        .range([h, 0])
+        .domain([0, d3.max(bins, function(d) { return d.y; })]);
+
+      svg.append("g")
+      .call(d3.axisLeft(y)
+        .tickFormat(function(d){
+          return d + renderPercentage;
+        }));
+
+      // append the bar rectangles to the svg element
+      var columns = svg.selectAll("g.freq-bar")
+        .data(bins)
+        .enter()
+        .append("g")
+          .attr("class","freq-bar")
+          .attr("transform", function(d) { return "translate(" + x(d.x0) + ",0)"; })
+          .style("cursor","pointer")
+          .on("click",function(d,i){
+              Graph.nodes.filter(checkSelectable).forEach(function(node){
+                delete node.selected;
+                if(node[name]>=d.x0 && ((i<bins.length-1 && node[name]<d.x1) || (i==bins.length-1 && node[name]<=d.x1))){
+                  node.selected = true;
+                }
+              })
+              showTables();
+          })
+
+      var colorScale = options.nodeColor==name ? VisualHandlers.nodeColor.getScale() : false;
+
+      columns.append("rect")
+          .attr("class","freq1")
+          .attr("x", 1)
+          .attr("y", function(d) { return y(d.y); })
+          .attr("width", function(d) { return x(d.x1) - x(d.x0) -1 ; })
+          .attr("height", function(d) { return h - y(d.y); })
+          .style("fill", colorScale ? function(d){
+            return colorScale((d.x0+d.x1)/2);
+          } : "#cbdefb")
+
+      if(selectedValues.length){
+        columns.append("rect")
+          .attr("class","freq2")
+          .attr("x", 1 + 4)
+          .attr("y", function(d) { return y(d.y2); })
+          .attr("width", function(d) { return x(d.x1) - x(d.x0) -1 -8 ; })
+          .attr("height", function(d) { return h - y(d.y2); })
+          .style("fill", "#c6c6c6")
+      }
     }
   })
+
+  function getBarPlot(name,shape){
+      var barplot = div.selectAll("div.bar-plot").filter(function(){ return this.variable==name; });
+      if(barplot.empty()){
+        barplot = div.append("div")
+          .attr("class","bar-plot")
+          .property("variable",name);
+        var h2 = barplot.append("h2").text(name);
+        if(shape){
+          h2.append("img")
+          .attr("title",texts.Shape)
+          .attr("src",b64Icons.shapes)
+          .on("click",function(){
+            applyAuto("nodeShape",name);
+          })
+        }
+        h2.append("img")
+          .attr("title",texts.Color)
+          .attr("src",b64Icons.drop)
+          .on("click",function(){
+            applyAuto("nodeColor",name);
+          })
+      }else{
+        barplot.selectAll("*:not(h2)").remove();
+      }
+    return barplot;
+  }
 }
 
 function embedImages(callback){

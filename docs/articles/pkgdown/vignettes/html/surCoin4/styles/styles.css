@@ -406,8 +406,7 @@ div.poweredby img {
 .sidebar > .subSidebar,
 .legend-panel > .scale,
 .legend-panel > .legends,
-div.infopanel,
-.sidebar > .subSearch > .search > ul.dropdown-list {
+div.infopanel {
   margin: 10px;
   background-color: #ffffff;
   box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.07);
@@ -574,28 +573,29 @@ div.goback:after {
   background-position: center;
   
 }
-.sidebar > .subSearch > .search {
+.multi-search {
   background-color: #ffffff;
   border-radius: 5px;
   position: relative;
   padding: 0;
   border: none;
   margin: 0;
+  height: 34px;
 }
-.sidebar > .subSearch > .search > button {
+.multi-search > button {
   border: none;
   margin: 0;
   background-color: transparent;
   border-radius: 0;
   padding: 0.8em;
 }
-.sidebar > .subSearch > .search > button.search-icon,
-.sidebar > .subSearch > .search > button.help-icon {
+.multi-search > button.search-icon {
   position: absolute;
   top: 0;
   right: 0;
+  z-index: 2;
 }
-.sidebar > .subSearch > .search > button.help-icon:before {
+.multi-search > button.help-icon:before {
   content: "";
   position: absolute;
   left: 0;
@@ -604,46 +604,74 @@ div.goback:after {
   width: 1px;
   border-left: 1px solid #c6c6c6;
 }
-.sidebar > .subSearch > .search > button.search-icon > svg > path{
+.multi-search > button.search-icon > svg > path{
   fill: #2f7bee;
 }
-.sidebar > .subSearch > .search > button.search-icon.disabled > svg > path{
+.multi-search > button.search-icon.disabled > svg > path{
   fill: #777777;
 }
-.sidebar > .subSearch > .search > .search-box {
+.multi-search > .search-box {
+  position: absolute;
+  z-index: 1;
   border: solid 1px #c6c6c6;
   border-radius: 5px;
   width: 100%;
+  background-color: #ffffff;
 }
-.sidebar > .subSearch > .search > .search-box > div {
-  padding: 10px 30px 10px 10px;
+.multi-search > .search-box > div.check-container {
+  position: absolute;
+  margin-top: 10px;
+  height: 20px;
+  width: 20px;
+  overflow: hidden;
 }
-.sidebar > .subSearch > .search > .search-box > div > input {
-  width: 100%;
+.multi-search > .search-box > div.check-container > span {
+  display: block;
+  height: 14px;
+}
+.multi-search > .search-box > div.check-container > span.yes:after {
+  content: "";
+  display: block;
+  margin: 0 0 0 6px;
+  width: 4px;
+  height: 8px;
+  border: solid #000000;
+  border-width: 0 2px 2px 0;
+  -webkit-transform: rotate(45deg);
+  -ms-transform: rotate(45deg);
+  transform: rotate(45deg);
+}
+.multi-search > .search-box > div.text-wrapper {
+  padding: 10px 30px 10px 20px;
+}
+.multi-search > .search-box > div.text-wrapper > div.text-content {
+  overflow: hidden;
+}
+.multi-search > .search-box > div.text-wrapper > div.text-content > textarea {
+  height: 12px;
+  line-height: 14px;
+  width: 99999px;
   border: none;
   margin: 0;
   padding: 0;
+  resize: none;
 }
-.sidebar > .subSearch > .search > ul.dropdown-list {
-  margin: 0;
-  border-top: none;
-  border-radius: 0 0 5px 5px;
-  padding: 4px 0;
-  position: absolute;
+.multi-search > .search-box > p {
+  margin: 2px;
+  color: #777777;
+  text-align: center;
   display: none;
-  width: 100%;
-  font-size: 1.2em;
-  z-index: 1;
 }
-.sidebar > .subSearch > .search > ul.dropdown-list > li {
-  padding: 4px 40px;
-  cursor: pointer;
+.multi-search > .search-box.focused > div.text-wrapper > div.text-content > textarea {
+  height: 300px;
 }
-.sidebar > .subSearch > .search > ul.dropdown-list > li:hover,
-.sidebar > .subSearch > .search > ul.dropdown-list > li.active {
-  background-color: #c6c6c6;
+.multi-search > .search-box.focused > div.check-container {
+  height: 300px;
 }
-.sidebar > .subSearch > .search:after,
+.multi-search > .search-box.focused > p {
+  display: block;
+}
+.multi-search:after,
 .subSidebar .visSel:after {
   content: '';
   display: block;
@@ -778,6 +806,11 @@ div.topbar {
 .topbar button {
   margin: 0 2px;
 }
+.topbar > .multi-search {
+  display: inline-block;
+  width: 180px;
+  vertical-align: middle;
+}
 .header {
   position: relative;
   margin-top: 5em;
@@ -830,6 +863,14 @@ div.topbar {
 .picker div.row > span.active,
 .picker div.row > span:hover {
   border-color: rgba(0,0,0, 0.25);
+}
+button.custom-color {
+  color: #777777;
+  width: 100%;
+  margin-bottom: 2em;
+}
+#iro-picker {
+  margin-bottom: 2em;
 }
 
 div.loading {
@@ -1241,21 +1282,25 @@ svg .legend-bottom-button > text{
 }
 
 /* frequency plots */
-.freq-bars .bar-plot h2 {
+.frequency-barplots > .bar-plot > h2 {
   margin: 12px 0 6px 0;
 }
-.freq-bars .bar-plot .freq-bar {
+.frequency-barplots > .bar-plot > h2 > img {
+  cursor: pointer;
+  float: right;
+}
+.frequency-barplots > .bar-plot > .freq-bar {
   position: relative;
   margin-bottom: 4px;
   cursor: pointer;
 }
-.freq-bars .bar-plot .freq-bar > div.freq1 {
+.frequency-barplots > .bar-plot > .freq-bar > div.freq1 {
   background-color: #cbdefb;
   height: 100%;
   width: 100%;
   padding: 4px 0;
 }
-.freq-bars .bar-plot .freq-bar > div.freq2 {
+.frequency-barplots > .bar-plot > .freq-bar > div.freq2 {
   background-color: #c6c6c6;
   margin: 4px 0;
   position: absolute;
@@ -1264,7 +1309,7 @@ svg .legend-bottom-button > text{
   top: 0;
   left: 0;
 }
-.freq-bars .bar-plot .freq-bar > span {
+.frequency-barplots > .bar-plot > .freq-bar > span {
   position: absolute;
   display: inline-block;
   padding: 4px;
@@ -1272,12 +1317,12 @@ svg .legend-bottom-button > text{
   top: 0;
   left: 0;
 }
-.freq-bars .bar-plot .freq-axis {
+.frequency-barplots > .bar-plot > .freq-axis {
   position: relative;
   border-top: solid 1px #777777;
   padding-bottom: 20px;
 }
-.freq-bars .bar-plot .freq-axis > span {
+.frequency-barplots > .bar-plot > .freq-axis > span {
   position: absolute;
   display: block;
   width: 30px;
@@ -1285,7 +1330,7 @@ svg .legend-bottom-button > text{
   margin-left: -15px;
   margin-top: 4px;
 }
-.freq-bars .bar-plot .freq-axis > span:after {
+.frequency-barplots > .bar-plot > .freq-axis > span:after {
   content: "";
   border-left: solid 1px #777777;
   height: 4px;
@@ -1296,36 +1341,56 @@ svg .legend-bottom-button > text{
 }
 
 /* grid gallery */
+div.topbar.gallery-topbar{
+  position: relative;
+}
 div.content {
-  margin: 5em 2em 2em 2em;
+  margin: 1em;
 }
 div.grid-gallery {
+  display: inline-block;
   width: 66%;
+  height: 100%;
+  overflow: auto;
 }
 div.grid-gallery > div {
   display: inline-block;
-  margin: 1em;
+  margin: 0.5em;
+  overflow: hidden;
+  border: solid #ffffff 3px;
+}
+div.grid-gallery > div.selected {
+  border-color: yellow;
 }
 div.grid-gallery > div > img {
   display: block;
 }
 div.grid-gallery > div > span {
   display: block;
-  text-align: center;
+  white-space: nowrap;
+  position: relative;
+}
+div.grid-gallery > div > span:after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width:100%;
+  height:100%; 
+  background:linear-gradient(to right, transparent 75%, white);
+  pointer-events: none;
 }
 div.gallery-panel {
-  position: fixed;
-  top: 0;
-  left: 66%;
-  bottom: 0;
-  right: 0;
+  display: inline-block;
+  width: 33%;
+  height: 100%;
   background: #c6c6c6;
 }
 div.gallery-note {
   background-color: #ffffff;
   position: fixed;
-  left: inherit;
   right: 0;
+  left: 66%;
   bottom: 0;
   padding: 1em;
 }

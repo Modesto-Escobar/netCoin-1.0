@@ -72,7 +72,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">netCoin</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">1.2.13</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">1.2.18</span>
       </span>
     </div>
 
@@ -135,8 +135,8 @@
     <p><code>surScat</code> produces a network object of coincidences from a data frame converting variables into dichotomies.</p>
     </div>
 
-    <pre class="usage"><span class='fu'>surScat</span>(<span class='no'>data</span>, <span class='kw'>variables</span><span class='kw'>=</span><span class='fu'><a href='https://rdrr.io/r/base/names.html'>names</a></span>(<span class='no'>data</span>), <span class='kw'>active</span><span class='kw'>=</span><span class='fu'><a href='https://rdrr.io/r/base/names.html'>names</a></span>(<span class='no'>data</span>), <span class='kw'>nclusters</span><span class='kw'>=</span><span class='fl'>2</span>,
-        <span class='kw'>maxN</span><span class='kw'>=</span><span class='fl'>2000</span>, <span class='no'>...</span>)</pre>
+    <pre class="usage"><span class='fu'>surScat</span><span class='op'>(</span><span class='va'>data</span>, variables<span class='op'>=</span><span class='fu'><a href='https://rdrr.io/r/base/names.html'>names</a></span><span class='op'>(</span><span class='va'>data</span><span class='op'>)</span>, active<span class='op'>=</span><span class='va'>variables</span>, nclusters<span class='op'>=</span><span class='fl'>2</span>,
+        maxN<span class='op'>=</span><span class='fl'>2000</span>, <span class='va'>...</span><span class='op'>)</span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -190,12 +190,16 @@
   <em>Journal of Statistical Software</em>, <b>93</b>, 1-32.
   doi: <a href='https://doi.org/10.18637/jss.v093.i11'>10.18637/jss.v093.i11</a>
 .</p>
+    <h2 class="hasAnchor" id="author"><a class="anchor" href="#author"></a>Author</h2>
+
+    <p>Modesto Escobar, Department of Sociology and Communication, University of Salamanca. See <a href='https://sociocav.usal.es/blog/modesto-escobar/'>https://sociocav.usal.es/blog/modesto-escobar/</a></p>
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
     <pre class="examples"><div class='input'><span class='co'># A data frame with two variables Gender and Opinion</span>
-<span class='no'>frame</span><span class='kw'>&lt;-</span><span class='fu'><a href='https://rdrr.io/r/base/data.frame.html'>data.frame</a></span>(<span class='kw'>Gender</span><span class='kw'>=</span><span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='fu'><a href='https://rdrr.io/r/base/rep.html'>rep</a></span>(<span class='st'>"Man"</span>,<span class='fl'>3</span>),<span class='fu'><a href='https://rdrr.io/r/base/rep.html'>rep</a></span>(<span class='st'>"Woman"</span>,<span class='fl'>3</span>)),
-                  <span class='kw'>Opinion</span><span class='kw'>=</span><span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>"Yes"</span>,<span class='st'>"Yes"</span>,<span class='st'>"No"</span>,<span class='st'>"No"</span>,<span class='st'>"No"</span>,<span class='st'>"Yes"</span>))
-<span class='fu'>surScat</span>(<span class='no'>frame</span>) <span class='co'># network object</span></div><div class='output co'>#&gt; 
+<span class='va'>frame</span><span class='op'>&lt;-</span><span class='fu'><a href='https://rdrr.io/r/base/data.frame.html'>data.frame</a></span><span class='op'>(</span>Gender<span class='op'>=</span><span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='fu'><a href='https://rdrr.io/r/base/rep.html'>rep</a></span><span class='op'>(</span><span class='st'>"Man"</span>,<span class='fl'>3</span><span class='op'>)</span>,<span class='fu'><a href='https://rdrr.io/r/base/rep.html'>rep</a></span><span class='op'>(</span><span class='st'>"Woman"</span>,<span class='fl'>3</span><span class='op'>)</span><span class='op'>)</span>,
+                  Opinion<span class='op'>=</span><span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='st'>"Yes"</span>,<span class='st'>"Yes"</span>,<span class='st'>"No"</span>,<span class='st'>"No"</span>,<span class='st'>"No"</span>,<span class='st'>"Yes"</span><span class='op'>)</span><span class='op'>)</span>
+<span class='fu'>surScat</span><span class='op'>(</span><span class='va'>frame</span><span class='op'>)</span> <span class='co'># network object</span>
+</div><div class='output co'>#&gt; 
 #&gt; Nodes(6):
 #&gt;  Gender Opinion Grupos(2) name
 #&gt;     Man     Yes  Grupo: 2    1
@@ -216,11 +220,11 @@
 
       <footer>
       <div class="copyright">
-  <p>Developed by Modesto Escobar, David Barrios, Carlos Prieto, Luis Martinez-Barrios.</p>
+  <p>Developed by Modesto Escobar, David Barrios, Carlos Prieto, Luis Martinez-Barrios, Pablo Cabrera-Álvarez.</p>
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.5.1.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.6.1.</p>
 </div>
 
       </footer>

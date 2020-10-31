@@ -72,7 +72,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">netCoin</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">1.2.13</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">1.2.18</span>
       </span>
     </div>
 
@@ -135,12 +135,12 @@
     <p>A sample size of 1,000 respondents from the European Social Survey, Round-8.</p>
     </div>
 
-    <pre class="usage"><span class='fu'><a href='https://rdrr.io/r/utils/data.html'>data</a></span>(<span class='st'>"ess"</span>)</pre>
+    <pre class="usage"><span class='fu'><a href='https://rdrr.io/r/utils/data.html'>data</a></span><span class='op'>(</span><span class='st'>"ess"</span><span class='op'>)</span></pre>
 
 
     <h2 class="hasAnchor" id="format"><a class="anchor" href="#format"></a>Format</h2>
 
-    <p>A data frame with 1000 cases (respondents) and 5 variables:</p><dl'>
+    <p>A data frame with 1000 cases (respondents) and 5 variables:</p><dl>
     <dt><code>Gender</code></dt><dd><p>Gender (factor vector): Female, Male.</p></dd>
     <dt><code>Age</code></dt><dd><p>Age (recoded factor vector): 15-29, 30-30, 40-49, 50-59, 60-69, 70 and +.</p></dd>
     <dt><code>Social participation</code></dt><dd><p>Social participation (factor vector): No, Yes.</p></dd>
@@ -154,8 +154,9 @@
     <p>ESS Round 8: European Social Survey Round 8 Data (2016). Data file edition 2.1. NSD - Norwegian Centre for Research Data, Norway - Data Archive and distributor of ESS data for ESS ERIC. <a href='https://www.europeansocialsurvey.org/data/download.html?r=8'>doi:10.21338/NSD-ESS8-2016</a>.</p>
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
-    <pre class="examples"><div class='input'><span class='fu'><a href='https://rdrr.io/r/utils/data.html'>data</a></span>(<span class='st'>"ess"</span>)
-<span class='fu'><a href='https://rdrr.io/r/utils/head.html'>head</a></span>(<span class='no'>ess</span>,<span class='fl'>10</span>)</div><div class='output co'>#&gt;    Gender      Age Social participation Political participation    cweight
+    <pre class="examples"><div class='input'><span class='fu'><a href='https://rdrr.io/r/utils/data.html'>data</a></span><span class='op'>(</span><span class='st'>"ess"</span><span class='op'>)</span>
+<span class='fu'><a href='https://rdrr.io/r/utils/head.html'>head</a></span><span class='op'>(</span><span class='va'>ess</span>,<span class='fl'>10</span><span class='op'>)</span>
+</div><div class='output co'>#&gt;    Gender      Age Social participation Political participation    cweight
 #&gt; 1    Male 70 and +                   No                      No 2.02486539
 #&gt; 2    Male    60-69                   No                      No 0.33566934
 #&gt; 3  Female 70 and +                   No                      No 1.78967142
@@ -177,11 +178,11 @@
 
       <footer>
       <div class="copyright">
-  <p>Developed by Modesto Escobar, David Barrios, Carlos Prieto, Luis Martinez-Barrios.</p>
+  <p>Developed by Modesto Escobar, David Barrios, Carlos Prieto, Luis Martinez-Barrios, Pablo Cabrera-Álvarez.</p>
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.5.1.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.6.1.</p>
 </div>
 
       </footer>

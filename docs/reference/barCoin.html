@@ -72,7 +72,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">netCoin</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">1.2.13</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">1.2.18</span>
       </span>
     </div>
 
@@ -135,16 +135,16 @@
     <p><code>barCoin</code> produces a barCoin object.</p>
     </div>
 
-    <pre class="usage"><span class='fu'>barCoin</span>(<span class='no'>data</span>, <span class='kw'>variables</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/colnames.html'>colnames</a></span>(<span class='no'>data</span>), <span class='kw'>commonlabel</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-        <span class='kw'>dichotomies</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>"_all"</span>,<span class='st'>"_none"</span>), <span class='kw'>valueDicho</span> <span class='kw'>=</span> <span class='fl'>1</span>, <span class='kw'>weight</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-        <span class='kw'>subsample</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>sort</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>decreasing</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='kw'>nodes</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-        <span class='kw'>name</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>select</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>scalebar</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>note</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-        <span class='kw'>label</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>text</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>color</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>defaultColor</span> <span class='kw'>=</span> <span class='st'>"#1f77b4"</span>,
-        <span class='kw'>expected</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>confidence</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>level</span> <span class='kw'>=</span> <span class='fl'>.95</span>, <span class='kw'>significance</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
-        <span class='kw'>minimum</span> <span class='kw'>=</span> <span class='fl'>1</span> , <span class='kw'>maximum</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/nrow.html'>nrow</a></span>(<span class='no'>data</span>), <span class='kw'>percentages</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
-        <span class='kw'>criteria</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>"Z"</span>,<span class='st'>"hyp"</span>), <span class='kw'>Bonferroni</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
-        <span class='kw'>support</span> <span class='kw'>=</span> <span class='fl'>1</span>, <span class='kw'>minL</span> <span class='kw'>=</span> -<span class='fl'>Inf</span>, <span class='kw'>maxL</span> <span class='kw'>=</span> <span class='fl'>1</span>,
-        <span class='kw'>language</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>"en"</span>,<span class='st'>"es"</span>,<span class='st'>"ca"</span>), <span class='kw'>cex</span> <span class='kw'>=</span> <span class='fl'>1.0</span>, <span class='kw'>dir</span> <span class='kw'>=</span> <span class='kw'>NULL</span>)</pre>
+    <pre class="usage"><span class='fu'>barCoin</span><span class='op'>(</span><span class='va'>data</span>, variables <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/colnames.html'>colnames</a></span><span class='op'>(</span><span class='va'>data</span><span class='op'>)</span>, commonlabel <span class='op'>=</span> <span class='cn'>NULL</span>,
+        dichotomies <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='st'>"_all"</span>,<span class='st'>"_none"</span><span class='op'>)</span>, valueDicho <span class='op'>=</span> <span class='fl'>1</span>, weight <span class='op'>=</span> <span class='cn'>NULL</span>,
+        subsample <span class='op'>=</span> <span class='cn'>FALSE</span>, sort <span class='op'>=</span> <span class='cn'>NULL</span>, decreasing <span class='op'>=</span> <span class='cn'>TRUE</span>, nodes <span class='op'>=</span> <span class='cn'>NULL</span>,
+        name <span class='op'>=</span> <span class='cn'>NULL</span>, select <span class='op'>=</span> <span class='cn'>NULL</span>, scalebar <span class='op'>=</span> <span class='cn'>FALSE</span>, note <span class='op'>=</span> <span class='cn'>NULL</span>, 
+        label <span class='op'>=</span> <span class='cn'>NULL</span>, text <span class='op'>=</span> <span class='cn'>NULL</span>, color <span class='op'>=</span> <span class='cn'>NULL</span>, defaultColor <span class='op'>=</span> <span class='st'>"#1f77b4"</span>, 
+        expected <span class='op'>=</span> <span class='cn'>FALSE</span>, confidence <span class='op'>=</span> <span class='cn'>FALSE</span>, level <span class='op'>=</span> <span class='fl'>.95</span>, significance <span class='op'>=</span> <span class='cn'>FALSE</span>, 
+        minimum <span class='op'>=</span> <span class='fl'>1</span> , maximum <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/nrow.html'>nrow</a></span><span class='op'>(</span><span class='va'>data</span><span class='op'>)</span>, percentages <span class='op'>=</span> <span class='cn'>FALSE</span>, 
+        criteria <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='st'>"Z"</span>,<span class='st'>"hyp"</span><span class='op'>)</span>, Bonferroni <span class='op'>=</span> <span class='cn'>FALSE</span>, 
+        support <span class='op'>=</span> <span class='fl'>1</span>, minL <span class='op'>=</span> <span class='op'>-</span><span class='cn'>Inf</span>, maxL <span class='op'>=</span> <span class='fl'>1</span>,
+        language <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='st'>"en"</span>,<span class='st'>"es"</span>,<span class='st'>"ca"</span><span class='op'>)</span>, cex <span class='op'>=</span> <span class='fl'>1.0</span>, dir <span class='op'>=</span> <span class='cn'>NULL</span><span class='op'>)</span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -286,14 +286,18 @@
     <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
     <p>Object of class <code>barCoin</code>.</p>
+    <h2 class="hasAnchor" id="author"><a class="anchor" href="#author"></a>Author</h2>
+
+    <p>Modesto Escobar, Department of Sociology and Communication, University of Salamanca. See <a href='https://sociocav.usal.es/blog/modesto-escobar/'>https://sociocav.usal.es/blog/modesto-escobar/</a></p>
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
     <pre class="examples"><div class='input'><span class='co'># A character column (with separator)</span>
-<span class='no'>frame</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/data.frame.html'>data.frame</a></span>(<span class='kw'>A</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>"Man; Women"</span>, <span class='st'>"Women; Women"</span>,
-                        <span class='st'>"Man; Man"</span>, <span class='st'>"Undet.; Women; Man"</span>))
-<span class='no'>data</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='dichotomize.html'>dichotomize</a></span>(<span class='no'>frame</span>, <span class='st'>"A"</span>, <span class='kw'>sep</span> <span class='kw'>=</span> <span class='st'>"; "</span>)[<span class='fl'>2</span>:<span class='fl'>4</span>]
+<span class='va'>frame</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/data.frame.html'>data.frame</a></span><span class='op'>(</span>A <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='st'>"Man; Women"</span>, <span class='st'>"Women; Women"</span>,
+                        <span class='st'>"Man; Man"</span>, <span class='st'>"Undet.; Women; Man"</span><span class='op'>)</span><span class='op'>)</span>
+<span class='va'>data</span> <span class='op'>&lt;-</span> <span class='fu'><a href='dichotomize.html'>dichotomize</a></span><span class='op'>(</span><span class='va'>frame</span>, <span class='st'>"A"</span>, sep <span class='op'>=</span> <span class='st'>"; "</span><span class='op'>)</span><span class='op'>[</span><span class='fl'>2</span><span class='op'>:</span><span class='fl'>4</span><span class='op'>]</span>
 
-<span class='fu'>barCoin</span>(<span class='no'>data</span>,<span class='kw'>dichotomies</span><span class='kw'>=</span><span class='st'>"_all"</span>)</div><div class='output co'>#&gt; 
+<span class='fu'>barCoin</span><span class='op'>(</span><span class='va'>data</span>,dichotomies<span class='op'>=</span><span class='st'>"_all"</span><span class='op'>)</span>
+</div><div class='output co'>#&gt; 
 #&gt; Nodes(3):
 #&gt;    name incidences
 #&gt;     Man          3
@@ -305,7 +309,8 @@
 #&gt;     Man  Women            2     2.25
 #&gt;     Man Undet.            1     0.75
 #&gt;   Women Undet.            1     0.75
-#&gt; </div><div class='input'><span class='fu'>barCoin</span>(<span class='no'>data</span>,<span class='kw'>dichotomies</span><span class='kw'>=</span><span class='st'>"_all"</span>,<span class='kw'>confidence</span><span class='kw'>=</span><span class='fl'>TRUE</span>,<span class='kw'>percentages</span><span class='kw'>=</span><span class='fl'>TRUE</span>)</div><div class='output co'>#&gt; 
+#&gt; </div><div class='input'><span class='fu'>barCoin</span><span class='op'>(</span><span class='va'>data</span>,dichotomies<span class='op'>=</span><span class='st'>"_all"</span>,confidence<span class='op'>=</span><span class='cn'>TRUE</span>,percentages<span class='op'>=</span><span class='cn'>TRUE</span><span class='op'>)</span>
+</div><div class='output co'>#&gt; 
 #&gt; Nodes(3):
 #&gt;    name incidences
 #&gt;     Man         75
@@ -329,11 +334,11 @@
 
       <footer>
       <div class="copyright">
-  <p>Developed by Modesto Escobar, David Barrios, Carlos Prieto, Luis Martinez-Barrios.</p>
+  <p>Developed by Modesto Escobar, David Barrios, Carlos Prieto, Luis Martinez-Barrios, Pablo Cabrera-Álvarez.</p>
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.5.1.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.6.1.</p>
 </div>
 
       </footer>

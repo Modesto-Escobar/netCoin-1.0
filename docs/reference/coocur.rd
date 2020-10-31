@@ -73,7 +73,7 @@ Besides, this object has two attributes: 1) n is the total of the sum of the ocu
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">netCoin</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">1.2.13</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">1.2.18</span>
       </span>
     </div>
 
@@ -137,8 +137,8 @@ Besides, this object has two attributes: 1) n is the total of the sum of the ocu
 Besides, this object has two attributes: 1) n is the total of the sum of the ocurrences in each row.2) m is the sum of the maximum number of ocurrences in each row.</p>
     </div>
 
-    <pre class="usage"><span class='fu'><a href='coocur.rd.html'>coocur</a></span>(<span class='no'>ocurrences</span>, <span class='kw'>minimum</span> <span class='kw'>=</span> <span class='fl'>1</span>, <span class='kw'>maximum</span> <span class='kw'>=</span> <span class='fl'>Inf</span>,
-       <span class='kw'>sort</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>decreasing</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)</pre>
+    <pre class="usage"><span class='fu'>coocur</span><span class='op'>(</span><span class='va'>ocurrences</span>, minimum <span class='op'>=</span> <span class='fl'>1</span>, maximum <span class='op'>=</span> <span class='cn'>Inf</span>,
+       sort <span class='op'>=</span> <span class='cn'>FALSE</span>, decreasing <span class='op'>=</span> <span class='cn'>TRUE</span><span class='op'>)</span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -174,11 +174,15 @@ Besides, this object has two attributes: 1) n is the total of the sum of the ocu
 <dt>n</dt><dd><p>Total sum of occurences)</p></dd>
 <dt>m</dt><dd><p>Sum of maximum occurences in each row of the ocurrence matrix</p></dd>
 
+    <h2 class="hasAnchor" id="author"><a class="anchor" href="#author"></a>Author</h2>
+
+    <p>Modesto Escobar, Department of Sociology and Communication, University of Salamanca. See <a href='https://sociocav.usal.es/blog/modesto-escobar/'>https://sociocav.usal.es/blog/modesto-escobar/</a></p>
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
     <pre class="examples"><div class='input'><span class='co'>## Tossing two coins five times.</span>
-<span class='no'>D</span><span class='kw'>&lt;-</span><span class='fu'><a href='https://rdrr.io/r/base/data.frame.html'>data.frame</a></span>(<span class='kw'>Head</span><span class='kw'>=</span><span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='fl'>2</span>,<span class='fl'>1</span>,<span class='fl'>1</span>,<span class='fl'>0</span>,<span class='fl'>2</span>),<span class='kw'>Tail</span><span class='kw'>=</span><span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='fl'>0</span>,<span class='fl'>1</span>,<span class='fl'>1</span>,<span class='fl'>2</span>,<span class='fl'>0</span>))
-<span class='fu'><a href='coocur.rd.html'>coocur</a></span>(<span class='no'>D</span>)</div><div class='output co'>#&gt; n= 10; m= 8
+<span class='va'>D</span><span class='op'>&lt;-</span><span class='fu'><a href='https://rdrr.io/r/base/data.frame.html'>data.frame</a></span><span class='op'>(</span>Head<span class='op'>=</span><span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='fl'>2</span>,<span class='fl'>1</span>,<span class='fl'>1</span>,<span class='fl'>0</span>,<span class='fl'>2</span><span class='op'>)</span>,Tail<span class='op'>=</span><span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='fl'>0</span>,<span class='fl'>1</span>,<span class='fl'>1</span>,<span class='fl'>2</span>,<span class='fl'>0</span><span class='op'>)</span><span class='op'>)</span>
+<span class='fu'>coocur</span><span class='op'>(</span><span class='va'>D</span><span class='op'>)</span>
+</div><div class='output co'>#&gt; n= 10; m= 8
 #&gt;      Head Tail
 #&gt; Head    6     
 #&gt; Tail    2    4</div></pre>
@@ -193,11 +197,11 @@ Besides, this object has two attributes: 1) n is the total of the sum of the ocu
 
       <footer>
       <div class="copyright">
-  <p>Developed by Modesto Escobar, David Barrios, Carlos Prieto, Luis Martinez-Barrios.</p>
+  <p>Developed by Modesto Escobar, David Barrios, Carlos Prieto, Luis Martinez-Barrios, Pablo Cabrera-Álvarez.</p>
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.5.1.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.6.1.</p>
 </div>
 
       </footer>
