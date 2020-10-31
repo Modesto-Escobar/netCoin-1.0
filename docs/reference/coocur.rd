@@ -86,7 +86,7 @@ Besides, this object has two attributes: 1) n is the total of the sum of the ocu
   </a>
 </li>
 <li>
-  <a href="../articles/pkgdown/vignettes/surCoin.html">Quick start</a>
+  <a href="../articles/pkgdown/vignettes/netCoin.html">Quick start</a>
 </li>
 <li>
   <a href="../reference/index.html">Reference</a>
@@ -99,7 +99,7 @@ Besides, this object has two attributes: 1) n is the total of the sum of the ocu
   </a>
   <ul class="dropdown-menu" role="menu">
     <li>
-      <a href="../articles/pkgdown/vignettes/netCoin.html">netCoin</a>
+      <a href="../articles/pkgdown/vignettes/surCoin.html">surCoin</a>
     </li>
   </ul>
 </li>

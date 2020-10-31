@@ -8,13 +8,13 @@ navbar:
     - icon: fa-home
       href: index.html
     - text: "Quick start"
-      href: articles/pkgdown/vignettes/surCoin.html
+      href: articles/pkgdown/vignettes/netCoin.html
     - text: "Reference"
       href: reference/index.html
     - text: "Vignettes"
       menu:
-        - text: "netCoin"
-          href: articles/pkgdown/vignettes/netCoin.html
+        - text: "surCoin"
+          href: articles/pkgdown/vignettes/surCoin.html
     - text: "Examples"
       href: articles/pkgdown/examples/examples.html
       
