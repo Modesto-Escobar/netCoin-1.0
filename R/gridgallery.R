@@ -9,7 +9,7 @@ galleryCreate <- function(gallery, dir){
   createHTML(dir, c("reset.css","styles.css"), c("d3.min.js","functions.js",language,"gallery.js"), function(){ return(imgWrapper(gallery,galleryJSON,dir)) })
 }
 
-gridGallery <- function(nodes, name = NULL, label = NULL, info = NULL, main = NULL, note = NULL, language = c("en", "es", "ca"), image = NULL, dir = NULL){
+gridGallery <- function(nodes, name = NULL, label = NULL, info = NULL, image = NULL, main = NULL, note = NULL, help = NULL, language = c("en", "es", "ca"), dir = NULL){
   name <- nameByLanguage(name,language,nodes)
   if(!is.null(name)) rownames(nodes) <- nodes[[name]]
 
@@ -22,6 +22,7 @@ gridGallery <- function(nodes, name = NULL, label = NULL, info = NULL, main = NU
   if (!is.null(info)) options[["nodeInfo"]] <- info
   if (!is.null(main)) options[["main"]] <- main
   if (!is.null(note)) options[["note"]] <- note
+  if (!is.null(help)) options[["help"]] <- help
 
   if (!is.null(image)){
     if(length(setdiff(image,colnames(nodes)))){

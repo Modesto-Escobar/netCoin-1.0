@@ -108,5 +108,6 @@ var texts = {
     poweredby: "Hecho con",
     isolateInfo: "Permite ver únicamente el nodo (o nodos) seleccionado",
     filterInfo: "Permite ver el nodo (o nodos) seleccionado y su red (nodos con los que está relacionado)",
-    selectcustomcolor: "Selecciona un color personalizado"
+    selectcustomcolor: "Selecciona un color personalizado",
+    filterselection: "Filtrar selección"
   };

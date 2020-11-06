@@ -108,5 +108,6 @@ var texts = {
     poweredby: "Fet amb",
     isolateInfo: "Permet veure únicament el node (o nodes) seleccionat",
     filterInfo: "Permet veure el node (o nodes) seleccionat i la seva xarxa (nodes amb els quals està relacionat)",
-    selectcustomcolor: "Selecciona un color personalitzat"
+    selectcustomcolor: "Selecciona un color personalitzat",
+    filterselection: "Filtrar selecció"
   };

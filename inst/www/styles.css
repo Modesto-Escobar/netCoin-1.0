@@ -406,7 +406,8 @@ div.poweredby img {
 .sidebar > .subSidebar,
 .legend-panel > .scale,
 .legend-panel > .legends,
-div.infopanel {
+div.infopanel,
+div.gallery-panel {
   margin: 10px;
   background-color: #ffffff;
   box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.07);
@@ -904,8 +905,8 @@ div.infopanel .drag {
     width: 10px;
     cursor: w-resize;
 }
-div.infopanel .close-button {
-  position: absolute;
+div.infopanel > .close-button,
+div.gallery-panel > .close-button {
   top: 10px;
   right: 14px;
 }
@@ -1344,33 +1345,34 @@ svg .legend-bottom-button > text{
 div.topbar.gallery-topbar{
   position: relative;
 }
-div.content {
+div.gallery-content {
   margin: 1em;
 }
 div.grid-gallery {
+  position: relative;
   display: inline-block;
   width: 66%;
   height: 100%;
   overflow: auto;
 }
-div.grid-gallery > div {
+div.grid-gallery > .gallery-items > div {
   display: inline-block;
   margin: 0.5em;
   overflow: hidden;
   border: solid #ffffff 3px;
 }
-div.grid-gallery > div.selected {
+div.grid-gallery > .gallery-items > div.selected {
   border-color: yellow;
 }
-div.grid-gallery > div > img {
+div.grid-gallery > .gallery-items > div > img {
   display: block;
 }
-div.grid-gallery > div > span {
+div.grid-gallery > .gallery-items > div > span {
   display: block;
   white-space: nowrap;
   position: relative;
 }
-div.grid-gallery > div > span:after {
+div.grid-gallery > .gallery-items > div > span:after {
   content: '';
   position: absolute;
   top: 0;
@@ -1381,16 +1383,42 @@ div.grid-gallery > div > span:after {
   pointer-events: none;
 }
 div.gallery-panel {
+  position: relative;
+  vertical-align: top;
   display: inline-block;
   width: 33%;
   height: 100%;
-  background: #c6c6c6;
+  margin: 0;
+}
+div.panel-content {
+  padding: 5% 0;
+  height: 90%;
+}
+div.panel-content > div {
+  padding: 0 20px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  height: 100%;
 }
 div.gallery-note {
   background-color: #ffffff;
   position: fixed;
   right: 0;
-  left: 66%;
+  left: 0;
   bottom: 0;
   padding: 1em;
+}
+div.grid-gallery > .show-panel-button {
+  position: absolute;
+  top: 0;
+  right: 0;
+}
+div.gallery-content.hide-panel > .gallery-panel {
+  display: none;
+}
+div.gallery-content.hide-panel > .grid-gallery {
+  width: 100%;
+}
+div.gallery-content:not(.hide-panel) > .grid-gallery > .show-panel-button {
+  display: none;
 }

@@ -9,8 +9,9 @@ Object of class \code{gridGallery}.
 }
 
 \usage{
-gridGallery(nodes, name = NULL, label = NULL, info = NULL, main = NULL, note = NULL,
-            language = c("en", "es", "ca"), image = NULL, dir = NULL)
+gridGallery(nodes, name = NULL, label = NULL, info = NULL, image = NULL,
+            main = NULL, note = NULL, help = NULL,
+            language = c("en", "es", "ca"), dir = NULL)
 }
 \arguments{
 \item{nodes}{a data frame with at least three vectors of names, start and end.}
@@ -20,6 +21,7 @@ gridGallery(nodes, name = NULL, label = NULL, info = NULL, main = NULL, note = N
 \item{note}{lower title of the graph.}
 \item{info}{name of the vector with information to display in a panel in the nodes data frame.}
 \item{language}{a character vector (es=spanish; en=english; ca=catalan).}
+\item{help}{help text of the graph.}
 \item{image}{name of the vector with image files in the nodes data frame.}
 \item{dir}{a "character" string representing the directory where the web files will be saved.}
 }

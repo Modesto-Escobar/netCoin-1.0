@@ -44,6 +44,21 @@ function gallery(Graph){
   topOrder(topBar,nodes,displayNodes);
 
   topBar.append("span").style("padding","0 10px");
+  
+  topBar.append("button")
+    .attr("class","primary")
+    .text(texts.filterselection)
+    .on("click",function(){
+      filter = nodes.filter(function(n){
+          return n.selected;
+        })
+        .map(function(n){
+          return n[options.nodeName];
+        });
+      displayNodes();
+    })
+
+  topBar.append("span").style("padding","0 10px");
 
   // node filter in topBar
   var topFilterInst = topFilter()
@@ -58,38 +73,66 @@ function gallery(Graph){
       filter = f;
       displayNodes();
     });
-  topBar.call(topFilterInst);
+  topBar.call(topFilterInst); 
 
   var content = body.append("div")
-        .attr("class","content");
+        .attr("class","gallery-content");
 
   var gallery = content.append("div")
         .attr("class","grid-gallery");
 
+  var showPanelButton = gallery.append("div").attr("class","show-panel-button");
+  showPanelButton.append("span");
+  showPanelButton.append("span");
+  showPanelButton.append("span");
+  showPanelButton.on("click",function(){
+    content.classed("hide-panel",false);
+  })
+
+  gallery.on("click",function(){
+    nodes.forEach(function(n){ delete n.selected; });
+    displayNodes();
+  });
+
   gallery.call(d3.zoom()
+      .filter(function(){ return d3.event.ctrlKey; })
       .scaleExtent(zoomRange)
-      .on("zoom", zoomed));
+      .on("zoom", zoomed))
+
+  gallery = gallery.append("div").attr("class","gallery-items");
 
   displayNodes();
 
   var panel = content.append("div")
         .attr("class","gallery-panel");
 
+  panel.append("div")
+    .attr("class","close-button")
+    .on("click",function(){
+      content.classed("hide-panel",true);
+    });
+
   var panelContent = panel.append("div")
         .attr("class","panel-content")
-        .style("height","100%");
+        .append("div");
 
   if(options.note){
     var note = body.append("div")
       .attr("class","gallery-note")
       .html(options.note)
   }
+  
+  if(options.help){
+    panelContent.html(options.help);
+  }else{
+    content.classed("hide-panel",true);
+  }
 
   content.style("height",(height - topBar.node().offsetHeight - 20 - (options.note ? note.node().offsetHeight : 0))+"px")
 
   function zoomed() {
-    currentGridHeight = gridHeight*d3.event.transform.k;
-    displayNodes();
+      currentGridHeight = gridHeight*d3.event.transform.k;
+      displayNodes();
   }
 
   function displayNodes(){
@@ -131,12 +174,31 @@ function gallery(Graph){
       }
       wrapper.append("span")
         .text(n[options.nodeLabel])
-      if(options.nodeInfo && n[options.nodeInfo]!=""){
-        wrapper.style("cursor","pointer")
-        .on("click",function(){
-          panelContent.html(n[options.nodeInfo]);
-        })
-      }
+      wrapper.style("cursor","pointer")
+      .on("click",function(){
+          d3.event.stopPropagation();
+          if(d3.event.ctrlKey){
+            if(n.selected){
+              delete n.selected;
+            }else{
+              n.selected = true;
+            }
+          }else if(d3.event.shiftKey){
+            n.selected = true;
+            var ext = d3.extent(data.map(function(d,i){ return [i,d.selected]; }).filter(function(d){ return d[1]; }).map(function(d){ return d[0]; }));
+            d3.range(ext[0],ext[1]).forEach(function(i){
+              data[i].selected = true;
+            });
+          }else{
+            data.forEach(function(n){ delete n.selected; });
+            n.selected = true;
+          }
+          displayNodes();
+          if(options.nodeInfo && n[options.nodeInfo]){
+            content.classed("hide-panel",false);
+            panelContent.html(n[options.nodeInfo]);
+          }
+      })
     })
   }
 
