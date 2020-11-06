@@ -108,5 +108,6 @@ var texts = {
     poweredby: "Powered by",
     isolateInfo: "Allows you to see only the selected node (or nodes)",
     filterInfo: "Allows you to see the selected node (or nodes) and its network (nodes with which it is related)",
-    selectcustomcolor: "Select a custom color"
+    selectcustomcolor: "Select a custom color",
+    filterselection: "Filter selection"
   };

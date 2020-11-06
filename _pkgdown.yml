@@ -58,6 +58,7 @@ reference:
   - '`multigraphCreate`'
   - '`propCoin`'
   - '`savePajek`'
+  - '`saveGexf`'
   - '`shinyCoin`'
   - '`sim`'
   - '`toIgraph`'

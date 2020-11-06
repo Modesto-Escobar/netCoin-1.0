@@ -1469,6 +1469,38 @@ savePajek<-function(net, file="file.net", arcs=NULL, edges=NULL, partitions= NUL
   close(connec)
 }
 
+saveGexf <- function(netCoin, file="netCoin.gexf", edgesWeight=NULL){
+  if(!inherits(netCoin, "netCoin")) stop("This program only works with netCoin objects")
+  if(!grepl("\\.",file))file<-paste0(file,".gexf")
+  nodes <- data.frame(id=1:nrow(netCoin$nodes), label=netCoin$nodes$name, stringsAsFactors = F)
+  if(!is.null(netCoin$links)) {
+  e1 <- merge(netCoin$links, nodes, by.x="Source", by.y="label")
+  e2 <- merge(netCoin$links, nodes, by.x="Target", by.y="label")
+  edges <- data.frame(Source=e1$id, Target=e2$id)
+  }
+  else stop("A net without links cannot be converted into a gexf file")
+  if(ncol(netCoin$nodes)>1) nodesAtt <- netCoin$nodes[,2:ncol(netCoin$nodes), drop=FALSE]
+  else nodesAtt <- NULL
+  
+  if(!is.null(edges) && ncol(netCoin$links>2)) {
+    edgesAtt <- netCoin$links[,3:ncol(netCoin$links), drop=FALSE]
+    if(is.null(edgesWeight)) edgesWeight <- netCoin$links[[3]]
+    else edgesWeight <- netCoin$links[[edgesWeight]]
+  }
+  
+  if("fx" %in% names(netCoin$nodes) & "fy" %in% names(netCoin$nodes)) position <- cbind(as.matrix(netCoin$nodes[,c("fx","fy")]),fz=1)
+  else position <- NULL
+  
+  if(exists("showArrows", netCoin$options) && netCoin$options$showArrows) defaultedgetype = "directed" 
+  else defaultedgetype = "undirected"
+  
+  meta <- list(creator="", description="GEXF file written with rgexf", keywords="netCoin, GEXF, Gephi, R")
+  return(gexf(nodes=nodes, edges=edges, edgesWeight=edgesWeight,
+              nodesVizAtt= list(position=position),
+              nodesAtt=nodesAtt, edgesAtt=edgesAtt, 
+              defaultedgetype=defaultedgetype, meta=meta, output=file))
+}
+
 expectedList<- function(data, names=NULL, min=1, confidence=FALSE) {
   if (!inherits(data,"coin")) stop("Error: input must be a coin object")
   if (!is.null(names)) colnames(data[,])<-rownames(data[,])<-names
