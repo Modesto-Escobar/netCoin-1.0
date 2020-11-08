@@ -9,15 +9,16 @@ This function creates a netCoin object (or igraph) and, if stated, a folder in t
 }
 
 \usage{
-surScat(data, variables=names(data), active=variables, nclusters=2,
+surScat(data, variables=names(data), active=variables, type=c("mca", "pca"), nclusters=2,
         maxN=2000, ...)
 }
 \arguments{
-  \item{data}{a data frame}
-  \item{variables}{a vector of variables included in the previous data frame}
-  \item{active}{a vector of variables actived in the previous data frame}
-  \item{nclusters}{number of clusters}
-  \item{maxN}{Maximum number or rows}
+  \item{data}{a data frame.}
+  \item{variables}{a vector of variables included in the previous data frame.}
+  \item{active}{a vector of variables actived in the previous data frame.}
+  \item{type}{Factorial type: mca for qualitative active variables, pca for quantitative active variables.}
+  \item{nclusters}{number of clusters.}
+  \item{maxN}{Maximum number or rows.}
   \item{...}{Any \link{netCoin} argument.}
 }
 \details{
@@ -26,11 +27,11 @@ Possible measures in procedures are
 \item{Frequencies (f), Relative frequencies (x), Conditional frequencies (i), Coincidence degree (cc), Probable degree (cp),}
 \item{Expected (e), Confidence interval (con)}
 \item{Matching (m), Rogers & Tanimoto (t), Gower (g), Sneath (s), Anderberg (and),}
-\item Jaccard (j), Dice (d), antiDice (a), Ochiai (o), Kulczynski (k),
-\item Hamann (ham), Yule (y), Pearson (p), odds ratio (od), Rusell (r), 
-\item Haberman (h), Z value of Haberman (z), 
-\item Hypergeometric p greater value (hyp).
-\item Convert a matrix into an edge list (shape).
+\item{Jaccard (j), Dice (d), antiDice (a), Ochiai (o), Kulczynski (k),}
+\item{Hamann (ham), Yule (y), Pearson (p), odds ratio (od), Rusell (r),}
+\item{Haberman (h), Z value of Haberman (z),}
+\item{Hypergeometric p greater value (hyp).}
+\item{Convert a matrix into an edge list (shape).}
 }
 }
 \references{

@@ -594,11 +594,22 @@ surCoin<-function(data,variables=names(data), commonlabel=NULL,
 
 # surScat is a wrapper to build a netCoin object from an original non-dichotomized data.frame and see frequencies.
 
-surScat <- function(data, variables=names(data), active=variables, nclusters=2, maxN=2000, ...) {
-  B <- as.data.frame(droplevels(as_factor(na.omit(data[,variables]))))
-  b <- B[,active]
-  m <- as.matrix(dichotomize(b,variables=names(b), sort=F, add=F, nas=NULL))
-  cc <- layoutMca(m, rows=T)
+surScat <- function(data, variables=names(data), active=variables, type= c("mca", "pca"), nclusters=2, maxN=2000, ...) {
+  if(type[1]=="mca") {
+    B <- as.data.frame(droplevels(as_factor(na.omit(data[,variables]))))
+    b <- B[,active]
+    m <- as.matrix(dichotomize(b,variables=names(b), sort=F, add=F, nas=NULL))
+    cc <- layoutMca(m, rows=T)
+  }
+  else {
+    B <- na.omit(data[,variables])
+    b <- as.data.frame(sapply(B[,active], as.numeric))
+    factors <- setdiff(variables, active)
+    B[, factors] <- as.data.frame(droplevels(as_factor(B[,factors])))
+    B[, active]  <- b
+    m  <- prcomp(b, center = TRUE, scale. = TRUE)
+    cc <- m$x[,1:2]
+  }
   for(i in nclusters) {
     G <- stats::kmeans(cc, centers=i)
     g <- paste0("Grupos(",sprintf(paste0("%0",length(levels(G$cluster)),"d"),i),")")
@@ -606,7 +617,8 @@ surScat <- function(data, variables=names(data), active=variables, nclusters=2, 
   }
   arguments <- list(...)
   arguments$name <- nameByLanguage(NULL,arguments$language,NULL)
-  B[[arguments$name]] <- sprintf(paste0("%0",nchar(nrow(B)),"d"),as.numeric(rownames(B)))
+  if(class(rownames(B))=="character")  B[[arguments$name]] <- rownames(B)
+  else B[[arguments$name]] <- sprintf(paste0("%0",nchar(nrow(B)),"d"),as.numeric(rownames(B)))
   B <- B[, c(active, setdiff(names(B), active))]
   if(nrow(B)>maxN) {
     set.seed(2020)
@@ -1472,11 +1484,12 @@ savePajek<-function(net, file="file.net", arcs=NULL, edges=NULL, partitions= NUL
 saveGexf <- function(netCoin, file="netCoin.gexf", edgesWeight=NULL){
   if(!inherits(netCoin, "netCoin")) stop("This program only works with netCoin objects")
   if(!grepl("\\.",file))file<-paste0(file,".gexf")
-  nodes <- data.frame(id=1:nrow(netCoin$nodes), label=netCoin$nodes$name, stringsAsFactors = F)
+  nodes <- data.frame(id=1:nrow(netCoin$nodes), label=netCoin$nodes[[1]], stringsAsFactors = F)
   if(!is.null(netCoin$links)) {
   e1 <- merge(netCoin$links, nodes, by.x="Source", by.y="label")
   e2 <- merge(netCoin$links, nodes, by.x="Target", by.y="label")
-  edges <- data.frame(Source=e1$id, Target=e2$id)
+  ee <- merge(e1, e2, by=setdiff(colnames(e1),"id"))
+  edges <- data.frame(Source=ee$id.x, Target=ee$id.y)
   }
   else stop("A net without links cannot be converted into a gexf file")
   if(ncol(netCoin$nodes)>1) nodesAtt <- netCoin$nodes[,2:ncol(netCoin$nodes), drop=FALSE]
@@ -1497,7 +1510,7 @@ saveGexf <- function(netCoin, file="netCoin.gexf", edgesWeight=NULL){
   meta <- list(creator="", description="GEXF file written with rgexf", keywords="netCoin, GEXF, Gephi, R")
   return(gexf(nodes=nodes, edges=edges, edgesWeight=edgesWeight,
               nodesVizAtt= list(position=position),
-              nodesAtt=nodesAtt, edgesAtt=edgesAtt, 
+              nodesAtt=nodesAtt, edgesAtt=edgesAtt,
               defaultedgetype=defaultedgetype, meta=meta, output=file))
 }
 
