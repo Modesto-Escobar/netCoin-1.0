@@ -1484,19 +1484,18 @@ savePajek<-function(net, file="file.net", arcs=NULL, edges=NULL, partitions= NUL
 saveGexf <- function(netCoin, file="netCoin.gexf", edgesWeight=NULL){
   if(!inherits(netCoin, "netCoin")) stop("This program only works with netCoin objects")
   if(!grepl("\\.",file))file<-paste0(file,".gexf")
-  nodes <- data.frame(id=1:nrow(netCoin$nodes), label=netCoin$nodes[[1]], stringsAsFactors = F)
+  nodes <- data.frame(id=seq_len(nrow(netCoin$nodes))-1, label=netCoin$nodes[[netCoin$options$nodeName]], stringsAsFactors=FALSE)
   if(!is.null(netCoin$links)) {
-  e1 <- merge(netCoin$links, nodes, by.x="Source", by.y="label")
-  e2 <- merge(netCoin$links, nodes, by.x="Target", by.y="label")
-  ee <- merge(e1, e2, by=setdiff(colnames(e1),"id"))
-  edges <- data.frame(Source=ee$id.x, Target=ee$id.y)
+    idx <- nodes$id
+    names(idx) <- nodes$label
+    edges <- data.frame(Source=idx[netCoin$links$Source], Target=idx[netCoin$links$Target])
   }
   else stop("A net without links cannot be converted into a gexf file")
-  if(ncol(netCoin$nodes)>1) nodesAtt <- netCoin$nodes[,2:ncol(netCoin$nodes), drop=FALSE]
+  if(ncol(netCoin$nodes)>1) nodesAtt <- netCoin$nodes[,setdiff(colnames(netCoin$nodes),netCoin$options$nodeName), drop=FALSE]
   else nodesAtt <- NULL
   
   if(!is.null(edges) && ncol(netCoin$links>2)) {
-    edgesAtt <- netCoin$links[,3:ncol(netCoin$links), drop=FALSE]
+    edgesAtt <- netCoin$links[,setdiff(colnames(netCoin$links),c("Source","Target")), drop=FALSE]
     if(is.null(edgesWeight)) edgesWeight <- netCoin$links[[3]]
     else edgesWeight <- netCoin$links[[edgesWeight]]
   }

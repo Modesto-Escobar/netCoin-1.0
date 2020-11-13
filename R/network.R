@@ -21,16 +21,10 @@ networkJSON<-function(net){
         count <- count + 1
     }
 
-    sourcenames <- as.character(links$Source)
-    targetnames <- as.character(links$Target)
-
-    nlinks <- nrow(links)
-    source <- numeric(nlinks)
-    target <- numeric(nlinks)
-    for(i in seq_len(nlinks)){
-      source[i] <- which(sourcenames[i]==name)-1
-      target[i] <- which(targetnames[i]==name)-1
-    }
+    idx <- seq_along(name)-1
+    names(idx) <- name
+    source <- idx[as.character(links$Source)]
+    target <- idx[as.character(links$Target)]
 
     links$Source <- source
     links$Target <- target
