@@ -381,7 +381,7 @@ surCoin<-function(data,variables=names(data), commonlabel=NULL,
                   igraph=FALSE, coin=FALSE, dir=NULL, ...)
 {
   arguments <- list(...)
-  if((criteria=="Z" | criteria=="hyp") & maxL==Inf) maxL=.05
+  if((criteria=="Z" | criteria=="hyp") & maxL==Inf) maxL=.5
   varOrder  <- variables # To order variables later before coin
   #Check methods. No necessary because edgeList call these routines.
   #procedures<-i.method(c.method(procedures))
@@ -435,6 +435,7 @@ surCoin<-function(data,variables=names(data), commonlabel=NULL,
   
   #Dichotomies    
   if(!is.null(dichotomies)){
+    if(length(valueDicho)>1 & !is.list(valueDicho)) stop("valueDicho must be a value or a list")
     dichos<-dicho(data, dichotomies, valueDicho, newlabel = FALSE)
     variables<-setdiff(variables,dichotomies)
   }
@@ -576,7 +577,11 @@ surCoin<-function(data,variables=names(data), commonlabel=NULL,
                                     (E$Target %in% exogenous2)),"No","Yes")
       arguments$linkFilter<-paste(ifelse(is.null(arguments$linkFilter),"",paste(arguments$linkFilter,"&")),"chaine=='Yes'")
     }
-    if ("showArrows" %in% names(arguments$options) & exists("nodes")) E<-orderEdges(E,nodes[[name]])
+    if("showArrows" %in% names(arguments$options) & exists("nodes")) E<-orderEdges(E,nodes[[name]])
+    if(exists("ltext",arguments)) {
+      if(toupper(arguments$ltext) == "Z") arguments$ltext <- "p(Z)"
+      if(arguments$ltext =="Fisher") arguments$ltext <- "p(Fisher)"
+    }
 
     if(!is.null(dir)){
       arguments$dir <- dir
@@ -846,6 +851,7 @@ c.method<-function(method) {
   method<-sub("TET","VET",method)
   method<-sub("CON","LCO",method)
   method<-sub("II" ,"0"  ,method)
+  method<-sub("COI","F", method)
   method<-substr(method,1,1)
   return(method)
 }
