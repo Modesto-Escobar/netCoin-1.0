@@ -1487,36 +1487,11 @@ savePajek<-function(net, file="file.net", arcs=NULL, edges=NULL, partitions= NUL
   close(connec)
 }
 
-saveGexf <- function(netCoin, file="netCoin.gexf", edgesWeight=NULL){
+saveGhml <- function(netCoin, file="netCoin.graphml"){
   if(!inherits(netCoin, "netCoin")) stop("This program only works with netCoin objects")
-  if(!grepl("\\.",file))file<-paste0(file,".gexf")
-  nodes <- data.frame(id=seq_len(nrow(netCoin$nodes))-1, label=netCoin$nodes[[netCoin$options$nodeName]], stringsAsFactors=FALSE)
-  if(!is.null(netCoin$links)) {
-    idx <- nodes$id
-    names(idx) <- nodes$label
-    edges <- data.frame(Source=idx[netCoin$links$Source], Target=idx[netCoin$links$Target])
-  }
-  else stop("A net without links cannot be converted into a gexf file")
-  if(ncol(netCoin$nodes)>1) nodesAtt <- netCoin$nodes[,setdiff(colnames(netCoin$nodes),netCoin$options$nodeName), drop=FALSE]
-  else nodesAtt <- NULL
-  
-  if(!is.null(edges) && ncol(netCoin$links>2)) {
-    edgesAtt <- netCoin$links[,setdiff(colnames(netCoin$links),c("Source","Target")), drop=FALSE]
-    if(is.null(edgesWeight)) edgesWeight <- netCoin$links[[3]]
-    else edgesWeight <- netCoin$links[[edgesWeight]]
-  }
-  
-  if("fx" %in% names(netCoin$nodes) & "fy" %in% names(netCoin$nodes)) position <- cbind(as.matrix(netCoin$nodes[,c("fx","fy")]),fz=1)
-  else position <- NULL
-  
-  if(exists("showArrows", netCoin$options) && netCoin$options$showArrows) defaultedgetype = "directed" 
-  else defaultedgetype = "undirected"
-  
-  meta <- list(creator="", description="GEXF file written with rgexf", keywords="netCoin, GEXF, Gephi, R")
-  return(gexf(nodes=nodes, edges=edges, edgesWeight=edgesWeight,
-              nodesVizAtt= list(position=position),
-              nodesAtt=nodesAtt, edgesAtt=edgesAtt,
-              defaultedgetype=defaultedgetype, meta=meta, output=file))
+  if(!grepl("\\.",file))file<-paste0(file,".graphml")
+  graph <- toIgraph(netCoin)
+  write_graph(netCoin, file=file, format="graphml")
 }
 
 expectedList<- function(data, names=NULL, min=1, confidence=FALSE) {

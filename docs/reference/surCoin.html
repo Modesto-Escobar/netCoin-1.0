@@ -150,39 +150,39 @@
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
       <th>data</th>
-      <td><p>a data frame</p></td>
+      <td><p>a data frame.</p></td>
     </tr>
     <tr>
       <th>variables</th>
-      <td><p>a vector of variables included in the previous data frame</p></td>
+      <td><p>a vector of variables included in the previous data frame.</p></td>
     </tr>
     <tr>
       <th>commonlabel</th>
-      <td><p>a vector of variables whose names are to be included in nodes labels</p></td>
+      <td><p>a vector of variables whose names are to be included in nodes labels.</p></td>
     </tr>
     <tr>
       <th>dichotomies</th>
-      <td><p>a vector of dichotomous variables to appear as just one category</p></td>
+      <td><p>a vector of dichotomous variables to appear as just one category.</p></td>
     </tr>
     <tr>
       <th>valueDicho</th>
-      <td><p>value to be selected for dichotomous variables. Default is 1</p></td>
+      <td><p>value or list of values (not vector) to be selected for dichotomous variables. Default is 1.</p></td>
     </tr>
     <tr>
       <th>metric</th>
-      <td><p>a vector of metrics</p></td>
+      <td><p>a vector of metrics.</p></td>
     </tr>
     <tr>
       <th>exogenous</th>
-      <td><p>a vector of variables whose relations amongst them are of no interest. None by default</p></td>
+      <td><p>a vector of variables whose relations amongst them are of no interest. None by default.</p></td>
     </tr>
     <tr>
       <th>weight</th>
-      <td><p>a vector of weights. Optimal for data.framed tables</p></td>
+      <td><p>a vector of weights. Optimal for data.framed tables.</p></td>
     </tr>
     <tr>
       <th>subsample</th>
-      <td><p>retrict the analysis to scenarios with at least one event</p></td>
+      <td><p>retrict the analysis to scenarios with at least one event.</p></td>
     </tr>
     <tr>
       <th>pairwise</th>
@@ -190,19 +190,19 @@
     </tr>
     <tr>
       <th>minimum</th>
-      <td><p>minimum frequency to be considered</p></td>
+      <td><p>minimum frequency to be considered.</p></td>
     </tr>
     <tr>
       <th>maximum</th>
-      <td><p>maximum frequency to be considered</p></td>
+      <td><p>maximum frequency to be considered.</p></td>
     </tr>
     <tr>
       <th>sort</th>
-      <td><p>sort the coincidence matrix according to frequency of events</p></td>
+      <td><p>sort the coincidence matrix according to frequency of events.</p></td>
     </tr>
     <tr>
       <th>decreasing</th>
-      <td><p>decreasing or increasing sort of the matrix</p></td>
+      <td><p>decreasing or increasing sort of the matrix.</p></td>
     </tr>
     <tr>
       <th>frequency</th>
@@ -226,7 +226,7 @@
     </tr>
     <tr>
       <th>support</th>
-      <td><p>minimum value of the frequency of the coincidence to be edged</p></td>
+      <td><p>minimum value of the frequency of the coincidence to be edged.</p></td>
     </tr>
     <tr>
       <th>minL</th>
@@ -234,7 +234,7 @@
     </tr>
     <tr>
       <th>maxL</th>
-      <td><p>maximum value of the statistic to include the edge in the list.</p></td>
+      <td><p>maximum value of the statistic to include the edge in the list. By default is +Inf, except if criteria="Z" or criteria="hyp", in which case it is .5. It is recommnended to change it to .05 if data has been sampled.</p></td>
     </tr>
     <tr>
       <th>directed</th>
@@ -242,11 +242,11 @@
     </tr>
     <tr>
       <th>diagonal</th>
-      <td><p>includes auto-links</p></td>
+      <td><p>includes auto-links.</p></td>
     </tr>
     <tr>
       <th>sortL</th>
-      <td><p>sort the list according to the values of a statistic. See below</p></td>
+      <td><p>sort the list according to the values of a statistic. See below.</p></td>
     </tr>
     <tr>
       <th>decreasingL</th>
@@ -258,7 +258,7 @@
     </tr>
     <tr>
       <th>coin</th>
-      <td><p>Only return the coincidences matrix if TRUE</p></td>
+      <td><p>Only return the coincidences matrix if TRUE.</p></td>
     </tr>
     <tr>
       <th>dir</th>
@@ -309,6 +309,11 @@
 #&gt;  Gender:Woman 50   Gender Woman
 #&gt;    Opinion:No 50  Opinion    No
 #&gt;   Opinion:Yes 50  Opinion   Yes
+#&gt; 
+#&gt; Links(2):
+#&gt;        Source      Target  Haberman      p(Z)
+#&gt;    Gender:Man Opinion:Yes 0.8164966 0.2227078
+#&gt;  Gender:Woman  Opinion:No 0.8164966 0.2227078
 #&gt; </div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
@@ -321,7 +326,7 @@
 
       <footer>
       <div class="copyright">
-  <p>Developed by Modesto Escobar, David Barrios, Carlos Prieto, Luis Martinez-Barrios, Pablo Cabrera-Álvarez.</p>
+  <p>Developed by Modesto Escobar.</p>
 </div>
 
 <div class="pkgdown">

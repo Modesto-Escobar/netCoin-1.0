@@ -197,7 +197,7 @@ Besides, this object has two attributes: 1) n is the total of the sum of the ocu
 
       <footer>
       <div class="copyright">
-  <p>Developed by Modesto Escobar, David Barrios, Carlos Prieto, Luis Martinez-Barrios, Pablo Cabrera-Álvarez.</p>
+  <p>Developed by Modesto Escobar.</p>
 </div>
 
 <div class="pkgdown">
