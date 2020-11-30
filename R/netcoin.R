@@ -320,7 +320,7 @@ allNet<-function(incidences, weight = NULL, subsample = FALSE, pairwise = FALSE,
 {
   arguments <- list(...)
   arguments$dir<-dir
-  if((criteria=="Z" | criteria=="hyp") & maxL==Inf) maxL=.05
+  if((criteria=="Z" | criteria=="hyp") & maxL==Inf) maxL=.5
   if(!("language" %in% names(arguments))) arguments$language <- "en"
   arguments$name <- nameByLanguage(arguments$name,arguments$language,arguments$nodes)
   if (!("size" %in% names(arguments)))
